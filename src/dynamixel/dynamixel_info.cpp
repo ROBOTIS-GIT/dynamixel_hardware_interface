@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-/* Authors: Hye-Jong KIM*/
+/* Authors: Hye-Jong KIM */
 
 #include "dynamixel_hardware_interface/dynamixel/dynamixel_info.hpp"
 #include <string>
@@ -150,13 +150,15 @@ bool DynamixelInfo::GetDxlTypeInfo(
   int32_t & value_of_max_radian_position,
   int32_t & value_of_min_radian_position,
   double & min_radian,
-  double & max_radian)
+  double & max_radian,
+  double & torque_constant)
 {
   value_of_zero_radian_position = dxl_info_[id].value_of_zero_radian_position;
   value_of_max_radian_position = dxl_info_[id].value_of_max_radian_position;
   value_of_min_radian_position = dxl_info_[id].value_of_min_radian_position;
   min_radian = dxl_info_[id].min_radian;
   max_radian = dxl_info_[id].max_radian;
+  torque_constant = dxl_info_[id].torque_constant;
   return true;
 }
 

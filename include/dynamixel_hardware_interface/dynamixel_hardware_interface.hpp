@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-/* Authors: Hye-Jong KIM, Sungho Woo */
+/* Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie*/
 
 #ifndef DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL_HARDWARE_INTERFACE_HPP_
 #define DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL_HARDWARE_INTERFACE_HPP_
@@ -47,6 +47,10 @@
 #define PRESENT_POSITION_INDEX 0
 #define PRESENT_VELOCITY_INDEX 1
 #define PRESENT_EFFORT_INDEX 2
+
+#define GOAL_POSITION_INDEX 0
+// #define GOAL_VELOCITY_INDEX 1  // TODO: to be implemented
+#define GOAL_CURRENT_INDEX 1
 
 namespace dynamixel_hardware_interface
 {

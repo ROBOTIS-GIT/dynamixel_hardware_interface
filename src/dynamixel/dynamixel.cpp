@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-/* Authors: Hye-Jong KIM, Sungho Woo */
+/* Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie */
 
 #include "dynamixel_hardware_interface/dynamixel/dynamixel.hpp"
 
@@ -800,7 +800,7 @@ DxlError Dynamixel::GetDxlValueFromSyncRead()
           dxl_info_.ConvertValueRPMToVelocityRPS(ID, static_cast<int32_t>(dxl_getdata));
       } else if (indirect_info_read_[ID].item_name.at(item_index) == "Present Current") {
         *it_read_data.item_data_ptr_vec.at(item_index) =
-          static_cast<int16_t>(dxl_getdata);
+         dxl_info_.ConvertCurrentToEffort(ID, static_cast<int16_t>(dxl_getdata));
       } else {
         *it_read_data.item_data_ptr_vec.at(item_index) =
           static_cast<double>(dxl_getdata);
@@ -921,7 +921,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead()
           dxl_info_.ConvertValueRPMToVelocityRPS(ID, static_cast<int32_t>(dxl_getdata));
       } else if (indirect_info_read_[ID].item_name.at(item_index) == "Present Current") {
         *it_read_data.item_data_ptr_vec.at(item_index) =
-          static_cast<int16_t>(dxl_getdata);
+         dxl_info_.ConvertCurrentToEffort(ID, static_cast<int16_t>(dxl_getdata));
       } else {
         *it_read_data.item_data_ptr_vec.at(item_index) =
           static_cast<double>(dxl_getdata);

@@ -4,7 +4,9 @@ Number	Name
 1060	xl430_w250.model
 1080	xc430_w240.model
 1100	xh540_w270.model
+1110    xh540_w150.model
 1160	2xc430_w250.model
+1220    xc330_t288.model
 4000	ym070_210_m001.model
 4020	ym070_210_r051.model
 4030	ym070_210_r099.model

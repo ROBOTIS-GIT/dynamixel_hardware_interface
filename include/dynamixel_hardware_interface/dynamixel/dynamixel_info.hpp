@@ -77,7 +77,8 @@ public:
     int32_t & value_of_max_radian_position,
     int32_t & value_of_min_radian_position,
     double & min_radian,
-    double & max_radian);
+    double & max_radian,
+    double & torque_constant);
   int32_t ConvertRadianToValue(uint8_t id, double radian);
   double ConvertValueToRadian(uint8_t id, int32_t value);
   inline int16_t ConvertEffortToCurrent(uint8_t id, double effort)
