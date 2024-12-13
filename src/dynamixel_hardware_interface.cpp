@@ -816,12 +816,18 @@ void DynamixelHardware::CalcJointToTransmission()
   }
 
   for (size_t i = 0; i < num_of_transmissions_; i++) {
-    double value = 0.0;
-    for (size_t j = 0; j < num_of_joints_; j++) {
-      value += joint_to_transmission_matrix_[i][j] *
-        (*hdl_joint_commands_.at(j).value_ptr_vec.at(GOAL_CURRENT_INDEX));
+    if(hdl_trans_commands_.at(i).interface_name_vec.size() > GOAL_CURRENT_INDEX && hdl_trans_commands_.at(i).interface_name_vec.at(GOAL_CURRENT_INDEX) == "Goal Current")
+    {
+      double value = 0.0;
+      for (size_t j = 0; j < num_of_joints_; j++) {
+        if(hdl_joint_commands_.at(j).interface_name_vec.size() > GOAL_CURRENT_INDEX && hdl_joint_commands_.at(j).interface_name_vec.at(GOAL_CURRENT_INDEX) == hardware_interface::HW_IF_EFFORT)
+        {
+          value += joint_to_transmission_matrix_[i][j] *
+            (*hdl_joint_commands_.at(j).value_ptr_vec.at(GOAL_CURRENT_INDEX));
+        }
+      }
+      *hdl_trans_commands_.at(i).value_ptr_vec.at(GOAL_CURRENT_INDEX) = value;
     }
-    *hdl_trans_commands_.at(i).value_ptr_vec.at(GOAL_CURRENT_INDEX) = value;
   }
 }
 
