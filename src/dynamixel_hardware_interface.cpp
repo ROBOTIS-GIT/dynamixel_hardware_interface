@@ -658,15 +658,21 @@ bool DynamixelHardware::InitDxlWriteItems()
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
       if (gpio.command_interfaces.size()) {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-        for (auto it : gpio.command_interfaces) {
         HandlerVarType temp_write;
         temp_write.id = id;
         temp_write.name = gpio.name;
 
-          temp_write.interface_name_vec.push_back(it.name);
+        temp_write.interface_name_vec.push_back("Goal Position");
         temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-        hdl_trans_commands_.push_back(temp_write);
+
+        for (auto it : gpio.command_interfaces) {
+          if (it.name == "Goal Current") {
+            temp_write.interface_name_vec.push_back("Goal Current");
+            temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+          }
         }
+
+        hdl_trans_commands_.push_back(temp_write);
       }
     }
     is_set_hdl = true;
