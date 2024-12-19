@@ -63,5 +63,5 @@ Address	Size	Data Name
 224	1	Indirect Data 1
 168	2	Indirect Address Read
 224	1	Indirect Data Read
-578	2	Indirect Address Write
-634	1	Indirect Data Write
+194	2	Indirect Address Write
+237	1	Indirect Data Write

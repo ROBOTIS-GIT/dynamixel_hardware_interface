@@ -30,7 +30,6 @@ Address	Size	Data Name
 52	4	Min Position Limit
 63	1	Shutdown
 64	1	Torque Enable
-65	1	LED
 68	1	Status Return Level
 69	1	Registered Instruction
 70	1	Hardware Error Status
