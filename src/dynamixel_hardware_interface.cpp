@@ -551,8 +551,27 @@ bool DynamixelHardware::InitDxlItems()
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Items");
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+    
+    // First write items containing "Limit"
     for (auto it : gpio.parameters) {
-      if (it.first != "ID" && it.first != "type") {
+      if (it.first != "ID" && it.first != "type" && it.first.find("Limit") != std::string::npos) {
+        if (dxl_comm_->WriteItem(
+            id, it.first,
+            static_cast<uint32_t>(stoi(it.second))) != DxlError::OK)
+        {
+          RCLCPP_ERROR_STREAM(logger_, "[ID:" << std::to_string(id) << "] Write Item error");
+          return false;
+        }
+        RCLCPP_INFO_STREAM(
+          logger_,
+          "[ID:" << std::to_string(id) << "] item_name:" << it.first.c_str() << "\tdata:" <<
+            stoi(it.second));
+      }
+    }
+
+    // Then write the remaining items
+    for (auto it : gpio.parameters) {
+      if (it.first != "ID" && it.first != "type" && it.first.find("Limit") == std::string::npos) {
         if (dxl_comm_->WriteItem(
             id, it.first,
             static_cast<uint32_t>(stoi(it.second))) != DxlError::OK)
