@@ -42,4 +42,4 @@ jobs:
         with:
           package-name: dynamixel_hardware_interface
           target-ros2-distro: ${{ matrix.ros_distribution }}
-          vcs-repo-file-url: "https://raw.githubusercontent.com/ROBOTIS-GIT/dynamixel_hardware_interface/humble/dynamixel_hardware_interface_ci.repos"
+          vcs-repo-file-url: "https://raw.githubusercontent.com/ROBOTIS-GIT/dynamixel_hardware_interface/main/dynamixel_hardware_interface_ci.repos"
