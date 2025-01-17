@@ -93,7 +93,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     } else if (gpio.parameters.at("type") == "sensor") {
       sensor_id_.push_back(static_cast<uint8_t>(stoi(gpio.parameters.at("ID"))));
     } else {
-      RCLCPP_ERROR_STREAM(logger_, "Invalid DXL / Sensoe type");
+      RCLCPP_ERROR_STREAM(logger_, "Invalid DXL / Sensor type");
       exit(-1);
     }
   }

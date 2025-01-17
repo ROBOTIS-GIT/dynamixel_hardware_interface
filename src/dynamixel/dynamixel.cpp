@@ -658,6 +658,22 @@ DxlError Dynamixel::WriteMultiDxlData()
 bool Dynamixel::checkReadType()
 {
   for (size_t dxl_index = 1; dxl_index < read_data_list_.size(); dxl_index++) {
+    // Check if Indirect Data Read address and size are different
+    uint16_t indirect_addr[2];  // [i-1], [i]
+    uint8_t indirect_size[2];   // [i-1], [i]
+    
+    if (!dxl_info_.GetDxlControlItem(
+      read_data_list_.at(dxl_index).id, "Indirect Data Read", indirect_addr[1], indirect_size[1]) ||
+      !dxl_info_.GetDxlControlItem(
+      read_data_list_.at(dxl_index - 1).id, "Indirect Data Read", indirect_addr[0], indirect_size[0]))
+    {
+      return BULK;
+    }
+    
+    if (indirect_addr[1] != indirect_addr[0] || indirect_size[1] != indirect_size[0]) {
+      return BULK;
+    }
+
     if (read_data_list_.at(dxl_index).item_name.size() !=
       read_data_list_.at(dxl_index - 1).item_name.size())
     {
@@ -667,7 +683,11 @@ bool Dynamixel::checkReadType()
       item_index++)
     {
       if (read_data_list_.at(dxl_index).item_name.at(item_index) !=
-        read_data_list_.at(dxl_index - 1).item_name.at(item_index))
+        read_data_list_.at(dxl_index - 1).item_name.at(item_index) || 
+        read_data_list_.at(dxl_index).item_addr.at(item_index) !=
+        read_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
+        read_data_list_.at(dxl_index).item_size.at(item_index) !=
+        read_data_list_.at(dxl_index - 1).item_size.at(item_index))
       {
         return BULK;
       }
@@ -679,6 +699,22 @@ bool Dynamixel::checkReadType()
 bool Dynamixel::checkWriteType()
 {
   for (size_t dxl_index = 1; dxl_index < write_data_list_.size(); dxl_index++) {
+    // Check if Indirect Data Write address and size are different
+    uint16_t indirect_addr[2];  // [i-1], [i]
+    uint8_t indirect_size[2];   // [i-1], [i]
+    
+    if (!dxl_info_.GetDxlControlItem(
+      write_data_list_.at(dxl_index).id, "Indirect Data Write", indirect_addr[1], indirect_size[1]) ||
+      !dxl_info_.GetDxlControlItem(
+      write_data_list_.at(dxl_index - 1).id, "Indirect Data Write", indirect_addr[0], indirect_size[0]))
+    {
+      return BULK;
+    }
+    
+    if (indirect_addr[1] != indirect_addr[0] || indirect_size[1] != indirect_size[0]) {
+      return BULK;
+    }
+
     if (write_data_list_.at(dxl_index).item_name.size() !=
       write_data_list_.at(dxl_index - 1).item_name.size())
     {
@@ -688,7 +724,12 @@ bool Dynamixel::checkWriteType()
       item_index++)
     {
       if (write_data_list_.at(dxl_index).item_name.at(item_index) !=
-        write_data_list_.at(dxl_index - 1).item_name.at(item_index))
+        write_data_list_.at(dxl_index - 1).item_name.at(item_index) ||
+        write_data_list_.at(dxl_index).item_addr.at(item_index) !=
+        write_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
+        write_data_list_.at(dxl_index).item_size.at(item_index) !=
+        write_data_list_.at(dxl_index - 1).item_size.at(item_index)
+        )
       {
         return BULK;
       }
@@ -870,11 +911,12 @@ DxlError Dynamixel::SetBulkReadHandler(std::vector<uint8_t> id_arr)
     }
     // Set indirect addr.
     indirect_info_read_[it_id].indirect_data_addr = IN_ADDR;
+
+    fprintf(
+      stderr,
+      "set bulk read (indirect addr) : addr %d, size %d\n",
+      IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
   }
-  fprintf(
-    stderr,
-    "set bulk read (indirect addr) : addr %d, size %d\n",
-    IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
 
   group_bulk_read_ = new dynamixel::GroupBulkRead(port_handler_, packet_handler_);
 
@@ -1130,15 +1172,12 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
 
 DxlError Dynamixel::SetBulkWriteHandler(std::vector<uint8_t> id_arr)
 {
-  uint16_t INDIRECT_ADDR = 0;
-  uint8_t INDIRECT_SIZE;
+  uint16_t IN_ADDR = 0;
+  uint8_t IN_SIZE = 0;
 
   for (auto it_id : id_arr) {
     // Get the indirect addr.
-    if (dxl_info_.GetDxlControlItem(
-        it_id, "Indirect Data Write", INDIRECT_ADDR,
-        INDIRECT_SIZE) == false)
-    {
+    if (dxl_info_.GetDxlControlItem(it_id, "Indirect Data Write", IN_ADDR, IN_SIZE) == false) {
       fprintf(
         stderr,
         "Fail to set indirect address bulk write. "
@@ -1146,14 +1185,16 @@ DxlError Dynamixel::SetBulkWriteHandler(std::vector<uint8_t> id_arr)
       return DxlError::SET_BULK_WRITE_FAIL;
     }
     // Set indirect addr.
-    indirect_info_write_[it_id].indirect_data_addr = INDIRECT_ADDR;
+    indirect_info_write_[it_id].indirect_data_addr = IN_ADDR;
+
+    fprintf(
+      stderr,
+      "set bulk write (indirect addr) : addr %d, size %d\n",
+      IN_ADDR, indirect_info_write_[id_arr.at(0)].size);
   }
-  fprintf(
-    stderr,
-    "set bulk write (indirect addr) : addr %d, size %d\n",
-    INDIRECT_ADDR, indirect_info_write_[id_arr.at(0)].size);
 
   group_bulk_write_ = new dynamixel::GroupBulkWrite(port_handler_, packet_handler_);
+
   return DxlError::OK;
 }
 
