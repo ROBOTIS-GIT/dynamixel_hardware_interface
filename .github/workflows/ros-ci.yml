@@ -9,7 +9,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  humblel:
+  humble:
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
