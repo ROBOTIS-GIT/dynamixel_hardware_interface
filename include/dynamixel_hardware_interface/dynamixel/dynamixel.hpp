@@ -77,7 +77,7 @@ typedef struct
   uint16_t indirect_data_addr;      ///< Base address for indirect data.
   uint16_t cnt;                     ///< Number of control items.
   uint8_t size;                     ///< Total size in bytes.
-  std::vector<std::string> item_name; ///< Names of the control items.
+  std::vector<std::string> item_name;  ///< Names of the control items.
   std::vector<uint8_t> item_size;  ///< Sizes of each control item in bytes.
 } IndirectInfo;
 
@@ -103,7 +103,7 @@ typedef struct
   std::vector<std::string> item_name;          ///< List of control item names.
   std::vector<uint8_t> item_size;              ///< Sizes of the control items.
   std::vector<uint16_t> item_addr;             ///< Addresses of the control items.
-  std::vector<std::shared_ptr<double>> item_data_ptr_vec; ///< Pointers to the data.
+  std::vector<std::shared_ptr<double>> item_data_ptr_vec;  ///< Pointers to the data.
 } RWItemList;
 
 class Dynamixel

@@ -51,7 +51,9 @@ DynamixelHardware::~DynamixelHardware()
 hardware_interface::CallbackReturn DynamixelHardware::on_init(
   const hardware_interface::HardwareInfo & info)
 {
-  if (hardware_interface::SystemInterface::on_init(info) != hardware_interface::CallbackReturn::SUCCESS) {
+  if (hardware_interface::SystemInterface::on_init(info) !=
+    hardware_interface::CallbackReturn::SUCCESS)
+  {
     RCLCPP_ERROR_STREAM(logger_, "Failed to initialize DynamixelHardware");
     return hardware_interface::CallbackReturn::ERROR;
   }
@@ -78,9 +80,11 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   RCLCPP_INFO_STREAM(logger_, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Comm Port");
 
-
-  if (info_.hardware_parameters.find("use_revolute_to_prismatic_gripper") != info_.hardware_parameters.end()) {
-    use_revolute_to_prismatic_ = std::stoi(info_.hardware_parameters.at("use_revolute_to_prismatic_gripper")) != 0;
+  if (info_.hardware_parameters.find("use_revolute_to_prismatic_gripper") !=
+    info_.hardware_parameters.end())
+  {
+    use_revolute_to_prismatic_ =
+      std::stoi(info_.hardware_parameters.at("use_revolute_to_prismatic_gripper")) != 0;
   }
 
   if (use_revolute_to_prismatic_) {
@@ -383,7 +387,7 @@ hardware_interface::CallbackReturn DynamixelHardware::stop()
 }
 
 hardware_interface::return_type DynamixelHardware::read(
-    const rclcpp::Time & time, const rclcpp::Duration & period)
+  const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   if (dxl_status_ == REBOOTING) {
     RCLCPP_ERROR_STREAM(logger_, "Dynamixel Read Fail : REBOOTING");
@@ -426,14 +430,14 @@ hardware_interface::return_type DynamixelHardware::read(
     dxl_state_pub_uni_ptr_->unlockAndPublish();
   }
 
-if (rclcpp::ok()) {
+  if (rclcpp::ok()) {
     rclcpp::spin_some(this->get_node_base_interface());
-}
+  }
   return hardware_interface::return_type::OK;
 }
 
 hardware_interface::return_type DynamixelHardware::write(
-    const rclcpp::Time & time, const rclcpp::Duration & period)
+  const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   if (dxl_status_ == DXL_OK || dxl_status_ == HW_ERROR) {
     dxl_comm_->WriteItemBuf();
@@ -551,7 +555,6 @@ bool DynamixelHardware::InitDxlItems()
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Items");
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-    
     // First write items containing "Limit"
     for (auto it : gpio.parameters) {
       if (it.first != "ID" && it.first != "type" && it.first.find("Limit") != std::string::npos) {
@@ -599,7 +602,6 @@ bool DynamixelHardware::InitDxlReadItems()
     hdl_gpio_sensor_states_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
       if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "dxl") {
-
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_read;
 
@@ -982,11 +984,15 @@ void DynamixelHardware::set_dxl_torque_srv_callback(
 
 void DynamixelHardware::initRevoluteToPrismaticParam()
 {
-  if (info_.hardware_parameters.find("revolute_to_prismatic_dxl") != info_.hardware_parameters.end()) {
+  if (info_.hardware_parameters.find("revolute_to_prismatic_dxl") !=
+    info_.hardware_parameters.end())
+  {
     conversion_dxl_name_ = info_.hardware_parameters.at("revolute_to_prismatic_dxl");
   }
 
-  if (info_.hardware_parameters.find("revolute_to_prismatic_joint") != info_.hardware_parameters.end()) {
+  if (info_.hardware_parameters.find("revolute_to_prismatic_joint") !=
+    info_.hardware_parameters.end())
+  {
     conversion_joint_name_ = info_.hardware_parameters.at("revolute_to_prismatic_joint");
   }
 

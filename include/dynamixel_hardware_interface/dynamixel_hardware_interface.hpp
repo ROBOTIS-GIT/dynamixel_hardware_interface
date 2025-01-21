@@ -65,7 +65,7 @@ typedef struct HandlerVarType_
   uint8_t id;                                /**< ID of the Dynamixel component. */
   std::string name;                          /**< Name of the component. */
   std::vector<std::string> interface_name_vec; /**< Vector of interface names. */
-  std::vector<std::shared_ptr<double>> value_ptr_vec; /**< Vector of pointers to interface values. */
+  std::vector<std::shared_ptr<double>> value_ptr_vec; /**< Vector interface values. */
 } HandlerVarType;
 
 /**
@@ -117,7 +117,8 @@ public:
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
+  hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info)
+  override;
 
   /**
    * @brief Exports state interfaces for ROS2.
@@ -139,7 +140,8 @@ public:
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
+  hardware_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state)
+  override;
 
   /**
    * @brief Callback for deactivating the hardware interface.
@@ -147,7 +149,8 @@ public:
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
+  hardware_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state)
+  override;
 
   /**
    * @brief Reads data from the hardware.

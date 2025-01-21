@@ -661,15 +661,16 @@ bool Dynamixel::checkReadType()
     // Check if Indirect Data Read address and size are different
     uint16_t indirect_addr[2];  // [i-1], [i]
     uint8_t indirect_size[2];   // [i-1], [i]
-    
+
     if (!dxl_info_.GetDxlControlItem(
-      read_data_list_.at(dxl_index).id, "Indirect Data Read", indirect_addr[1], indirect_size[1]) ||
+        read_data_list_.at(dxl_index).id, "Indirect Data Read", indirect_addr[1],
+        indirect_size[1]) ||
       !dxl_info_.GetDxlControlItem(
-      read_data_list_.at(dxl_index - 1).id, "Indirect Data Read", indirect_addr[0], indirect_size[0]))
+        read_data_list_.at(dxl_index - 1).id, "Indirect Data Read", indirect_addr[0],
+        indirect_size[0]))
     {
       return BULK;
     }
-    
     if (indirect_addr[1] != indirect_addr[0] || indirect_size[1] != indirect_size[0]) {
       return BULK;
     }
@@ -683,7 +684,7 @@ bool Dynamixel::checkReadType()
       item_index++)
     {
       if (read_data_list_.at(dxl_index).item_name.at(item_index) !=
-        read_data_list_.at(dxl_index - 1).item_name.at(item_index) || 
+        read_data_list_.at(dxl_index - 1).item_name.at(item_index) ||
         read_data_list_.at(dxl_index).item_addr.at(item_index) !=
         read_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
         read_data_list_.at(dxl_index).item_size.at(item_index) !=
@@ -702,15 +703,15 @@ bool Dynamixel::checkWriteType()
     // Check if Indirect Data Write address and size are different
     uint16_t indirect_addr[2];  // [i-1], [i]
     uint8_t indirect_size[2];   // [i-1], [i]
-    
     if (!dxl_info_.GetDxlControlItem(
-      write_data_list_.at(dxl_index).id, "Indirect Data Write", indirect_addr[1], indirect_size[1]) ||
+        write_data_list_.at(dxl_index).id, "Indirect Data Write", indirect_addr[1],
+        indirect_size[1]) ||
       !dxl_info_.GetDxlControlItem(
-      write_data_list_.at(dxl_index - 1).id, "Indirect Data Write", indirect_addr[0], indirect_size[0]))
+        write_data_list_.at(dxl_index - 1).id, "Indirect Data Write", indirect_addr[0],
+        indirect_size[0]))
     {
       return BULK;
     }
-    
     if (indirect_addr[1] != indirect_addr[0] || indirect_size[1] != indirect_size[0]) {
       return BULK;
     }
@@ -728,8 +729,7 @@ bool Dynamixel::checkWriteType()
         write_data_list_.at(dxl_index).item_addr.at(item_index) !=
         write_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
         write_data_list_.at(dxl_index).item_size.at(item_index) !=
-        write_data_list_.at(dxl_index - 1).item_size.at(item_index)
-        )
+        write_data_list_.at(dxl_index - 1).item_size.at(item_index))
       {
         return BULK;
       }

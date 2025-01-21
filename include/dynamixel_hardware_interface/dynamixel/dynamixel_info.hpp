@@ -18,14 +18,16 @@
 #ifndef DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL__DYNAMIXEL_INFO_HPP_
 #define DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL__DYNAMIXEL_INFO_HPP_
 
-#include <boost/algorithm/string.hpp>
+#include <cmath>
+#include <cstring>
+
 #include <fstream>
 #include <iostream>
-#include <vector>
-#include <cstring>
-#include <string>
 #include <map>
-#include <cmath>
+#include <string>
+#include <vector>
+
+#include <boost/algorithm/string.hpp>
 
 namespace dynamixel_hardware_interface
 {
