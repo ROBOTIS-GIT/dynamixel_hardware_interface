@@ -61,7 +61,7 @@ Address	Size	Data Name
 146	1	Present Temperature
 168	2	Indirect Address 1
 224	1	Indirect Data 1
-168	2	Indirect Address Read
-224	1	Indirect Data Read
-578	2	Indirect Address Write
-634	1	Indirect Data Write
+168	2	Indirect Address Write
+224	1	Indirect Data Write
+578	2	Indirect Address Read
+634	1	Indirect Data Read

@@ -24,12 +24,12 @@ Address	Size	Data Name
 32	2	Max Voltage Limit
 34	2	Min Voltage Limit
 36	2	PWM Limit
+38	2	Current Limit
 44	4	Velocity Limit
 48	4	Max Position Limit
 52	4	Min Position Limit
 63	1	Shutdown
 64	1	Torque Enable
-65	1	LED
 68	1	Status Return Level
 69	1	Registered Instruction
 70	1	Hardware Error Status
@@ -42,6 +42,7 @@ Address	Size	Data Name
 90	2	Feedforward 1st Gain
 98	1	Bus Watchdog
 100	2	Goal PWM
+102	2	Goal Current
 104	4	Goal Velocity
 108	4	Profile Acceleration
 112	4	Profile Velocity
@@ -50,7 +51,7 @@ Address	Size	Data Name
 122	1	Moving
 123	1	Moving Status
 124	2	Present PWM
-126	2	Present Load
+126	2	Present Current
 128	4	Present Velocity
 132	4	Present Position
 136	4	Velocity Trajectory

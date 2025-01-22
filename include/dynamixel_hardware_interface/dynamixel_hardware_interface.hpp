@@ -1,19 +1,18 @@
-/*******************************************************************************
-* Copyright 2024 ROBOTIS CO., LTD.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************/
-/* Authors: Hye-Jong KIM, Sungho Woo */
+// Copyright 2024 ROBOTIS CO., LTD.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Authors: Hye-Jong KIM, Sungho Woo
 
 #ifndef DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL_HARDWARE_INTERFACE_HPP_
 #define DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL_HARDWARE_INTERFACE_HPP_
@@ -65,7 +64,7 @@ typedef struct HandlerVarType_
   uint8_t id;                                /**< ID of the Dynamixel component. */
   std::string name;                          /**< Name of the component. */
   std::vector<std::string> interface_name_vec; /**< Vector of interface names. */
-  std::vector<std::shared_ptr<double>> value_ptr_vec; /**< Vector of pointers to interface values. */
+  std::vector<std::shared_ptr<double>> value_ptr_vec; /**< Vector interface values. */
 } HandlerVarType;
 
 /**
@@ -117,7 +116,8 @@ public:
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
+  hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info)
+  override;
 
   /**
    * @brief Exports state interfaces for ROS2.
@@ -139,7 +139,8 @@ public:
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
+  hardware_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state)
+  override;
 
   /**
    * @brief Callback for deactivating the hardware interface.
@@ -147,7 +148,8 @@ public:
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
+  hardware_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state)
+  override;
 
   /**
    * @brief Reads data from the hardware.

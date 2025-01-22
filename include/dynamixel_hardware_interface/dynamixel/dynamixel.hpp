@@ -1,19 +1,18 @@
-/*******************************************************************************
-* Copyright 2024 ROBOTIS CO., LTD.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************/
-/* Authors: Hye-Jong KIM, Sungho Woo */
+// Copyright 2024 ROBOTIS CO., LTD.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Authors: Hye-Jong KIM, Sungho Woo
 
 #ifndef DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL__DYNAMIXEL_HPP_
 #define DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL__DYNAMIXEL_HPP_
@@ -77,7 +76,7 @@ typedef struct
   uint16_t indirect_data_addr;      ///< Base address for indirect data.
   uint16_t cnt;                     ///< Number of control items.
   uint8_t size;                     ///< Total size in bytes.
-  std::vector<std::string> item_name; ///< Names of the control items.
+  std::vector<std::string> item_name;  ///< Names of the control items.
   std::vector<uint8_t> item_size;  ///< Sizes of each control item in bytes.
 } IndirectInfo;
 
@@ -103,7 +102,7 @@ typedef struct
   std::vector<std::string> item_name;          ///< List of control item names.
   std::vector<uint8_t> item_size;              ///< Sizes of the control items.
   std::vector<uint16_t> item_addr;             ///< Addresses of the control items.
-  std::vector<std::shared_ptr<double>> item_data_ptr_vec; ///< Pointers to the data.
+  std::vector<std::shared_ptr<double>> item_data_ptr_vec;  ///< Pointers to the data.
 } RWItemList;
 
 class Dynamixel

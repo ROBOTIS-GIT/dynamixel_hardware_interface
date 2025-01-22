@@ -24,9 +24,13 @@ Address	Size	Data Name
 32	2	Max Voltage Limit
 34	2	Min Voltage Limit
 36	2	PWM Limit
+38	2	Current Limit
 44	4	Velocity Limit
 48	4	Max Position Limit
 52	4	Min Position Limit
+56	1	External Port Mode 1
+57	1	External Port Mode 2
+58	1	External Port Mode 3
 63	1	Shutdown
 64	1	Torque Enable
 65	1	LED
@@ -42,6 +46,7 @@ Address	Size	Data Name
 90	2	Feedforward 1st Gain
 98	1	Bus Watchdog
 100	2	Goal PWM
+102	2	Goal Current
 104	4	Goal Velocity
 108	4	Profile Acceleration
 112	4	Profile Velocity
@@ -50,13 +55,16 @@ Address	Size	Data Name
 122	1	Moving
 123	1	Moving Status
 124	2	Present PWM
-126	2	Present Load
+126	2	Present Current
 128	4	Present Velocity
 132	4	Present Position
 136	4	Velocity Trajectory
 140	4	Position Trajectory
 144	2	Present Input Voltage
 146	1	Present Temperature
+152	2	External Port Data 1
+154	2	External Port Data 2
+156	2	External Port Data 3
 168	2	Indirect Address 1
 224	1	Indirect Data 1
 168	2	Indirect Address Write

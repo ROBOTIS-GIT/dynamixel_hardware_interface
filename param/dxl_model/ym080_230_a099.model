@@ -102,7 +102,7 @@ Address	Size	Data Name
 571	1	Present Motor Temperature
 634	1	Indirect Data 1
 919	1	Backup Ready
-256	2	Indirect Address Read
-634	1	Indirect Data Read
-384	2	Indirect Address Write
-698	1	Indirect Data Write
+256	2	Indirect Address Write
+634	1	Indirect Data Write
+384	2	Indirect Address Read
+698	1	Indirect Data Read
