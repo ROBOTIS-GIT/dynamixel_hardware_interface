@@ -68,7 +68,11 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   port_name_ = info_.hardware_parameters["port_name"];
   baud_rate_ = info_.hardware_parameters["baud_rate"];
-  err_timeout_ms_ = stod(info_.hardware_parameters["error_timeout_ms"]);
+  try {
+    err_timeout_ms_ = stod(info_.hardware_parameters["error_timeout_ms"]);
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR(logger_, "Failed to parse error_timeout_ms parameter: %s, using default value", e.what());
+  }
 
   RCLCPP_INFO_STREAM(
     logger_,
