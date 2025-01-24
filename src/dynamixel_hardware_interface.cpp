@@ -35,7 +35,11 @@ DynamixelHardware::DynamixelHardware()
 {
   dxl_status_ = DXL_OK;
   dxl_torque_status_ = TORQUE_ENABLED;
-  err_timeout_sec_ = 3.0;
+  err_timeout_ms_ = 500;
+  is_read_in_error_ = false;
+  is_write_in_error_ = false;
+  read_error_duration_ = rclcpp::Duration(0, 0);
+  write_error_duration_ = rclcpp::Duration(0, 0);
 }
 
 DynamixelHardware::~DynamixelHardware()
@@ -64,7 +68,11 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   port_name_ = info_.hardware_parameters["port_name"];
   baud_rate_ = info_.hardware_parameters["baud_rate"];
-  err_timeout_sec_ = stod(info_.hardware_parameters["error_timeout_sec"]);
+  try {
+    err_timeout_ms_ = stod(info_.hardware_parameters["error_timeout_ms"]);
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR(logger_, "Failed to parse error_timeout_ms parameter: %s, using default value", e.what());
+  }
 
   RCLCPP_INFO_STREAM(
     logger_,
@@ -394,11 +402,23 @@ hardware_interface::return_type DynamixelHardware::read(
   } else if (dxl_status_ == DXL_OK || dxl_status_ == COMM_ERROR) {
     dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData());
     if (dxl_comm_err_ != DxlError::OK) {
+      if (!is_read_in_error_) {
+        is_read_in_error_ = true;
+        read_error_duration_ = rclcpp::Duration(0, 0);
+      }
+      read_error_duration_ = read_error_duration_ + period;
+      
       RCLCPP_ERROR_STREAM(
         logger_,
-        "Dynamixel Read Fail :" << Dynamixel::DxlErrorToString(dxl_comm_err_));
-      return hardware_interface::return_type::ERROR;
+        "Dynamixel Read Fail (Duration: " << read_error_duration_.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms)");
+
+      if (read_error_duration_.seconds() * 1000 >= err_timeout_ms_) {
+        return hardware_interface::return_type::ERROR;
+      }
+      return hardware_interface::return_type::OK;
     }
+    is_read_in_error_ = false;
+    read_error_duration_ = rclcpp::Duration(0, 0);
   } else if (dxl_status_ == HW_ERROR) {
     dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData());
     if (dxl_comm_err_ != DxlError::OK) {
@@ -434,7 +454,6 @@ hardware_interface::return_type DynamixelHardware::read(
   }
   return hardware_interface::return_type::OK;
 }
-
 hardware_interface::return_type DynamixelHardware::write(
   const rclcpp::Time & time, const rclcpp::Duration & period)
 {
@@ -447,16 +466,28 @@ hardware_interface::return_type DynamixelHardware::write(
 
     dxl_comm_->WriteMultiDxlData();
 
+    is_write_in_error_ = false;
+    write_error_duration_ = rclcpp::Duration(0, 0);
+
     return hardware_interface::return_type::OK;
   } else {
-    RCLCPP_ERROR_STREAM(logger_, "Dynamixel Write Fail");
-    return hardware_interface::return_type::ERROR;
+    write_error_duration_ = write_error_duration_ + period;
+    
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "Dynamixel Write Fail (Duration: " << write_error_duration_.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms)");
+
+    if (write_error_duration_.seconds() * 1000 >= err_timeout_ms_) {
+      return hardware_interface::return_type::ERROR;
+    }
+    return hardware_interface::return_type::OK;
   }
 }
 
 DxlError DynamixelHardware::CheckError(DxlError dxl_comm_err)
 {
   DxlError error_state = DxlError::OK;
+  dxl_status_ = DXL_OK;
 
   // check comm error
   if (dxl_comm_err != DxlError::OK) {

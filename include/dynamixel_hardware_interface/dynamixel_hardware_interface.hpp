@@ -181,7 +181,12 @@ private:
   std::map<uint8_t /*id*/, uint8_t /*err*/> dxl_hw_err_;
   DxlTorqueStatus dxl_torque_status_;
   std::map<uint8_t /*id*/, bool /*enable*/> dxl_torque_state_;
-  double err_timeout_sec_;
+  double err_timeout_ms_;
+  rclcpp::Duration read_error_duration_{0, 0};
+  rclcpp::Duration write_error_duration_{0, 0};
+  bool is_read_in_error_{false};
+  bool is_write_in_error_{false};
+
   bool use_revolute_to_prismatic_{false};
   std::string conversion_dxl_name_{""};
   std::string conversion_joint_name_{""};
