@@ -11,13 +11,6 @@ ROS 2 package providing a hardware interface for controlling [Dynamixel](https:/
 
 This package currently supports ROS 2 Humble only. Ensure that ROS 2 Humble is properly installed (ROS 2 Humble installation guide).
 
-- [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK):
-  - Install the Dynamixel SDK using the following command:
-
-    ```bash
-    sudo apt install ros-humble-dynamixel-sdk
-    ```
-
 - Hardware Requirements:
 
   - Dynamixel servos
@@ -31,6 +24,7 @@ This package currently supports ROS 2 Humble only. Ensure that ROS 2 Humble is p
 
    ```bash
    cd ~/${WORKSPACE}/src
+   git clone -b humble https://github.com/ROBOTIS-GIT/DynamixelSDK.git
    git clone -b humble https://github.com/ROBOTIS-GIT/dynamixel_hardware_interface.git
    git clone -b humble https://github.com/ROBOTIS-GIT/dynamixel_interfaces.git
    ```
