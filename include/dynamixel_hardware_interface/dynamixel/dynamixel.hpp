@@ -125,12 +125,12 @@ private:
   std::vector<RWItemList> read_data_list_;
 
   // sync read
-  dynamixel::GroupSyncRead * group_sync_read_;
+  dynamixel::GroupFastSyncRead * group_sync_read_;
   // indirect inform for sync read
   std::map<uint8_t /*id*/, IndirectInfo> indirect_info_read_;
 
   // bulk read
-  dynamixel::GroupBulkRead * group_bulk_read_;
+  dynamixel::GroupFastBulkRead * group_bulk_read_;
 
   // write item (sync or bulk) variable
   bool write_type_;
