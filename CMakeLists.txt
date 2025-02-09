@@ -23,7 +23,7 @@ find_package(realtime_tools REQUIRED)
 
 find_package(dynamixel_sdk REQUIRED)
 find_package(std_srvs REQUIRED)
-find_package(dynamixel_interfaces REQUIRED)
+find_package(dynamixel_msgs REQUIRED)
 
 ################################################################################
 # Build
@@ -49,7 +49,7 @@ ament_target_dependencies(
   rclcpp
   dynamixel_sdk
   std_srvs
-  dynamixel_interfaces
+  dynamixel_msgs
   realtime_tools
 )
 
@@ -95,7 +95,7 @@ ament_export_dependencies(
   hardware_interface
   pluginlib
   dynamixel_sdk
-  dynamixel_interfaces
+  dynamixel_msgs
   aimbot_log_interfaces
 )
 
