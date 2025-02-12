@@ -79,9 +79,14 @@ DxlError Dynamixel::InitDxlComm(
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     } else {
       fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d\n", dxl_model_number);
+      dxl_info_.ReadDxlModelFile(it_id, dxl_model_number);
+      // Disable torque
+      if (WriteItem(it_id, "Torque Enable", TORQUE_OFF) < 0) {
+        fprintf(stderr, "[ID:%03d] Cannot write \"Torque Off\" command!\n", it_id);
+        return DxlError::ITEM_WRITE_FAIL;
+      }
+      fprintf(stderr, "[ID:%03d] Torque OFF\n", it_id);
     }
-
-    dxl_info_.ReadDxlModelFile(it_id, dxl_model_number);
   }
 
   read_data_list_.clear();
