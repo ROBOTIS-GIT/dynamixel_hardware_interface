@@ -327,8 +327,6 @@ private:
   double revoluteToPrismatic(double revolute_value);
 
   double prismaticToRevolute(double prismatic_value);
-
-  int ros_update_freq_;
 };
 
 }  // namespace dynamixel_hardware_interface
