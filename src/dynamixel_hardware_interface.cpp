@@ -277,8 +277,6 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     str_set_dxl_torque_srv_name,
     std::bind(&DynamixelHardware::set_dxl_torque_srv_callback, this, _1, _2));
 
-  ros_update_freq_ = stoi(info_.hardware_parameters["ros_update_freq"]);
-
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
