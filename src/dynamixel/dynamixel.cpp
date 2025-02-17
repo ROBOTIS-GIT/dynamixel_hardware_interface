@@ -799,7 +799,7 @@ DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
     IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
 
   group_sync_read_ =
-    new dynamixel::GroupSyncRead(
+    new dynamixel::GroupFastSyncRead(
     port_handler_, packet_handler_,
     IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
 
@@ -917,7 +917,7 @@ DxlError Dynamixel::SetBulkReadHandler(std::vector<uint8_t> id_arr)
       IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
   }
 
-  group_bulk_read_ = new dynamixel::GroupBulkRead(port_handler_, packet_handler_);
+  group_bulk_read_ = new dynamixel::GroupFastBulkRead(port_handler_, packet_handler_);
 
   for (auto it_id : id_arr) {
     uint8_t ID = it_id;
