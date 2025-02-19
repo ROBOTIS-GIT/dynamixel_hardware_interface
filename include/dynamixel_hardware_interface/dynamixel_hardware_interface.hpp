@@ -38,8 +38,8 @@
 #include "dynamixel_interfaces/srv/set_data_to_dxl.hpp"
 #include "dynamixel_interfaces/srv/reboot_dxl.hpp"
 
-#include "realtime_tools/realtime_publisher.h"
-#include "realtime_tools/realtime_buffer.h"
+#include "realtime_tools/realtime_publisher.hpp"
+#include "realtime_tools/realtime_buffer.hpp"
 
 #include "std_srvs/srv/set_bool.hpp"
 

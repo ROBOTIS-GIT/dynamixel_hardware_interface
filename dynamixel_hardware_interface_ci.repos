@@ -2,8 +2,8 @@ repositories:
   utils/DynamixelSDK:
     type: git
     url: https://github.com/ROBOTIS-GIT/DynamixelSDK.git
-    version: humble
+    version: main
   dynamixel_hardware_interface/dynamixel_interfaces:
     type: git
     url: https://github.com/ROBOTIS-GIT/dynamixel_interfaces.git
-    version: humble
+    version: main

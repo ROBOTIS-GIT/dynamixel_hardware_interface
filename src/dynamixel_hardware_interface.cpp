@@ -70,8 +70,10 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   baud_rate_ = info_.hardware_parameters["baud_rate"];
   try {
     err_timeout_ms_ = stod(info_.hardware_parameters["error_timeout_ms"]);
-  } catch (const std::exception& e) {
-    RCLCPP_ERROR(logger_, "Failed to parse error_timeout_ms parameter: %s, using default value", e.what());
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      logger_, "Failed to parse error_timeout_ms parameter: %s, using default value",
+      e.what());
   }
 
   RCLCPP_INFO_STREAM(
@@ -405,10 +407,11 @@ hardware_interface::return_type DynamixelHardware::read(
         read_error_duration_ = rclcpp::Duration(0, 0);
       }
       read_error_duration_ = read_error_duration_ + period;
-      
+
       RCLCPP_ERROR_STREAM(
         logger_,
-        "Dynamixel Read Fail (Duration: " << read_error_duration_.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms)");
+        "Dynamixel Read Fail (Duration: " << read_error_duration_.seconds() * 1000 << "ms/" <<
+          err_timeout_ms_ << "ms)");
 
       if (read_error_duration_.seconds() * 1000 >= err_timeout_ms_) {
         return hardware_interface::return_type::ERROR;
@@ -470,10 +473,11 @@ hardware_interface::return_type DynamixelHardware::write(
     return hardware_interface::return_type::OK;
   } else {
     write_error_duration_ = write_error_duration_ + period;
-    
+
     RCLCPP_ERROR_STREAM(
       logger_,
-      "Dynamixel Write Fail (Duration: " << write_error_duration_.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms)");
+      "Dynamixel Write Fail (Duration: " << write_error_duration_.seconds() * 1000 << "ms/" <<
+        err_timeout_ms_ << "ms)");
 
     if (write_error_duration_.seconds() * 1000 >= err_timeout_ms_) {
       return hardware_interface::return_type::ERROR;
