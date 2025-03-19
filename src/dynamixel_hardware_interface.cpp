@@ -870,10 +870,8 @@ void DynamixelHardware::CalcJointToTransmission()
 
   for (size_t i = 0; i < num_of_transmissions_; i++) {
     if(hdl_trans_commands_.at(i).interface_name_vec.size() > GOAL_CURRENT_INDEX &&
-      hdl_trans_commands_.at(i).interface_name_vec.at(GOAL_CURRENT_INDEX) == "Goal Current")
-    {
-      for(size_t j = 0; j < hdl_joint_commands_.size(); j++)
-      {
+      hdl_trans_commands_.at(i).interface_name_vec.at(GOAL_CURRENT_INDEX) == "Goal Current") {
+      for(size_t j = 0; j < hdl_joint_commands_.size(); j++) {
         if(hdl_joint_commands_.at(j).interface_name_vec.size() > GOAL_CURRENT_INDEX &&
           hdl_joint_commands_.at(j).interface_name_vec.at(GOAL_CURRENT_INDEX) ==
           hardware_interface::HW_IF_EFFORT)
