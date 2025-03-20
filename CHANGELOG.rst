@@ -2,6 +2,14 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.0 (2025-03-20)
+------------------
+* Added Torque Constant Parameter to DXL Model Files
+* Enhanced Transmission Command Calculation
+* Unified Initialization Structure
+* Support for Goal Current Control
+* Contributors: Woojin Wie
+
 1.3.0 (2025-02-17)
 ------------------
 * Enhance Error Handling and Timeout Management
