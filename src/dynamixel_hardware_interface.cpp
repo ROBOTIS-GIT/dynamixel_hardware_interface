@@ -711,15 +711,21 @@ bool DynamixelHardware::InitDxlWriteItems()
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
       if (gpio.command_interfaces.size()) {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-        for (auto it : gpio.command_interfaces) {
-          HandlerVarType temp_write;
-          temp_write.id = id;
-          temp_write.name = gpio.name;
+        HandlerVarType temp_write;
+        temp_write.id = id;
+        temp_write.name = gpio.name;
 
-          temp_write.interface_name_vec.push_back(it.name);
-          temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-          hdl_trans_commands_.push_back(temp_write);
+        temp_write.interface_name_vec.push_back("Goal Position");
+        temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+
+        for (auto it : gpio.command_interfaces) {
+          if (it.name == "Goal Current") {
+            temp_write.interface_name_vec.push_back("Goal Current");
+            temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+          }
         }
+
+        hdl_trans_commands_.push_back(temp_write);
       }
     }
     is_set_hdl = true;
@@ -853,14 +859,33 @@ void DynamixelHardware::CalcJointToTransmission()
     double value = 0.0;
     for (size_t j = 0; j < num_of_joints_; j++) {
       value += joint_to_transmission_matrix_[i][j] *
-        (*hdl_joint_commands_.at(j).value_ptr_vec.at(0));
+        (*hdl_joint_commands_.at(j).value_ptr_vec.at(GOAL_POSITION_INDEX));
     }
 
     if (hdl_trans_commands_.at(i).name == conversion_dxl_name_) {
       value = prismaticToRevolute(value);
     }
+    *hdl_trans_commands_.at(i).value_ptr_vec.at(GOAL_POSITION_INDEX) = value;
+  }
 
-    *hdl_trans_commands_.at(i).value_ptr_vec.at(0) = value;
+  for (size_t i = 0; i < num_of_transmissions_; i++) {
+    if (hdl_trans_commands_.at(i).interface_name_vec.size() > GOAL_CURRENT_INDEX &&
+      hdl_trans_commands_.at(i).interface_name_vec.at(GOAL_CURRENT_INDEX) == "Goal Current")
+    {
+      for (size_t j = 0; j < hdl_joint_commands_.size(); j++) {
+        if (hdl_joint_commands_.at(j).interface_name_vec.size() > GOAL_CURRENT_INDEX &&
+          hdl_joint_commands_.at(j).interface_name_vec.at(GOAL_CURRENT_INDEX) ==
+          hardware_interface::HW_IF_EFFORT)
+        {
+          double value = 0.0;
+          for (size_t k = 0; k < num_of_joints_; k++) {
+            value += joint_to_transmission_matrix_[i][k] *
+              (*hdl_joint_commands_.at(k).value_ptr_vec.at(GOAL_CURRENT_INDEX));
+          }
+          *hdl_trans_commands_.at(i).value_ptr_vec.at(GOAL_CURRENT_INDEX) = value;
+        }
+      }
+    }
   }
 }
 
