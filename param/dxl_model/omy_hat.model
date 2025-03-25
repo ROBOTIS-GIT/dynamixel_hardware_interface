@@ -1,0 +1,35 @@
+[control table]
+Address	Size	Data Name
+0	2	Model Number
+2	4	Model Information
+6	1	Firmware Version
+7	1	ID
+8	1	Baud Rate (Bus)
+9	1	DXL Baud Rate
+10	2	DB Voltage
+12	1	DB Voltage Thresh
+14	2	DB Voltage D Gain
+16	2	DB Voltage I Gain
+18	2	DB Voltage P Gain
+20	1	SyncTable ID
+30	2	SyncTable Read Address
+50	2	SyncTable Read Size
+70	2	SyncTable Write Address
+90	2	SyncTable Write Size
+110	2	SyncTable Period
+112	2	Indirect Address
+512	1	Power Enable
+513	1	Voltage Control Enable
+514	1	Table Sync Enable
+515	1	R LED
+516	1	G LED
+517	1	B LED
+518	1	Status
+519	1	EMG Power Ctrl
+520	2	Realtime Tick
+522	2	Present Input Voltage
+524	2	Present Input Current
+550	1	Status Return Level
+560	1	SyncTable Read Data
+688	1	SyncTable Write Data
+816	1	Indirect Data
