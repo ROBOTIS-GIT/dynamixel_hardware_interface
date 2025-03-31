@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.1 (2025-03-31)
+------------------
+* Modified the Model File
+* Contributors: Wonho Yun
+
 1.4.0 (2025-03-20)
 ------------------
 * Added Torque Constant Parameter to DXL Model Files
