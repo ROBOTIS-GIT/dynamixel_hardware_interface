@@ -71,7 +71,7 @@ These parameters define how the interface communicates with the Dynamixel motors
 
 - **`baud_rate`**: Communication baud rate.
 
-- **`error_timeout_sec`**: Timeout for communication errors.
+- **`error_timeout_ms`**: Timeout for communication errors (in milliseconds).
 
 #### **2. Hardware Configuration**
 
