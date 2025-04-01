@@ -261,7 +261,7 @@ private:
    * @param type_filter The type of items to initialize ("controller" or "dxl" or "sensor").
    * @return True if initialization was successful, false otherwise.
    */
-  bool initItems(const std::string& type_filter);
+  bool initItems(const std::string & type_filter);
 
   /**
    * @brief Helper function to retry writing an item to a Dynamixel device.
@@ -270,7 +270,7 @@ private:
    * @param value The value to write.
    * @return True if write was successful, false if timeout occurred.
    */
-  bool retryWriteItem(uint8_t id, const std::string& item_name, uint32_t value);
+  bool retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value);
 
   /**
    * @brief Initializes Dynamixel items.
