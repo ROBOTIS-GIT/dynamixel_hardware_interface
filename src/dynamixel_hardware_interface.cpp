@@ -105,6 +105,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       dxl_id_.push_back(static_cast<uint8_t>(stoi(gpio.parameters.at("ID"))));
     } else if (gpio.parameters.at("type") == "sensor") {
       sensor_id_.push_back(static_cast<uint8_t>(stoi(gpio.parameters.at("ID"))));
+    } else if (gpio.parameters.at("type") == "controller") {
+      controller_id_.push_back(static_cast<uint8_t>(stoi(gpio.parameters.at("ID"))));
     } else {
       RCLCPP_ERROR_STREAM(logger_, "Invalid DXL / Sensor type");
       exit(-1);
@@ -114,6 +116,35 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   bool trying_connect = true;
   int trying_cnt = 60;
   int cnt = 0;
+
+  if(controller_id_.size() > 0 ) {
+    while (trying_connect) {
+      std::vector<uint8_t> id_arr;
+      for (auto controller : controller_id_) {
+        id_arr.push_back(controller);
+      }
+      if (dxl_comm_->InitDxlComm(id_arr, port_name_, baud_rate_) == DxlError::OK) {
+        RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
+        trying_connect = false;
+      } else {
+        sleep(1);
+        cnt++;
+        if (cnt > trying_cnt) {
+          RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
+          cnt = 0;
+        }
+      }
+    }
+  }
+
+  if (!InitControllerItems()) {
+    RCLCPP_ERROR_STREAM(logger_, "Error: InitControllerItems");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
+
+  trying_connect = true;
+  trying_cnt = 60;
+  cnt = 0;
 
   while (trying_connect) {
     std::vector<uint8_t> id_arr;
@@ -566,6 +597,7 @@ bool DynamixelHardware::CommReset()
       usleep(200 * 1000);
     }
     if (!result) {continue;}
+    if (!InitControllerItems()) {continue;}
     if (!InitDxlItems()) {continue;}
     if (!InitDxlReadItems()) {continue;}
     if (!InitDxlWriteItems()) {continue;}
@@ -582,46 +614,69 @@ bool DynamixelHardware::CommReset()
   return false;
 }
 
-bool DynamixelHardware::InitDxlItems()
-{
-  RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Items");
+bool DynamixelHardware::retryWriteItem(uint8_t id, const std::string& item_name, uint32_t value) {
+  rclcpp::Time start_time = this->now();
+  rclcpp::Duration error_duration(0, 0);
+  
+  while (true) {
+    if (dxl_comm_->WriteItem(id, item_name, value) == DxlError::OK) {
+      RCLCPP_INFO_STREAM(
+        logger_,
+        "[ID:" << std::to_string(id) << "] item_name:" << item_name.c_str() << "\tdata:" << value);
+      return true;
+    }
+    
+    error_duration = this->now() - start_time;
+    if (error_duration.seconds() * 1000 >= err_timeout_ms_) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "[ID:" << std::to_string(id) << "] Write Item error (Timeout: " << 
+        error_duration.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms)");
+      return false;
+    }
+    RCLCPP_WARN_STREAM(
+      logger_,
+      "[ID:" << std::to_string(id) << "] Write Item retry...");
+  }
+}
+
+bool DynamixelHardware::initItems(const std::string& type_filter) {
+  RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Items for type: " << type_filter);
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
+    if (gpio.parameters.at("type") != type_filter) {
+      continue;
+    }
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+    
     // First write items containing "Limit"
     for (auto it : gpio.parameters) {
       if (it.first != "ID" && it.first != "type" && it.first.find("Limit") != std::string::npos) {
-        if (dxl_comm_->WriteItem(
-            id, it.first,
-            static_cast<uint32_t>(stoi(it.second))) != DxlError::OK)
-        {
-          RCLCPP_ERROR_STREAM(logger_, "[ID:" << std::to_string(id) << "] Write Item error");
+        if (!retryWriteItem(id, it.first, static_cast<uint32_t>(stoi(it.second)))) {
           return false;
         }
-        RCLCPP_INFO_STREAM(
-          logger_,
-          "[ID:" << std::to_string(id) << "] item_name:" << it.first.c_str() << "\tdata:" <<
-            stoi(it.second));
       }
     }
 
     // Then write the remaining items
     for (auto it : gpio.parameters) {
       if (it.first != "ID" && it.first != "type" && it.first.find("Limit") == std::string::npos) {
-        if (dxl_comm_->WriteItem(
-            id, it.first,
-            static_cast<uint32_t>(stoi(it.second))) != DxlError::OK)
-        {
-          RCLCPP_ERROR_STREAM(logger_, "[ID:" << std::to_string(id) << "] Write Item error");
+        if (!retryWriteItem(id, it.first, static_cast<uint32_t>(stoi(it.second)))) {
           return false;
         }
-        RCLCPP_INFO_STREAM(
-          logger_,
-          "[ID:" << std::to_string(id) << "] item_name:" << it.first.c_str() << "\tdata:" <<
-            stoi(it.second));
       }
     }
   }
   return true;
+}
+
+bool DynamixelHardware::InitControllerItems()
+{
+  return initItems("controller");
+}
+
+bool DynamixelHardware::InitDxlItems()
+{
+  return initItems("dxl") && initItems("sensor");
 }
 
 bool DynamixelHardware::InitDxlReadItems()
