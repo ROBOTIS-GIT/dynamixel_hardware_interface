@@ -627,9 +627,9 @@ bool DynamixelHardware::InitDxlItems()
 bool DynamixelHardware::InitDxlReadItems()
 {
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Read Items");
-  static bool is_set_hdl = false;
+  is_set_hdl_ = false;
 
-  if (!is_set_hdl) {
+  if (!is_set_hdl_) {
     hdl_trans_states_.clear();
     hdl_gpio_sensor_states_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
@@ -685,7 +685,7 @@ bool DynamixelHardware::InitDxlReadItems()
         hdl_gpio_sensor_states_.push_back(temp_sensor);
       }
     }
-    is_set_hdl = true;
+    is_set_hdl_ = true;
   }
   for (auto it : hdl_trans_states_) {
     if (dxl_comm_->SetDxlReadItems(
@@ -704,9 +704,9 @@ bool DynamixelHardware::InitDxlReadItems()
 bool DynamixelHardware::InitDxlWriteItems()
 {
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Write Items");
-  static bool is_set_hdl = false;
+  is_set_hdl_ = false;
 
-  if (!is_set_hdl) {
+  if (!is_set_hdl_) {
     hdl_trans_commands_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
       if (gpio.command_interfaces.size()) {
@@ -728,7 +728,7 @@ bool DynamixelHardware::InitDxlWriteItems()
         hdl_trans_commands_.push_back(temp_write);
       }
     }
-    is_set_hdl = true;
+    is_set_hdl_ = true;
   }
 
   for (auto it : hdl_trans_commands_) {

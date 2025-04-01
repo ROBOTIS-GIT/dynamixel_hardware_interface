@@ -245,6 +245,8 @@ private:
   std::vector<HandlerVarType> hdl_gpio_sensor_states_;
   std::vector<HandlerVarType> hdl_sensor_states_;
 
+  bool is_set_hdl_{false};
+
   // joint <-> transmission matrix
   size_t num_of_joints_;
   size_t num_of_transmissions_;
