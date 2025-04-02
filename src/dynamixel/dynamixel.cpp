@@ -819,7 +819,7 @@ DxlError Dynamixel::GetDxlValueFromSyncRead()
   // SyncRead tx
   int dxl_comm_result = group_sync_read_->txRxPacket();
   if (dxl_comm_result != COMM_SUCCESS) {
-    fprintf(stderr, "SyncRead TxRx Fail [Error code : %d]\n", dxl_comm_result);
+    fprintf(stderr, "SyncRead TxRx Fail [Dxl Size : %d] [Error code : %d]\n", read_data_list_.size(), dxl_comm_result);
     return DxlError::SYNC_READ_FAIL;
   }
 
