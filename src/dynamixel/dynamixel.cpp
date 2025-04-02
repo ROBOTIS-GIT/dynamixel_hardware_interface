@@ -300,18 +300,19 @@ DxlError Dynamixel::DynamixelEnable(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::DynamixelDisable(std::vector<uint8_t> id_arr)
 {
+  DxlError result = DxlError::OK;
   for (auto it_id : id_arr) {
     if (torque_state_[it_id] == TORQUE_ON) {
       if (WriteItem(it_id, "Torque Enable", TORQUE_OFF) < 0) {
         fprintf(stderr, "[ID:%03d] Cannot write \"Torque Off\" command!\n", it_id);
-        return DxlError::ITEM_WRITE_FAIL;
+        result = DxlError::ITEM_WRITE_FAIL;
       } else {
         torque_state_[it_id] = TORQUE_OFF;
         fprintf(stderr, "[ID:%03d] Torque OFF\n", it_id);
       }
     }
   }
-  return DxlError::OK;
+  return result;
 }
 
 DxlError Dynamixel::SetOperatingMode(uint8_t dxl_id, uint8_t dynamixel_mode)
