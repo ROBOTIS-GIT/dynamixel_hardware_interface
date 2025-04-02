@@ -941,7 +941,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead()
 {
   int dxl_comm_result = group_bulk_read_->txRxPacket();
   if (dxl_comm_result != COMM_SUCCESS) {
-    fprintf(stderr, "BulkRead TxRx Fail [Error code : %d]\n", dxl_comm_result);
+    fprintf(stderr, "BulkRead TxRx Fail [Dxl Size : %d] [Error code : %d]\n", read_data_list_.size(), dxl_comm_result);
     return DxlError::BULK_READ_FAIL;
   }
 
