@@ -378,7 +378,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_deactivate(
 
 hardware_interface::CallbackReturn DynamixelHardware::start()
 {
-  dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData());
+  dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(0.0));
   if (dxl_comm_err_ != DxlError::OK) {
     RCLCPP_ERROR_STREAM(
       logger_,
@@ -427,11 +427,12 @@ hardware_interface::CallbackReturn DynamixelHardware::stop()
 hardware_interface::return_type DynamixelHardware::read(
   const rclcpp::Time & time, const rclcpp::Duration & period)
 {
+  double period_ms = period.seconds() * 1000;
   if (dxl_status_ == REBOOTING) {
     RCLCPP_ERROR_STREAM(logger_, "Dynamixel Read Fail : REBOOTING");
     return hardware_interface::return_type::ERROR;
   } else if (dxl_status_ == DXL_OK || dxl_status_ == COMM_ERROR) {
-    dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData());
+    dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(period_ms));
     if (dxl_comm_err_ != DxlError::OK) {
       if (!is_read_in_error_) {
         is_read_in_error_ = true;
@@ -452,7 +453,7 @@ hardware_interface::return_type DynamixelHardware::read(
     is_read_in_error_ = false;
     read_error_duration_ = rclcpp::Duration(0, 0);
   } else if (dxl_status_ == HW_ERROR) {
-    dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData());
+    dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(period_ms));
     if (dxl_comm_err_ != DxlError::OK) {
       RCLCPP_ERROR_STREAM(
         logger_,
