@@ -964,14 +964,16 @@ DxlError Dynamixel::ProcessReadCommunication(
   if (is_sync) {
     dxl_comm_result = group_sync_read->txPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
-      fprintf(stderr, "SyncRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+      fprintf(
+        stderr, "SyncRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::SYNC_READ_FAIL;
     }
   } else {
     dxl_comm_result = group_bulk_read->txPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
-      fprintf(stderr, "BulkRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+      fprintf(
+        stderr, "BulkRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::BULK_READ_FAIL;
     }
@@ -986,14 +988,16 @@ DxlError Dynamixel::ProcessReadCommunication(
   if (is_sync) {
     dxl_comm_result = group_sync_read->rxPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
-      fprintf(stderr, "SyncRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+      fprintf(
+        stderr, "SyncRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::SYNC_READ_FAIL;
     }
   } else {
     dxl_comm_result = group_bulk_read->rxPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
-      fprintf(stderr, "BulkRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+      fprintf(
+        stderr, "BulkRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::BULK_READ_FAIL;
     }
@@ -1019,13 +1023,16 @@ DxlError Dynamixel::ProcessReadData(
     uint32_t dxl_getdata = get_data_func(id, current_addr, size);
 
     if (item_names[item_index] == "Present Position") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(id,
+      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+        id,
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(id,
+      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
+        id,
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Current") {
-      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(id,
+      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
+        id,
         static_cast<int16_t>(dxl_getdata));
     } else {
       *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
