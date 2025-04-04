@@ -76,6 +76,17 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       e.what());
   }
 
+  try {
+    global_torque_enable_ =
+      std::stoi(info_.hardware_parameters["torque_enable"]) != 0;
+      RCLCPP_INFO_STREAM(
+        logger_, "Torque enable parameter: " << global_torque_enable_);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      logger_, "Failed to parse torque_enable parameter: %s, using default value",
+      e.what());
+  }
+
   RCLCPP_INFO_STREAM(
     logger_,
     "port_name " << port_name_.c_str() << " / baudrate " << baud_rate_.c_str());
@@ -408,7 +419,11 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
   }
   usleep(500 * 1000);
 
-  dxl_comm_->DynamixelEnable(dxl_id_);
+  if (global_torque_enable_){
+    dxl_comm_->DynamixelEnable(dxl_id_);
+  } else{
+    RCLCPP_INFO_STREAM(logger_, "Global Torque is disabled!");
+  }
 
   RCLCPP_INFO_STREAM(logger_, "Dynamixel Hardware Start!");
 

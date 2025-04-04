@@ -191,6 +191,8 @@ private:
   bool is_read_in_error_{false};
   bool is_write_in_error_{false};
 
+  bool global_torque_enable_{true};
+
   bool use_revolute_to_prismatic_{false};
   std::string conversion_dxl_name_{""};
   std::string conversion_joint_name_{""};
