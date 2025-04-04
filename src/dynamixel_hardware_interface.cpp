@@ -79,7 +79,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   try {
     global_torque_enable_ =
       std::stoi(info_.hardware_parameters["torque_enable"]) != 0;
-      RCLCPP_INFO_STREAM(
+    RCLCPP_INFO_STREAM(
       logger_, "Torque enable parameter: " << global_torque_enable_);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
