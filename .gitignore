@@ -505,6 +505,9 @@ CATKIN_IGNORE
 AMENT_IGNORE
 COLCON_IGNORE
 
+## Dynamixel model files
+!*.model
+
 
 ##############################
 # ETC.

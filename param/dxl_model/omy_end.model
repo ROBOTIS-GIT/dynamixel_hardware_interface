@@ -1,0 +1,52 @@
+[type info]
+name	value
+value_of_zero_radian_position	0
+value_of_max_radian_position	740
+value_of_min_radian_position	-740
+min_radian	-1.099
+max_radian	1.099
+
+[control table]
+Address	Size	Data Name
+0	2	Model Number
+2	4	Model Information
+6	1	Firmware Version
+7	1	ID
+8	1	Baud Rate (Bus)
+10	1	Tool Analog Enable
+11	1	Tool Baud Rate
+12	1	Tool Protocol
+13	1	Tool ID
+14	1	Tool Status
+30	1	Button Status
+32	1	R LED
+33	1	G LED
+34	1	B LED
+36	2	Realtime Tick
+40	1	Digital Input
+41	1	Digital Output
+42	2	Analog Input1
+44	2	Analog Input2
+46	1	SyncTable Enable
+48	2	SyncTable Read Address
+52	2	SyncTable Read Size
+56	2	SyncTable Write Address
+60	2	SyncTable Write Size
+378	2	Indirect Address
+634	1	Indirect Data
+72	1	Hardware Error Status
+73	1	Moving
+74	2	Present Current
+76	4	Present Velocity
+80	4	Present Position
+84	4	Position Trajectory
+200	1	Torque Enable
+202	2	Goal Current
+204	4	Goal Velocity
+208	4	Goal Position
+378	2	Indirect Address 1
+634	1	Indirect Data 1
+378	2	Indirect Address Write
+634	1	Indirect Data Write
+402	2	Indirect Address Read
+646	1	Indirect Data Read

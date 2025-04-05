@@ -27,6 +27,7 @@
 #include <iostream>
 #include <cstdarg>
 #include <memory>
+#include <functional>
 
 namespace dynamixel_hardware_interface
 {
@@ -166,7 +167,7 @@ public:
   DxlError SetMultiDxlWrite();
 
   // Read Item (sync or bulk)
-  DxlError ReadMultiDxlData();
+  DxlError ReadMultiDxlData(double period_ms);
   // Write Item (sync or bulk)
   DxlError WriteMultiDxlData();
 
@@ -200,12 +201,12 @@ private:
   // SyncRead
   DxlError SetSyncReadItemAndHandler();
   DxlError SetSyncReadHandler(std::vector<uint8_t> id_arr);
-  DxlError GetDxlValueFromSyncRead();
+  DxlError GetDxlValueFromSyncRead(double period_ms);
 
   // BulkRead
   DxlError SetBulkReadItemAndHandler();
   DxlError SetBulkReadHandler(std::vector<uint8_t> id_arr);
-  DxlError GetDxlValueFromBulkRead();
+  DxlError GetDxlValueFromBulkRead(double period_ms);
 
   // Read - Indirect Address
   void ResetIndirectRead(std::vector<uint8_t> id_arr);
@@ -214,6 +215,23 @@ private:
     std::string item_name,
     uint16_t item_addr,
     uint8_t item_size);
+
+  // Read - Data Processing
+  DxlError ProcessReadData(
+    uint8_t id,
+    uint16_t indirect_addr,
+    const std::vector<std::string> & item_names,
+    const std::vector<uint8_t> & item_sizes,
+    const std::vector<std::shared_ptr<double>> & data_ptrs,
+    std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func);
+
+  // Read - Communication
+  DxlError ProcessReadCommunication(
+    dynamixel::GroupFastSyncRead * group_sync_read,
+    dynamixel::GroupFastBulkRead * group_bulk_read,
+    dynamixel::PortHandler * port_handler,
+    double period_ms,
+    bool is_sync);
 
   // SyncWrite
   DxlError SetSyncWriteItemAndHandler();

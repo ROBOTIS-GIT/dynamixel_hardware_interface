@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 
 namespace dynamixel_hardware_interface
 {
@@ -300,18 +301,19 @@ DxlError Dynamixel::DynamixelEnable(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::DynamixelDisable(std::vector<uint8_t> id_arr)
 {
+  DxlError result = DxlError::OK;
   for (auto it_id : id_arr) {
     if (torque_state_[it_id] == TORQUE_ON) {
       if (WriteItem(it_id, "Torque Enable", TORQUE_OFF) < 0) {
         fprintf(stderr, "[ID:%03d] Cannot write \"Torque Off\" command!\n", it_id);
-        return DxlError::ITEM_WRITE_FAIL;
+        result = DxlError::ITEM_WRITE_FAIL;
       } else {
         torque_state_[it_id] = TORQUE_OFF;
         fprintf(stderr, "[ID:%03d] Torque OFF\n", it_id);
       }
     }
   }
-  return DxlError::OK;
+  return result;
 }
 
 DxlError Dynamixel::SetOperatingMode(uint8_t dxl_id, uint8_t dynamixel_mode)
@@ -636,12 +638,12 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
   }
 }
 
-DxlError Dynamixel::ReadMultiDxlData()
+DxlError Dynamixel::ReadMultiDxlData(double period_ms)
 {
   if (read_type_ == SYNC) {
-    return GetDxlValueFromSyncRead();
+    return GetDxlValueFromSyncRead(period_ms);
   } else {
-    return GetDxlValueFromBulkRead();
+    return GetDxlValueFromBulkRead(period_ms);
   }
 }
 
@@ -813,39 +815,27 @@ DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
   return DxlError::OK;
 }
 
-DxlError Dynamixel::GetDxlValueFromSyncRead()
+DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
 {
-  // SyncRead tx
-  int dxl_comm_result = group_sync_read_->txRxPacket();
-  if (dxl_comm_result != COMM_SUCCESS) {
-    fprintf(stderr, "SyncRead TxRx Fail [Error code : %d]\n", dxl_comm_result);
-    return DxlError::SYNC_READ_FAIL;
+  DxlError comm_result = ProcessReadCommunication(
+    group_sync_read_, group_bulk_read_, port_handler_, period_ms, true);
+  if (comm_result != DxlError::OK) {
+    return comm_result;
   }
 
   for (auto it_read_data : read_data_list_) {
-    uint8_t ID = it_read_data.id;
-    uint16_t IN_ADDR = indirect_info_read_[ID].indirect_data_addr;
+    uint8_t id = it_read_data.id;
+    uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
 
-    for (size_t item_index = 0; item_index < indirect_info_read_[ID].cnt; item_index++) {
-      uint8_t SIZE = indirect_info_read_[ID].item_size.at(item_index);
-      if (item_index > 0) {IN_ADDR += indirect_info_read_[ID].item_size.at(item_index - 1);}
-
-      uint32_t dxl_getdata = group_sync_read_->getData(ID, IN_ADDR, SIZE);
-
-      if (indirect_info_read_[ID].item_name.at(item_index) == "Present Position") {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          dxl_info_.ConvertValueToRadian(ID, static_cast<int32_t>(dxl_getdata));
-      } else if (indirect_info_read_[ID].item_name.at(item_index) == "Present Velocity") {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          dxl_info_.ConvertValueRPMToVelocityRPS(ID, static_cast<int32_t>(dxl_getdata));
-      } else if (indirect_info_read_[ID].item_name.at(item_index) == "Present Current") {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          dxl_info_.ConvertCurrentToEffort(ID, static_cast<int16_t>(dxl_getdata));
-      } else {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          static_cast<double>(dxl_getdata);
-      }
-    }
+    ProcessReadData(
+      id,
+      indirect_addr,
+      indirect_info_read_[id].item_name,
+      indirect_info_read_[id].item_size,
+      it_read_data.item_data_ptr_vec,
+      [this](uint8_t id, uint16_t addr, uint8_t size) {
+        return group_sync_read_->getData(id, addr, size);
+      });
   }
   return DxlError::OK;
 }
@@ -887,7 +877,7 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
 
   if (SetBulkReadHandler(id_arr) != DxlError::OK) {
     fprintf(stderr, "Cannot set the BulkRead handler.\n");
-    return DxlError::SYNC_READ_FAIL;
+    return DxlError::BULK_READ_FAIL;
   }
 
   fprintf(stderr, "Success to set BulkRead handler using indirect address\n");
@@ -936,41 +926,121 @@ DxlError Dynamixel::SetBulkReadHandler(std::vector<uint8_t> id_arr)
   return DxlError::OK;
 }
 
-DxlError Dynamixel::GetDxlValueFromBulkRead()
+DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
 {
-  int dxl_comm_result = group_bulk_read_->txRxPacket();
-  if (dxl_comm_result != COMM_SUCCESS) {
-    fprintf(stderr, "BulkRead TxRx Fail [Error code : %d]\n", dxl_comm_result);
-    return DxlError::BULK_READ_FAIL;
+  DxlError comm_result = ProcessReadCommunication(
+    group_sync_read_, group_bulk_read_, port_handler_, period_ms, false);
+  if (comm_result != DxlError::OK) {
+    return comm_result;
   }
 
   for (auto it_read_data : read_data_list_) {
-    uint8_t ID = it_read_data.id;
-    uint16_t IN_ADDR = indirect_info_read_[ID].indirect_data_addr;
+    uint8_t id = it_read_data.id;
+    uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
 
-    for (size_t item_index = 0; item_index < indirect_info_read_[ID].cnt; item_index++) {
-      uint8_t SIZE = indirect_info_read_[ID].item_size.at(item_index);
-      if (item_index > 0) {IN_ADDR += indirect_info_read_[ID].item_size.at(item_index - 1);}
+    ProcessReadData(
+      id,
+      indirect_addr,
+      indirect_info_read_[id].item_name,
+      indirect_info_read_[id].item_size,
+      it_read_data.item_data_ptr_vec,
+      [this](uint8_t id, uint16_t addr, uint8_t size) {
+        return group_bulk_read_->getData(id, addr, size);
+      });
+  }
+  return DxlError::OK;
+}
 
-      uint32_t dxl_getdata = group_bulk_read_->getData(ID, IN_ADDR, SIZE);
+DxlError Dynamixel::ProcessReadCommunication(
+  dynamixel::GroupFastSyncRead * group_sync_read,
+  dynamixel::GroupFastBulkRead * group_bulk_read,
+  dynamixel::PortHandler * port_handler,
+  double period_ms,
+  bool is_sync)
+{
+  int dxl_comm_result;
 
-      if (indirect_info_read_[ID].item_name.at(item_index) == "Present Position") {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          dxl_info_.ConvertValueToRadian(ID, static_cast<int32_t>(dxl_getdata));
-      } else if (indirect_info_read_[ID].item_name.at(item_index) == "Present Velocity") {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          dxl_info_.ConvertValueRPMToVelocityRPS(ID, static_cast<int32_t>(dxl_getdata));
-      } else if (indirect_info_read_[ID].item_name.at(item_index) == "Present Current") {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          dxl_info_.ConvertCurrentToEffort(ID, static_cast<int16_t>(dxl_getdata));
-      } else {
-        *it_read_data.item_data_ptr_vec.at(item_index) =
-          static_cast<double>(dxl_getdata);
-      }
+  // Send packet
+  if (is_sync) {
+    dxl_comm_result = group_sync_read->txPacket();
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr, "SyncRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::SYNC_READ_FAIL;
+    }
+  } else {
+    dxl_comm_result = group_bulk_read->txPacket();
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr, "BulkRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::BULK_READ_FAIL;
+    }
+  }
+
+  // Set timeout if period_ms is specified
+  if (period_ms > 0) {
+    port_handler->setPacketTimeout(period_ms);
+  }
+
+  // Receive packet
+  if (is_sync) {
+    dxl_comm_result = group_sync_read->rxPacket();
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr, "SyncRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::SYNC_READ_FAIL;
+    }
+  } else {
+    dxl_comm_result = group_bulk_read->rxPacket();
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr, "BulkRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::BULK_READ_FAIL;
+    }
+  }
+
+  return DxlError::OK;
+}
+
+DxlError Dynamixel::ProcessReadData(
+  uint8_t id,
+  uint16_t indirect_addr,
+  const std::vector<std::string> & item_names,
+  const std::vector<uint8_t> & item_sizes,
+  const std::vector<std::shared_ptr<double>> & data_ptrs,
+  std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func)
+{
+  uint16_t current_addr = indirect_addr;
+
+  for (size_t item_index = 0; item_index < item_names.size(); item_index++) {
+    uint8_t size = item_sizes[item_index];
+    if (item_index > 0) {current_addr += item_sizes[item_index - 1];}
+
+    uint32_t dxl_getdata = get_data_func(id, current_addr, size);
+
+    if (item_names[item_index] == "Present Position") {
+      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+        id,
+        static_cast<int32_t>(dxl_getdata));
+    } else if (item_names[item_index] == "Present Velocity") {
+      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
+        id,
+        static_cast<int32_t>(dxl_getdata));
+    } else if (item_names[item_index] == "Present Current") {
+      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
+        id,
+        static_cast<int16_t>(dxl_getdata));
+    } else {
+      *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
     }
   }
   return DxlError::OK;
 }
+
 
 void Dynamixel::ResetIndirectRead(std::vector<uint8_t> id_arr)
 {
