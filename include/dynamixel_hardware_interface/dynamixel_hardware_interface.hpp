@@ -191,6 +191,8 @@ private:
   bool is_read_in_error_{false};
   bool is_write_in_error_{false};
 
+  bool global_torque_enable_{true};
+
   bool use_revolute_to_prismatic_{false};
   std::string conversion_dxl_name_{""};
   std::string conversion_joint_name_{""};
@@ -235,6 +237,9 @@ private:
   std::vector<uint8_t> sensor_id_;
   std::map<uint8_t /*id*/, std::string /*interface_name*/> sensor_item_;
 
+  std::vector<uint8_t> controller_id_;
+  std::map<uint8_t /*id*/, std::string /*interface_name*/> controller_item_;
+
   ///// handler variable
   std::vector<HandlerVarType> hdl_trans_states_;
   std::vector<HandlerVarType> hdl_trans_commands_;
@@ -245,6 +250,8 @@ private:
   std::vector<HandlerVarType> hdl_gpio_sensor_states_;
   std::vector<HandlerVarType> hdl_sensor_states_;
 
+  bool is_set_hdl_{false};
+
   // joint <-> transmission matrix
   size_t num_of_joints_;
   size_t num_of_transmissions_;
@@ -252,10 +259,32 @@ private:
   double ** joint_to_transmission_matrix_;
 
   /**
-   * @brief Initializes the Dynamixel items.
+   * @brief Helper function to initialize items for a specific type.
+   * @param type_filter The type of items to initialize ("controller" or "dxl" or "sensor").
+   * @return True if initialization was successful, false otherwise.
+   */
+  bool initItems(const std::string & type_filter);
+
+  /**
+   * @brief Helper function to retry writing an item to a Dynamixel device.
+   * @param id The ID of the Dynamixel device.
+   * @param item_name The name of the item to write.
+   * @param value The value to write.
+   * @return True if write was successful, false if timeout occurred.
+   */
+  bool retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value);
+
+  /**
+   * @brief Initializes Dynamixel items.
    * @return True if initialization was successful, false otherwise.
    */
   bool InitDxlItems();
+
+  /**
+   * @brief Initializes the controller items.
+   * @return True if initialization was successful, false otherwise.
+   */
+  bool InitControllerItems();
 
   /**
    * @brief Initializes the read items for Dynamixel.

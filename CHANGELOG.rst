@@ -2,6 +2,13 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.2 (2025-04-05)
+------------------
+* Added OM-Y dynamixel model files
+* Added a function to enable torque
+* Fixed the configuration for OM-Y robots
+* Contributors: Woojin Wie, Wonho Yun
+
 1.4.1 (2025-03-31)
 ------------------
 * Modified the Model File
