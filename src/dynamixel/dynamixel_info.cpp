@@ -24,7 +24,8 @@ namespace dynamixel_hardware_interface
 {
 
 // Helper function to split string by delimiter
-std::vector<std::string> split_string(const std::string& str, char delimiter) {
+std::vector<std::string> split_string(const std::string & str, char delimiter)
+{
   std::vector<std::string> tokens;
   std::string token;
   std::istringstream token_stream(str);
@@ -95,7 +96,7 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
     }
 
     std::vector<std::string> strs = split_string(line, '\t');
-    
+
     if (!strs.empty()) {
       if (strs.at(0) == "value_of_zero_radian_position") {
         temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
