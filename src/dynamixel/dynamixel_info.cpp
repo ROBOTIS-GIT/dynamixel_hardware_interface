@@ -18,9 +18,23 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <sstream>
 
 namespace dynamixel_hardware_interface
 {
+
+// Helper function to split string by delimiter
+std::vector<std::string> split_string(const std::string& str, char delimiter) {
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream token_stream(str);
+  while (std::getline(token_stream, token, delimiter)) {
+    if (!token.empty()) {  // Skip empty tokens
+      tokens.push_back(token);
+    }
+  }
+  return tokens;
+}
 
 void DynamixelInfo::SetDxlModelFolderPath(const char * path)
 {
@@ -80,21 +94,22 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
       break;
     }
 
-    std::vector<std::string> strs;
-    boost::split(strs, line, boost::is_any_of("\t"));
-
-    if (strs.at(0) == "value_of_zero_radian_position") {
-      temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-    } else if (strs.at(0) == "value_of_max_radian_position") {
-      temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-    } else if (strs.at(0) == "value_of_min_radian_position") {
-      temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-    } else if (strs.at(0) == "min_radian") {
-      temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
-    } else if (strs.at(0) == "max_radian") {
-      temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
-    } else if (strs.at(0) == "torque_constant") {
-      temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
+    std::vector<std::string> strs = split_string(line, '\t');
+    
+    if (!strs.empty()) {
+      if (strs.at(0) == "value_of_zero_radian_position") {
+        temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+      } else if (strs.at(0) == "value_of_max_radian_position") {
+        temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+      } else if (strs.at(0) == "value_of_min_radian_position") {
+        temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+      } else if (strs.at(0) == "min_radian") {
+        temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
+      } else if (strs.at(0) == "max_radian") {
+        temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
+      } else if (strs.at(0) == "torque_constant") {
+        temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
+      }
     }
   }
 
@@ -105,14 +120,15 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
       break;
     }
 
-    std::vector<std::string> strs;
-    boost::split(strs, line, boost::is_any_of("\t"));
+    std::vector<std::string> strs = split_string(line, '\t');
 
-    ControlItem temp;
-    temp.address = static_cast<uint16_t>(stoi(strs.at(0)));
-    temp.size = static_cast<uint8_t>(stoi(strs.at(1)));
-    temp.item_name = strs.at(2);
-    temp_dxl_info.item.push_back(temp);
+    if (!strs.empty()) {
+      ControlItem temp;
+      temp.address = static_cast<uint16_t>(stoi(strs.at(0)));
+      temp.size = static_cast<uint8_t>(stoi(strs.at(1)));
+      temp.item_name = strs.at(2);
+      temp_dxl_info.item.push_back(temp);
+    }
   }
 
   dxl_info_[id] = temp_dxl_info;

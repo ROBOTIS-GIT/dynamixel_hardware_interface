@@ -19,14 +19,13 @@
 
 #include <cmath>
 #include <cstring>
+#include <cstdint>
 
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <boost/algorithm/string.hpp>
 
 namespace dynamixel_hardware_interface
 {
