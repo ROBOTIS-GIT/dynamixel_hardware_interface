@@ -24,12 +24,22 @@ namespace dynamixel_hardware_interface
 {
 
 // Helper function to split string by delimiter
-std::vector<std::string> split_string(const std::string & str, char delimiter)
+std::vector<std::string> split_string(const std::string & str, char delimiter, bool trim = false)
 {
   std::vector<std::string> tokens;
   std::string token;
   std::istringstream token_stream(str);
   while (std::getline(token_stream, token, delimiter)) {
+    if (trim) {
+      // Trim leading and trailing whitespace
+      size_t first = token.find_first_not_of(" \t\r\n");
+      size_t last = token.find_last_not_of(" \t\r\n");
+      if (first != std::string::npos && last != std::string::npos) {
+        token = token.substr(first, (last - first + 1));
+      } else {
+        token.clear();
+      }
+    }
     if (!token.empty()) {  // Skip empty tokens
       tokens.push_back(token);
     }
@@ -95,21 +105,29 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
       break;
     }
 
-    std::vector<std::string> strs = split_string(line, '\t');
+    std::vector<std::string> strs = split_string(line, '\t', true);
 
     if (!strs.empty()) {
-      if (strs.at(0) == "value_of_zero_radian_position") {
-        temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-      } else if (strs.at(0) == "value_of_max_radian_position") {
-        temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-      } else if (strs.at(0) == "value_of_min_radian_position") {
-        temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-      } else if (strs.at(0) == "min_radian") {
-        temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
-      } else if (strs.at(0) == "max_radian") {
-        temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
-      } else if (strs.at(0) == "torque_constant") {
-        temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
+      try {
+        if (strs.at(0) == "value_of_zero_radian_position") {
+          temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(std::stoi(strs.at(1)));
+        } else if (strs.at(0) == "value_of_max_radian_position") {
+          temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(std::stoi(strs.at(1)));
+        } else if (strs.at(0) == "value_of_min_radian_position") {
+          temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(std::stoi(strs.at(1)));
+        } else if (strs.at(0) == "min_radian") {
+          temp_dxl_info.min_radian = static_cast<double>(std::stod(strs.at(1)));
+        } else if (strs.at(0) == "max_radian") {
+          temp_dxl_info.max_radian = static_cast<double>(std::stod(strs.at(1)));
+        } else if (strs.at(0) == "torque_constant") {
+          temp_dxl_info.torque_constant = static_cast<double>(std::stod(strs.at(1)));
+        }
+      } catch (const std::invalid_argument & e) {
+        fprintf(stderr, "[ERROR] Invalid argument in model file: %s\n", e.what());
+        continue;
+      } catch (const std::out_of_range & e) {
+        fprintf(stderr, "[ERROR] Out of range in model file: %s\n", e.what());
+        continue;
       }
     }
   }
@@ -121,14 +139,22 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
       break;
     }
 
-    std::vector<std::string> strs = split_string(line, '\t');
+    std::vector<std::string> strs = split_string(line, '\t', true);
 
     if (!strs.empty()) {
-      ControlItem temp;
-      temp.address = static_cast<uint16_t>(stoi(strs.at(0)));
-      temp.size = static_cast<uint8_t>(stoi(strs.at(1)));
-      temp.item_name = strs.at(2);
-      temp_dxl_info.item.push_back(temp);
+      try {
+        ControlItem temp;
+        temp.address = static_cast<uint16_t>(std::stoi(strs.at(0)));
+        temp.size = static_cast<uint8_t>(std::stoi(strs.at(1)));
+        temp.item_name = strs.at(2);
+        temp_dxl_info.item.push_back(temp);
+      } catch (const std::invalid_argument & e) {
+        fprintf(stderr, "[ERROR] Invalid argument in control table: %s\n", e.what());
+        continue;
+      } catch (const std::out_of_range & e) {
+        fprintf(stderr, "[ERROR] Out of range in control table: %s\n", e.what());
+        continue;
+      }
     }
   }
 
