@@ -635,6 +635,8 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
       return "DLX_HARDWARE_ERROR";
     case DXL_REBOOT_FAIL:
       return "DXL_REBOOT_FAIL";
+    default:
+      return "UNKNOWN_ERROR";
   }
 }
 
