@@ -376,13 +376,13 @@ DynamixelHardware::export_command_interfaces()
 }
 
 hardware_interface::CallbackReturn DynamixelHardware::on_activate(
-  const rclcpp_lifecycle::State & previous_state)
+  [[maybe_unused]] const rclcpp_lifecycle::State & previous_state)
 {
   return start();
 }
 
 hardware_interface::CallbackReturn DynamixelHardware::on_deactivate(
-  const rclcpp_lifecycle::State & previous_state)
+  [[maybe_unused]] const rclcpp_lifecycle::State & previous_state)
 {
   return stop();
 }
@@ -440,7 +440,7 @@ hardware_interface::CallbackReturn DynamixelHardware::stop()
 }
 
 hardware_interface::return_type DynamixelHardware::read(
-  const rclcpp::Time & time, const rclcpp::Duration & period)
+  [[maybe_unused]] const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   double period_ms = period.seconds() * 1000;
   if (dxl_status_ == REBOOTING) {
@@ -503,7 +503,7 @@ hardware_interface::return_type DynamixelHardware::read(
   return hardware_interface::return_type::OK;
 }
 hardware_interface::return_type DynamixelHardware::write(
-  const rclcpp::Time & time, const rclcpp::Duration & period)
+  [[maybe_unused]] const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   if (dxl_status_ == DXL_OK || dxl_status_ == HW_ERROR) {
     dxl_comm_->WriteItemBuf();
@@ -1051,7 +1051,7 @@ void DynamixelHardware::set_dxl_data_srv_callback(
 }
 
 void DynamixelHardware::reboot_dxl_srv_callback(
-  const std::shared_ptr<dynamixel_interfaces::srv::RebootDxl::Request> request,
+  [[maybe_unused]] const std::shared_ptr<dynamixel_interfaces::srv::RebootDxl::Request> request,
   std::shared_ptr<dynamixel_interfaces::srv::RebootDxl::Response> response)
 {
   if (CommReset()) {
