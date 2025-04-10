@@ -1029,7 +1029,8 @@ DxlError Dynamixel::ProcessReadData(
         id,
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(static_cast<int32_t>(dxl_getdata));
+      *data_ptrs[item_index] =
+        dxl_info_.ConvertValueRPMToVelocityRPS(static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Current") {
       *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
         id,
