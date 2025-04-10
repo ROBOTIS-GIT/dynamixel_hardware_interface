@@ -965,7 +965,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_sync_read->txPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "SyncRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "SyncRead Tx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::SYNC_READ_FAIL;
     }
@@ -973,7 +973,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_bulk_read->txPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "BulkRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "BulkRead Tx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::BULK_READ_FAIL;
     }
@@ -989,7 +989,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_sync_read->rxPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "SyncRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "SyncRead Rx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::SYNC_READ_FAIL;
     }
@@ -997,7 +997,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_bulk_read->rxPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "BulkRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "BulkRead Rx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::BULK_READ_FAIL;
     }
