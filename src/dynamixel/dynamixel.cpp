@@ -635,6 +635,8 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
       return "DLX_HARDWARE_ERROR";
     case DXL_REBOOT_FAIL:
       return "DXL_REBOOT_FAIL";
+    default:
+      return "UNKNOWN_ERROR";
   }
 }
 
@@ -965,7 +967,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_sync_read->txPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "SyncRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "SyncRead Tx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::SYNC_READ_FAIL;
     }
@@ -973,7 +975,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_bulk_read->txPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "BulkRead Tx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "BulkRead Tx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::BULK_READ_FAIL;
     }
@@ -989,7 +991,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_sync_read->rxPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "SyncRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "SyncRead Rx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::SYNC_READ_FAIL;
     }
@@ -997,7 +999,7 @@ DxlError Dynamixel::ProcessReadCommunication(
     dxl_comm_result = group_bulk_read->rxPacket();
     if (dxl_comm_result != COMM_SUCCESS) {
       fprintf(
-        stderr, "BulkRead Rx Fail [Dxl Size : %d] [Error code : %d]\n",
+        stderr, "BulkRead Rx Fail [Dxl Size : %ld] [Error code : %d]\n",
         read_data_list_.size(), dxl_comm_result);
       return DxlError::BULK_READ_FAIL;
     }
@@ -1027,9 +1029,8 @@ DxlError Dynamixel::ProcessReadData(
         id,
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
-        id,
-        static_cast<int32_t>(dxl_getdata));
+      *data_ptrs[item_index] =
+        dxl_info_.ConvertValueRPMToVelocityRPS(static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Current") {
       *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
         id,
@@ -1173,7 +1174,7 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
         param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
-        int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
+        int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
@@ -1288,7 +1289,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
         param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
         param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
-        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
+        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));

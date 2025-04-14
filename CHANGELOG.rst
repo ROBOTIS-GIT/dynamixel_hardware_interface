@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.3 (2025-04-10)
+------------------
+* Fixed build errors
+* Contributors: Wonho Yun
+
 1.4.2 (2025-04-05)
 ------------------
 * Added OM-Y dynamixel model files
