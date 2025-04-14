@@ -86,9 +86,9 @@ public:
   {return static_cast<int16_t>(effort / dxl_info_[id].torque_constant);}
   inline double ConvertCurrentToEffort(uint8_t id, int16_t current)
   {return static_cast<double>(current * dxl_info_[id].torque_constant);}
-  inline double ConvertValueRPMToVelocityRPS(uint8_t id, int32_t value_rpm)
+  inline double ConvertValueRPMToVelocityRPS(int32_t value_rpm)
   {return static_cast<double>(value_rpm * 0.01 / 60.0 * 2.0 * M_PI);}
-  inline int32_t ConvertVelocityRPSToValueRPM(uint8_t id, double vel_rps)
+  inline int32_t ConvertVelocityRPSToValueRPM(double vel_rps)
   {return static_cast<int32_t>(vel_rps * 100.0 * 60.0 / 2.0 / M_PI);}
 };
 
