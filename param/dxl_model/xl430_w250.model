@@ -43,6 +43,7 @@ Address	Size	Data Name
 98	1	Bus Watchdog
 100	2	Goal PWM
 104	4	Goal Velocity
+104	2	Goal Current
 108	4	Profile Acceleration
 112	4	Profile Velocity
 116	4	Goal Position
@@ -52,6 +53,7 @@ Address	Size	Data Name
 124	2	Present PWM
 126	2	Present Load
 128	4	Present Velocity
+128	2	Present Current
 132	4	Present Position
 136	4	Velocity Trajectory
 140	4	Position Trajectory

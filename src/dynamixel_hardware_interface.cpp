@@ -22,6 +22,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <map>
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -73,17 +74,6 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       logger_, "Failed to parse error_timeout_ms parameter: %s, using default value",
-      e.what());
-  }
-
-  try {
-    global_torque_enable_ =
-      std::stoi(info_.hardware_parameters["torque_enable"]) != 0;
-    RCLCPP_INFO_STREAM(
-      logger_, "Torque enable parameter: " << global_torque_enable_);
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(
-      logger_, "Failed to parse torque_enable parameter: %s, using default value",
       e.what());
   }
 
@@ -419,11 +409,15 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
   }
   usleep(500 * 1000);
 
-  if (global_torque_enable_) {
-    dxl_comm_->DynamixelEnable(dxl_id_);
-  } else {
-    RCLCPP_INFO_STREAM(logger_, "Global Torque is disabled!");
+  // Enable torque only for Dynamixels that have torque enabled in their parameters
+  std::vector<uint8_t> torque_enabled_ids;
+  for (const auto& [id, enabled] : dxl_torque_enable_) {
+    if (enabled) {
+      torque_enabled_ids.push_back(id);
+    }
   }
+  
+  dxl_comm_->DynamixelEnable(torque_enabled_ids);
 
   RCLCPP_INFO_STREAM(logger_, "Dynamixel Hardware Start!");
 
@@ -666,21 +660,47 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     }
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
 
-    // First write items containing "Limit"
-    for (auto it : gpio.parameters) {
-      if (it.first != "ID" && it.first != "type" && it.first.find("Limit") != std::string::npos) {
-        if (!retryWriteItem(id, it.first, static_cast<uint32_t>(stoi(it.second)))) {
+    // Handle torque enable parameter
+    bool torque_enabled = true;  // Default to enabled
+    if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
+      torque_enabled = std::stoi(gpio.parameters.at("Torque Enable")) != 0;
+    }
+    dxl_torque_enable_[id] = torque_enabled;
+
+    // Write parameters in two passes:
+    // 1. First pass: Write all Limit parameters
+    for (const auto& param : gpio.parameters) {
+      const std::string& param_name = param.first;
+      
+      // Skip special parameters
+      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable") {
+        continue;
+      }
+
+      // Write Limit parameters first
+      if (param_name.find("Limit") != std::string::npos) {
+        if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
           return false;
         }
       }
     }
 
-    // Then write the remaining items
-    for (auto it : gpio.parameters) {
-      if (it.first != "ID" && it.first != "type" && it.first.find("Limit") == std::string::npos) {
-        if (!retryWriteItem(id, it.first, static_cast<uint32_t>(stoi(it.second)))) {
-          return false;
-        }
+    // 2. Second pass: Write all non-Limit parameters
+    for (const auto& param : gpio.parameters) {
+      const std::string& param_name = param.first;
+      
+      // Skip special parameters
+      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable") {
+        continue;
+      }
+
+      // Skip Limit parameters (already written)
+      if (param_name.find("Limit") != std::string::npos) {
+        continue;
+      }
+
+      if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
+        return false;
       }
     }
   }
