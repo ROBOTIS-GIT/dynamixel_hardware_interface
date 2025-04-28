@@ -319,27 +319,53 @@ DynamixelHardware::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
 
-  for (auto it : hdl_trans_states_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      state_interfaces.emplace_back(
-        hardware_interface::StateInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+  try {
+    for (auto it : hdl_trans_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for " << it.name <<
+            ". Expected size: " << it.value_ptr_vec.size() <<
+            ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
-  }
-  for (auto it : hdl_joint_states_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      state_interfaces.emplace_back(
-        hardware_interface::StateInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+    for (auto it : hdl_joint_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for joint " << it.name <<
+            ". Expected size: " << it.value_ptr_vec.size() <<
+            ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
-  }
-  for (auto it : hdl_sensor_states_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      state_interfaces.emplace_back(
-        hardware_interface::StateInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+    for (auto it : hdl_sensor_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for sensor " << it.name <<
+            ". Expected size: " << it.value_ptr_vec.size() <<
+            ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR_STREAM(logger_, "Error in export_state_interfaces: " << e.what());
   }
+
   return state_interfaces;
 }
 
@@ -348,20 +374,39 @@ DynamixelHardware::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
 
-  for (auto it : hdl_trans_commands_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      command_interfaces.emplace_back(
-        hardware_interface::CommandInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+  try {
+    for (auto it : hdl_trans_commands_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for " << it.name <<
+            ". Expected size: " << it.value_ptr_vec.size() <<
+            ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        command_interfaces.emplace_back(
+          hardware_interface::CommandInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
-  }
-  for (auto it : hdl_joint_commands_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      command_interfaces.emplace_back(
-        hardware_interface::CommandInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+    for (auto it : hdl_joint_commands_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for joint " << it.name <<
+            ". Expected size: " << it.value_ptr_vec.size() <<
+            ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        command_interfaces.emplace_back(
+          hardware_interface::CommandInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR_STREAM(logger_, "Error in export_command_interfaces: " << e.what());
   }
+
   return command_interfaces;
 }
 
@@ -416,7 +461,7 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
       torque_enabled_ids.push_back(id);
     }
   }
-  
+
   dxl_comm_->DynamixelEnable(torque_enabled_ids);
 
   RCLCPP_INFO_STREAM(logger_, "Dynamixel Hardware Start!");
@@ -437,6 +482,11 @@ hardware_interface::return_type DynamixelHardware::read(
   [[maybe_unused]] const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   double period_ms = period.seconds() * 1000;
+
+  for (auto sensor : hdl_gpio_sensor_states_) {
+    ReadSensorData(sensor);
+  }
+
   if (dxl_status_ == REBOOTING) {
     RCLCPP_ERROR_STREAM(logger_, "Dynamixel Read Fail : REBOOTING");
     return hardware_interface::return_type::ERROR;
@@ -471,10 +521,6 @@ hardware_interface::return_type DynamixelHardware::read(
   }
 
   CalcTransmissionToJoint();
-
-  for (auto sensor : hdl_gpio_sensor_states_) {
-    ReadSensorData(sensor);
-  }
 
   dxl_comm_->ReadItemBuf();
 
@@ -661,7 +707,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
 
     // Handle torque enable parameter
-    bool torque_enabled = true;  // Default to enabled
+    bool torque_enabled = type_filter == "dxl";
     if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
       torque_enabled = std::stoi(gpio.parameters.at("Torque Enable")) != 0;
     }
@@ -671,7 +717,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     // 1. First pass: Write all Limit parameters
     for (const auto& param : gpio.parameters) {
       const std::string& param_name = param.first;
-      
+
       // Skip special parameters
       if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable") {
         continue;
@@ -688,7 +734,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     // 2. Second pass: Write all non-Limit parameters
     for (const auto& param : gpio.parameters) {
       const std::string& param_name = param.first;
-      
+
       // Skip special parameters
       if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable") {
         continue;

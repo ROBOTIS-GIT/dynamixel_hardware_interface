@@ -82,15 +82,25 @@ DxlError Dynamixel::InitDxlComm(
       fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d\n", dxl_model_number);
     }
 
-    dxl_info_.ReadDxlModelFile(it_id, dxl_model_number);
+    try {
+      dxl_info_.ReadDxlModelFile(it_id, dxl_model_number);
+    } catch (const std::exception& e) {
+      fprintf(stderr, "Error reading model file for ID %d: %s\n", it_id, e.what());
+      return DxlError::CANNOT_FIND_CONTROL_ITEM;
+    }
   }
 
   read_data_list_.clear();
   write_data_list_.clear();
 
   for (auto it_id : id_arr) {
-    if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable")) {
-      torque_state_[it_id] = TORQUE_OFF;
+    try {
+      if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable")) {
+        torque_state_[it_id] = TORQUE_OFF;
+      }
+    } catch (const std::exception& e) {
+      fprintf(stderr, "Error checking control item for ID %d: %s\n", it_id, e.what());
+      return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
   }
 

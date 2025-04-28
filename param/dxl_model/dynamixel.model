@@ -9,6 +9,7 @@ Number	Name
 1040	xh430_v350.model
 1050	xh430_v210.model
 1060	xl430_w250.model
+1061	xl431_t250.model
 1070	xc430_w150.model
 1070	xc430_w150.model
 1080	xc430_w240.model
@@ -46,3 +47,4 @@ Number	Name
 35074	rh_p12_rn.model
 220	omy_hat.model
 230	omy_end.model
+536 sensorxel_joy.model
