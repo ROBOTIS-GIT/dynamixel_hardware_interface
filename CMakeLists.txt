@@ -42,8 +42,8 @@ target_include_directories(
   include
 )
 
-ament_target_dependencies(
-  ${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
   hardware_interface
   pluginlib
   rclcpp
