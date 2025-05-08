@@ -811,15 +811,13 @@ bool DynamixelHardware::InitDxlReadItems()
 
       } else if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "sensor") {
         HandlerVarType temp_sensor;
-        for (auto it : gpio.state_interfaces) {
-          uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+        uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
 
-          temp_sensor.id = id;
-          temp_sensor.name = gpio.name;
-          for (auto it : gpio.state_interfaces) {
-            temp_sensor.interface_name_vec.push_back(it.name);
-            temp_sensor.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-          }
+        temp_sensor.id = id;
+        temp_sensor.name = gpio.name;
+        for (auto it : gpio.state_interfaces) {
+          temp_sensor.interface_name_vec.push_back(it.name);
+          temp_sensor.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
         hdl_gpio_sensor_states_.push_back(temp_sensor);
       }
