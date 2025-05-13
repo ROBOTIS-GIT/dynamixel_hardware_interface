@@ -269,9 +269,12 @@ DxlError Dynamixel::SetMultiDxlWrite()
     }
     fprintf(stderr, "\n");
     fprintf(stderr, "Write items : ");
-
-    for (auto it_name : write_data_list_.at(0).item_name) {
-      fprintf(stderr, "\t%s", it_name.c_str());
+    if (!write_data_list_.empty()) {
+      for (auto it_name : write_data_list_.at(0).item_name) {
+        fprintf(stderr, "\t%s", it_name.c_str());
+      }
+    } else {
+      fprintf(stderr, "(none)");
     }
     fprintf(stderr, "\n");
   } else {
@@ -1179,16 +1182,16 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-      } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
-        int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-        param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
         int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
+      } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
+        int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
+        param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
+        param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       }
       added_byte += indirect_info_write_[ID].item_size.at(item_index);
     }
@@ -1294,16 +1297,16 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-      } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
-        int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-        param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
         int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
+      } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
+        int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
+        param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
+        param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       }
       added_byte += indirect_info_write_[ID].item_size.at(item_index);
     }

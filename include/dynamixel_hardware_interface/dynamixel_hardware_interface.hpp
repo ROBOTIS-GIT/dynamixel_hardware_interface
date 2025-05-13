@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 #include "rclcpp/rclcpp.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -46,10 +47,6 @@
 #define PRESENT_POSITION_INDEX 0
 #define PRESENT_VELOCITY_INDEX 1
 #define PRESENT_EFFORT_INDEX 2
-
-#define GOAL_POSITION_INDEX 0
-// #define GOAL_VELOCITY_INDEX 1  // TODO: to be implemented
-#define GOAL_CURRENT_INDEX 1
 
 namespace dynamixel_hardware_interface
 {
@@ -359,6 +356,18 @@ private:
   double revoluteToPrismatic(double revolute_value);
 
   double prismaticToRevolute(double prismatic_value);
+};
+
+// Conversion maps between ROS2 and Dynamixel interface names
+inline const std::unordered_map<std::string, std::string> ros2_to_dxl_cmd_map = {
+    {hardware_interface::HW_IF_POSITION, "Goal Position"},
+    {hardware_interface::HW_IF_VELOCITY, "Goal Velocity"},
+    {hardware_interface::HW_IF_EFFORT,   "Goal Current"}
+};
+inline const std::unordered_map<std::string, std::string> dxl_to_ros2_cmd_map = {
+    {"Goal Position", hardware_interface::HW_IF_POSITION},
+    {"Goal Velocity", hardware_interface::HW_IF_VELOCITY},
+    {"Goal Current",  hardware_interface::HW_IF_EFFORT}
 };
 
 }  // namespace dynamixel_hardware_interface
