@@ -698,17 +698,23 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     }
     dxl_torque_enable_[id] = torque_enabled;
 
-    // Write parameters in two passes:
-    // 1. First pass: Write all Limit parameters
+    // 1. First pass: Write Operating Mode parameters
     for (const auto& param : gpio.parameters) {
       const std::string& param_name = param.first;
+      if (param_name == "Operating Mode") {
+        if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
+          return false;
+        }
+      }
+    }
 
+    // 2. Second pass: Write all Limit parameters
+    for (const auto& param : gpio.parameters) {
+      const std::string& param_name = param.first;
       // Skip special parameters
-      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable") {
+      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable" || param_name == "Operating Mode") {
         continue;
       }
-
-      // Write Limit parameters first
       if (param_name.find("Limit") != std::string::npos) {
         if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
           return false;
@@ -716,20 +722,13 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
       }
     }
 
-    // 2. Second pass: Write all non-Limit parameters
+    // 3. Third pass: Write all other parameters (excluding already written ones)
     for (const auto& param : gpio.parameters) {
       const std::string& param_name = param.first;
-
-      // Skip special parameters
-      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable") {
+      // Skip special and already written parameters
+      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable" || param_name == "Operating Mode" || param_name.find("Limit") != std::string::npos) {
         continue;
       }
-
-      // Skip Limit parameters (already written)
-      if (param_name.find("Limit") != std::string::npos) {
-        continue;
-      }
-
       if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
         return false;
       }
