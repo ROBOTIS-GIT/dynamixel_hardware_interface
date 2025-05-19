@@ -944,31 +944,25 @@ void DynamixelHardware::SetMatrix()
 }
 void DynamixelHardware::CalcTransmissionToJoint()
 {
-  // Define the indices and their corresponding state types
   const std::array<size_t, 3> indices = {
     PRESENT_POSITION_INDEX,
     PRESENT_VELOCITY_INDEX,
     PRESENT_EFFORT_INDEX
   };
 
-  // Process each joint
   for (size_t i = 0; i < num_of_joints_; i++) {
-    // Process each state type (position, velocity, effort)
     for (size_t state_idx : indices) {
       double value = 0.0;
-      // Calculate value using transmission matrix
       for (size_t j = 0; j < num_of_transmissions_; j++) {
         value += transmission_to_joint_matrix_[i][j] *
           (*hdl_trans_states_.at(j).value_ptr_vec.at(state_idx));
       }
 
-      // Apply conversion if needed (only for position)
       if (state_idx == PRESENT_POSITION_INDEX &&
           hdl_joint_states_.at(i).name == conversion_joint_name_) {
         value = revoluteToPrismatic(value);
       }
 
-      // Store the calculated value
       *hdl_joint_states_.at(i).value_ptr_vec.at(state_idx) = value;
     }
   }
@@ -978,16 +972,10 @@ void DynamixelHardware::CalcJointToTransmission()
 {
   for (size_t i = 0; i < num_of_transmissions_; i++) {
     double value = 0.0;
-    bool temp_flag = false;
     for (size_t j = 0; j < num_of_joints_; j++) {
       for(size_t k = 0; k < hdl_joint_commands_.at(j).interface_name_vec.size(); k++) {
         value += joint_to_transmission_matrix_[i][j] *
           (*hdl_joint_commands_.at(j).value_ptr_vec.at(k));
-        if(hdl_joint_commands_.at(j).name == "l_rh_r1_joint") {
-          if(joint_to_transmission_matrix_[i][j] == 1.0) {
-            temp_flag = true;
-          }
-        }
       }
     }
 
@@ -996,9 +984,7 @@ void DynamixelHardware::CalcJointToTransmission()
           hdl_trans_commands_.at(i).name == conversion_dxl_name_) {
         value = prismaticToRevolute(value);
       }
-      if(hdl_trans_commands_.at(i).name == "dxl38") {
-        RCLCPP_INFO_STREAM(logger_, "hdl_trans_commands_.at(i).name: " << hdl_trans_commands_.at(i).name << ", cmd_idx: " << k << ", value: " << value);
-      }
+
       *hdl_trans_commands_.at(i).value_ptr_vec.at(k) = value;
     }
   }
