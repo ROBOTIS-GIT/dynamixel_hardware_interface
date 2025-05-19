@@ -360,14 +360,14 @@ private:
 
 // Conversion maps between ROS2 and Dynamixel interface names
 inline const std::unordered_map<std::string, std::string> ros2_to_dxl_cmd_map = {
-    {hardware_interface::HW_IF_POSITION, "Goal Position"},
-    {hardware_interface::HW_IF_VELOCITY, "Goal Velocity"},
-    {hardware_interface::HW_IF_EFFORT,   "Goal Current"}
+  {hardware_interface::HW_IF_POSITION, "Goal Position"},
+  {hardware_interface::HW_IF_VELOCITY, "Goal Velocity"},
+  {hardware_interface::HW_IF_EFFORT, "Goal Current"}
 };
 inline const std::unordered_map<std::string, std::string> dxl_to_ros2_cmd_map = {
-    {"Goal Position", hardware_interface::HW_IF_POSITION},
-    {"Goal Velocity", hardware_interface::HW_IF_VELOCITY},
-    {"Goal Current",  hardware_interface::HW_IF_EFFORT}
+  {"Goal Position", hardware_interface::HW_IF_POSITION},
+  {"Goal Velocity", hardware_interface::HW_IF_VELOCITY},
+  {"Goal Current", hardware_interface::HW_IF_EFFORT}
 };
 
 }  // namespace dynamixel_hardware_interface

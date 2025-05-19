@@ -101,9 +101,9 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
       } else if (strs.at(0) == "torque_constant") {
         temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
       }
-    } catch (const std::exception& e) {
-      std::string error_msg = "Error processing line in model file: " + line + "\nError: " + e.what();
-      // fprintf(stderr, "[WARN] %s\n", error_msg.c_str());
+    } catch (const std::exception & e) {
+      std::string error_msg = "Error processing line in model file: " + line +
+        "\nError: " + e.what();
       throw std::runtime_error(error_msg);
     }
   }
@@ -120,7 +120,6 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
 
     if (strs.size() < 3) {
       std::string error_msg = "Malformed control table line: " + line;
-      // fprintf(stderr, "[ERROR] %s\n", error_msg.c_str());
       throw std::runtime_error(error_msg);
     }
 
@@ -130,16 +129,16 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
       temp.size = static_cast<uint8_t>(stoi(strs.at(1)));
       temp.item_name = strs.at(2);
       temp_dxl_info.item.push_back(temp);
-    } catch (const std::exception& e) {
-      std::string error_msg = "Error processing control table line: " + line + "\nError: " + e.what();
-      // fprintf(stderr, "[ERROR] %s\n", error_msg.c_str());
+    } catch (const std::exception & e) {
+      std::string error_msg = "Error processing control table line: " + line +
+        "\nError: " + e.what();
       throw std::runtime_error(error_msg);
     }
   }
 
   if (temp_dxl_info.item.empty()) {
-    std::string error_msg = "No control table items found in model file for ID " + std::to_string(id);
-    // fprintf(stderr, "[ERROR] %s\n", error_msg.c_str());
+    std::string error_msg = "No control table items found in model file for ID " +
+      std::to_string(id);
     throw std::runtime_error(error_msg);
   }
 

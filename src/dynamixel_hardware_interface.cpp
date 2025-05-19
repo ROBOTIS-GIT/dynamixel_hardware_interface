@@ -325,9 +325,10 @@ DynamixelHardware::export_state_interfaces()
       for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
         if (i >= it.interface_name_vec.size()) {
           RCLCPP_ERROR_STREAM(
-            logger_, "Interface name vector size mismatch for " << it.name <<
-            ". Expected size: " << it.value_ptr_vec.size() <<
-            ", Actual size: " << it.interface_name_vec.size());
+            logger_,
+            "Interface name vector size mismatch for " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
         state_interfaces.emplace_back(
@@ -340,8 +341,8 @@ DynamixelHardware::export_state_interfaces()
         if (i >= it.interface_name_vec.size()) {
           RCLCPP_ERROR_STREAM(
             logger_, "Interface name vector size mismatch for joint " << it.name <<
-            ". Expected size: " << it.value_ptr_vec.size() <<
-            ", Actual size: " << it.interface_name_vec.size());
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
         state_interfaces.emplace_back(
@@ -354,8 +355,8 @@ DynamixelHardware::export_state_interfaces()
         if (i >= it.interface_name_vec.size()) {
           RCLCPP_ERROR_STREAM(
             logger_, "Interface name vector size mismatch for sensor " << it.name <<
-            ". Expected size: " << it.value_ptr_vec.size() <<
-            ", Actual size: " << it.interface_name_vec.size());
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
         state_interfaces.emplace_back(
@@ -381,8 +382,8 @@ DynamixelHardware::export_command_interfaces()
         if (i >= it.interface_name_vec.size()) {
           RCLCPP_ERROR_STREAM(
             logger_, "Interface name vector size mismatch for " << it.name <<
-            ". Expected size: " << it.value_ptr_vec.size() <<
-            ", Actual size: " << it.interface_name_vec.size());
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
         command_interfaces.emplace_back(
@@ -395,8 +396,8 @@ DynamixelHardware::export_command_interfaces()
         if (i >= it.interface_name_vec.size()) {
           RCLCPP_ERROR_STREAM(
             logger_, "Interface name vector size mismatch for joint " << it.name <<
-            ". Expected size: " << it.value_ptr_vec.size() <<
-            ", Actual size: " << it.interface_name_vec.size());
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
         command_interfaces.emplace_back(
@@ -441,7 +442,7 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 
   // Enable torque only for Dynamixels that have torque enabled in their parameters
   std::vector<uint8_t> torque_enabled_ids;
-  for (const auto& [id, enabled] : dxl_torque_enable_) {
+  for (const auto & [id, enabled] : dxl_torque_enable_) {
     if (enabled) {
       torque_enabled_ids.push_back(id);
     }
@@ -699,8 +700,8 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     dxl_torque_enable_[id] = torque_enabled;
 
     // 1. First pass: Write Operating Mode parameters
-    for (const auto& param : gpio.parameters) {
-      const std::string& param_name = param.first;
+    for (const auto & param : gpio.parameters) {
+      const std::string & param_name = param.first;
       if (param_name == "Operating Mode") {
         if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
           return false;
@@ -709,10 +710,11 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     }
 
     // 2. Second pass: Write all Limit parameters
-    for (const auto& param : gpio.parameters) {
-      const std::string& param_name = param.first;
-      // Skip special parameters
-      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable" || param_name == "Operating Mode") {
+    for (const auto & param : gpio.parameters) {
+      const std::string & param_name = param.first;
+      if (param_name == "ID" || param_name == "type" ||
+        param_name == "Torque Enable" || param_name == "Operating Mode")
+      {
         continue;
       }
       if (param_name.find("Limit") != std::string::npos) {
@@ -723,10 +725,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     }
 
     // 3. Third pass: Write all other parameters (excluding already written ones)
-    for (const auto& param : gpio.parameters) {
-      const std::string& param_name = param.first;
-      // Skip special and already written parameters
-      if (param_name == "ID" || param_name == "type" || param_name == "Torque Enable" || param_name == "Operating Mode" || param_name.find("Limit") != std::string::npos) {
+    for (const auto & param : gpio.parameters) {
+      const std::string & param_name = param.first;
+      if (param_name == "ID" || param_name == "type" ||
+        param_name == "Torque Enable" || param_name == "Operating Mode" ||
+        param_name.find("Limit") != std::string::npos)
+      {
         continue;
       }
       if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
@@ -840,8 +844,8 @@ bool DynamixelHardware::InitDxlWriteItems()
 
       for (auto it : gpio.command_interfaces) {
         if (it.name != "Goal Position" &&
-            it.name != "Goal Velocity" &&
-            it.name != "Goal Current")
+          it.name != "Goal Velocity" &&
+          it.name != "Goal Current")
         {
           continue;
         }
@@ -959,7 +963,8 @@ void DynamixelHardware::CalcTransmissionToJoint()
       }
 
       if (state_idx == PRESENT_POSITION_INDEX &&
-          hdl_joint_states_.at(i).name == conversion_joint_name_) {
+        hdl_joint_states_.at(i).name == conversion_joint_name_)
+      {
         value = revoluteToPrismatic(value);
       }
 
@@ -981,7 +986,8 @@ void DynamixelHardware::CalcJointToTransmission()
 
     for(size_t k = 0; k < hdl_trans_commands_.at(i).interface_name_vec.size(); k++) {
       if (hdl_trans_commands_.at(i).interface_name_vec.at(k) == "Goal Position" &&
-          hdl_trans_commands_.at(i).name == conversion_dxl_name_) {
+        hdl_trans_commands_.at(i).name == conversion_dxl_name_)
+      {
         value = prismaticToRevolute(value);
       }
 
@@ -993,18 +999,22 @@ void DynamixelHardware::CalcJointToTransmission()
 
 void DynamixelHardware::SyncJointCommandWithStates()
 {
-  for (auto& it_states : hdl_joint_states_) {
-    for (auto& it_commands : hdl_joint_commands_) {
+  for (auto & it_states : hdl_joint_states_) {
+    for (auto & it_commands : hdl_joint_commands_) {
       if (it_states.name == it_commands.name) {
         std::string pos_cmd_name = hardware_interface::HW_IF_POSITION;
-        std::string pos_dxl_name = ros2_to_dxl_cmd_map.count(pos_cmd_name) ? ros2_to_dxl_cmd_map.at(pos_cmd_name) : pos_cmd_name;
+        std::string pos_dxl_name =
+          ros2_to_dxl_cmd_map.count(pos_cmd_name) ? ros2_to_dxl_cmd_map.at(pos_cmd_name) :
+          pos_cmd_name;
         // Find index in command interfaces
         auto cmd_it = std::find(
           it_commands.interface_name_vec.begin(),
           it_commands.interface_name_vec.end(),
           pos_cmd_name);
         if (cmd_it == it_commands.interface_name_vec.end()) {
-          RCLCPP_WARN_STREAM(logger_, "No position interface found in command interfaces for joint '" << it_commands.name << "'. Skipping sync!");
+          RCLCPP_WARN_STREAM(logger_,
+              "No position interface found in command interfaces for joint '" <<
+              it_commands.name << "'. Skipping sync!");
           continue;
         }
         size_t cmd_idx = std::distance(it_commands.interface_name_vec.begin(), cmd_it);
@@ -1014,7 +1024,9 @@ void DynamixelHardware::SyncJointCommandWithStates()
           it_states.interface_name_vec.end(),
           pos_cmd_name);
         if (state_it == it_states.interface_name_vec.end()) {
-          RCLCPP_WARN_STREAM(logger_, "No position interface found in state interfaces for joint '" << it_states.name << "'. Skipping sync!");
+          RCLCPP_WARN_STREAM(logger_,
+              "No position interface found in state interfaces for joint '" <<
+              it_states.name << "'. Skipping sync!");
           continue;
         }
         size_t state_idx = std::distance(it_states.interface_name_vec.begin(), state_it);
