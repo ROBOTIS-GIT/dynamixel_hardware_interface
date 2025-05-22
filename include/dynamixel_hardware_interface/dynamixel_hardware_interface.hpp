@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <functional>
 
 #include "rclcpp/rclcpp.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -43,13 +45,6 @@
 
 #include "std_srvs/srv/set_bool.hpp"
 
-#define PRESENT_POSITION_INDEX 0
-#define PRESENT_VELOCITY_INDEX 1
-#define PRESENT_EFFORT_INDEX 2
-
-#define GOAL_POSITION_INDEX 0
-// #define GOAL_VELOCITY_INDEX 1  // TODO: to be implemented
-#define GOAL_CURRENT_INDEX 1
 
 namespace dynamixel_hardware_interface
 {
@@ -185,13 +180,12 @@ private:
   std::map<uint8_t /*id*/, uint8_t /*err*/> dxl_hw_err_;
   DxlTorqueStatus dxl_torque_status_;
   std::map<uint8_t /*id*/, bool /*enable*/> dxl_torque_state_;
+  std::map<uint8_t /*id*/, bool /*enable*/> dxl_torque_enable_;
   double err_timeout_ms_;
   rclcpp::Duration read_error_duration_{0, 0};
   rclcpp::Duration write_error_duration_{0, 0};
   bool is_read_in_error_{false};
   bool is_write_in_error_{false};
-
-  bool global_torque_enable_{true};
 
   bool use_revolute_to_prismatic_{false};
   std::string conversion_dxl_name_{""};
@@ -360,6 +354,38 @@ private:
   double revoluteToPrismatic(double revolute_value);
 
   double prismaticToRevolute(double prismatic_value);
+
+  void MapInterfaces(
+      size_t outer_size,
+      size_t inner_size,
+      std::vector<HandlerVarType> &outer_handlers,
+      const std::vector<HandlerVarType> &inner_handlers,
+      double **matrix,
+      const std::unordered_map<std::string, std::vector<std::string>> &iface_map,
+      const std::string &conversion_iface = "",
+      const std::string &conversion_name = "",
+      std::function<double(double)> conversion = nullptr);
+};
+
+// Conversion maps between ROS2 and Dynamixel interface names
+inline const std::unordered_map<std::string, std::vector<std::string>> ros2_to_dxl_cmd_map = {
+  {hardware_interface::HW_IF_POSITION, {"Goal Position"}},
+  {hardware_interface::HW_IF_VELOCITY, {"Goal Velocity"}},
+  {hardware_interface::HW_IF_EFFORT, {"Goal Current"}}
+};
+
+// Mapping for Dynamixel command interface names to ROS2 state interface names
+inline const std::unordered_map<std::string, std::vector<std::string>> dxl_to_ros2_cmd_map = {
+  {"Goal Position", {hardware_interface::HW_IF_POSITION}},
+  {"Goal Velocity", {hardware_interface::HW_IF_VELOCITY}},
+  {"Goal Current", {hardware_interface::HW_IF_EFFORT}}
+};
+
+// Mapping for ROS2 state interface names to Dynamixel state interface names
+inline const std::unordered_map<std::string, std::vector<std::string>> ros2_to_dxl_state_map = {
+  {hardware_interface::HW_IF_POSITION, {"Present Position"}},
+  {hardware_interface::HW_IF_VELOCITY, {"Present Velocity"}},
+  {hardware_interface::HW_IF_EFFORT, {"Present Current", "Present Load"}}
 };
 
 }  // namespace dynamixel_hardware_interface

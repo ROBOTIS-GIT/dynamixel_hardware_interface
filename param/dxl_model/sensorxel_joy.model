@@ -1,0 +1,21 @@
+[control table]
+Address	Size    Data Name
+0	2	Model Number
+2	1	ROBOT_Generation
+3	1	Board_Number
+5	1	Firmware_Version_Major
+6	1	Firmware_Version_Minor
+7	1	ID
+8	1	Baud Rate
+10	1	Boot_Version_Major
+11	1	Boot_Version_MInor
+12	4	Error_Code
+20	4	Micros
+24	4	Millis
+28	1	JOYSTICK TACT SWITCH
+29	2	JOYSTICK X VALUE
+31	2	JOYSTICK Y VALUE
+40	2	IMU ACC X
+42	2	IMU ACC Y
+44	2	IMU ACC Z
+46	2	IMU ACC SUM

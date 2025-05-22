@@ -62,7 +62,9 @@ Address	Size	Data Name
 592	2	Present Input Voltage
 594	1	Present Temperature
 878	1	Backup Ready
+168	2	Indirect Address 1
+634	1	Indirect Data 1
 168	2	Indirect Address Write
 634	1	Indirect Data Write
-350	2	Indirect Address Read
+296	2	Indirect Address Read
 698	1	Indirect Data Read
