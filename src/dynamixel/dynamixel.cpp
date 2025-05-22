@@ -678,6 +678,10 @@ bool Dynamixel::checkReadType()
     uint16_t indirect_addr[2];  // [i-1], [i]
     uint8_t indirect_size[2];   // [i-1], [i]
 
+    if (CheckIndirectReadAvailable(read_data_list_.at(dxl_index - 1).id) != DxlError::OK) {
+      return BULK;
+    }
+
     if (!dxl_info_.GetDxlControlItem(
         read_data_list_.at(dxl_index).id, "Indirect Data Read", indirect_addr[1],
         indirect_size[1]) ||
@@ -816,7 +820,7 @@ DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
     IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
 
   group_sync_read_ =
-    new dynamixel::GroupFastSyncRead(
+    new dynamixel::GroupSyncRead(
     port_handler_, packet_handler_,
     IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
 
@@ -857,15 +861,64 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
 
 DxlError Dynamixel::SetBulkReadItemAndHandler()
 {
-  std::vector<uint8_t> id_arr;
+  group_bulk_read_ = new dynamixel::GroupBulkRead(port_handler_, packet_handler_);
+  
+  std::vector<uint8_t> indirect_id_arr;
+  std::vector<uint8_t> direct_id_arr;
+
+  std::vector<RWItemList> indirect_read_data_list;
+  std::vector<RWItemList> direct_read_data_list;
+
   for (auto it_read_data : read_data_list_) {
-    id_arr.push_back(it_read_data.id);
+    if (CheckIndirectReadAvailable(it_read_data.id) == DxlError::OK) {
+      indirect_id_arr.push_back(it_read_data.id);
+      indirect_read_data_list.push_back(it_read_data);
+    } else {
+      direct_id_arr.push_back(it_read_data.id);
+      direct_read_data_list.push_back(it_read_data);
+    }
   }
 
-  DynamixelDisable(id_arr);
-  ResetIndirectRead(id_arr);
+  for (auto it_read_data : direct_read_data_list) {
+    if (it_read_data.item_addr.empty() || it_read_data.item_size.empty()) {
+      continue;
+    }
+    // Calculate min address and max end address
+    uint16_t min_addr = it_read_data.item_addr[0];
+    uint16_t max_end_addr = it_read_data.item_addr[0] + it_read_data.item_size[0];
+    for (size_t item_index = 1; item_index < it_read_data.item_addr.size(); ++item_index) {
+      uint16_t addr = it_read_data.item_addr[item_index];
+      uint16_t size = it_read_data.item_size[item_index];
+      if (addr < min_addr) min_addr = addr;
+      if (addr + size > max_end_addr) max_end_addr = addr + size;
+    }
+    uint8_t total_size = max_end_addr - min_addr;
+    // Concatenate all item names with '+'
+    std::string group_item_names;
+    for (size_t i = 0; i < it_read_data.item_name.size(); ++i) {
+      group_item_names += it_read_data.item_name[i];
+      if (i + 1 < it_read_data.item_name.size()) group_item_names += " + ";
+    }
+    // Call AddDirectRead once per id
+    if (AddDirectRead(
+          it_read_data.id,
+          group_item_names,
+          min_addr,
+          total_size) != DxlError::OK)
+    {
+      fprintf(stderr, "Cannot set the BulkRead handler.\n");
+      return DxlError::BULK_READ_FAIL;
+    }
+    fprintf(
+      stderr,
+      "set bulk read (direct addr) : addr %d, size %d\n",
+      min_addr, total_size);
+  }
 
-  for (auto it_read_data : read_data_list_) {
+  DynamixelDisable(indirect_id_arr);
+  ResetIndirectRead(indirect_id_arr);
+
+  for (auto it_read_data : indirect_read_data_list) {
     for (size_t item_index = 0; item_index < it_read_data.item_name.size();
       item_index++)
     {
@@ -880,17 +933,22 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
           stderr, "[ID:%03d] Add Indirect Address Read Item : [%s]\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str());
-      } else {
+      } else if(result == DxlError::SET_BULK_READ_FAIL) {
         fprintf(
           stderr, "[ID:%03d] Failed to Indirect Address Read Item : [%s], %d\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str(),
           result);
+      } else if(result == DxlError::CANNOT_FIND_CONTROL_ITEM) {
+        fprintf(
+          stderr, "[ID:%03d] 'Indirect Address Read' is not defined in control table, Cannot set Indirect Address Read for : [%s]\n",
+          it_read_data.id,
+          it_read_data.item_name.at(item_index).c_str());
       }
     }
   }
-
-  if (SetBulkReadHandler(id_arr) != DxlError::OK) {
+  
+  if (SetBulkReadHandler(indirect_id_arr) != DxlError::OK) {
     fprintf(stderr, "Cannot set the BulkRead handler.\n");
     return DxlError::BULK_READ_FAIL;
   }
@@ -919,10 +977,8 @@ DxlError Dynamixel::SetBulkReadHandler(std::vector<uint8_t> id_arr)
     fprintf(
       stderr,
       "set bulk read (indirect addr) : addr %d, size %d\n",
-      IN_ADDR, indirect_info_read_[id_arr.at(0)].size);
+      IN_ADDR, indirect_info_read_[it_id].size);
   }
-
-  group_bulk_read_ = new dynamixel::GroupFastBulkRead(port_handler_, packet_handler_);
 
   for (auto it_id : id_arr) {
     uint8_t ID = it_id;
@@ -941,6 +997,17 @@ DxlError Dynamixel::SetBulkReadHandler(std::vector<uint8_t> id_arr)
   return DxlError::OK;
 }
 
+DxlError Dynamixel::AddDirectRead(uint8_t id, std::string item_name, uint16_t item_addr, uint8_t item_size)
+{
+  if (group_bulk_read_->addParam(id, item_addr, item_size) == true) {
+    fprintf(stderr, "[ID:%03d] Add BulkRead item : [%s][%d][%d]\n", id, item_name.c_str(), item_addr, item_size);
+  } else {
+    fprintf(stderr, "[ID:%03d] Failed to BulkRead item : [%s][%d][%d]\n", id, item_name.c_str(), item_addr, item_size);
+    return DxlError::SET_BULK_READ_FAIL;
+  }
+  return DxlError::OK;
+}
+
 DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
 {
   DxlError comm_result = ProcessReadCommunication(
@@ -953,22 +1020,33 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
     uint8_t id = it_read_data.id;
     uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
 
-    ProcessReadData(
-      id,
-      indirect_addr,
-      indirect_info_read_[id].item_name,
-      indirect_info_read_[id].item_size,
-      it_read_data.item_data_ptr_vec,
-      [this](uint8_t id, uint16_t addr, uint8_t size) {
-        return group_bulk_read_->getData(id, addr, size);
-      });
+    if (CheckIndirectReadAvailable(id) != DxlError::OK) {
+      ProcessDirectReadData(
+        id,
+        it_read_data.item_addr,
+        it_read_data.item_size,
+        it_read_data.item_data_ptr_vec,
+        [this](uint8_t id, uint16_t addr, uint8_t size) {
+          return group_bulk_read_->getData(id, addr, size);
+        });
+    } else {
+      ProcessReadData(
+        id,
+        indirect_addr,
+        indirect_info_read_[id].item_name,
+        indirect_info_read_[id].item_size,
+        it_read_data.item_data_ptr_vec,
+        [this](uint8_t id, uint16_t addr, uint8_t size) {
+          return group_bulk_read_->getData(id, addr, size);
+        });
+    }
   }
   return DxlError::OK;
 }
 
 DxlError Dynamixel::ProcessReadCommunication(
-  dynamixel::GroupFastSyncRead * group_sync_read,
-  dynamixel::GroupFastBulkRead * group_bulk_read,
+  dynamixel::GroupSyncRead * group_sync_read,
+  dynamixel::GroupBulkRead * group_bulk_read,
   dynamixel::PortHandler * port_handler,
   double period_ms,
   bool is_sync)
@@ -1055,16 +1133,48 @@ DxlError Dynamixel::ProcessReadData(
   return DxlError::OK;
 }
 
+DxlError Dynamixel::ProcessDirectReadData(
+  uint8_t id,
+  const std::vector<uint16_t> & item_addrs,
+  const std::vector<uint8_t> & item_sizes,
+  const std::vector<std::shared_ptr<double>> & data_ptrs,
+  std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func)
+{
+  for (size_t item_index = 0; item_index < item_addrs.size(); item_index++) {
+    uint16_t current_addr = item_addrs[item_index];
+    uint8_t size = item_sizes[item_index];
+
+    uint32_t dxl_getdata = get_data_func(id, current_addr, size);
+
+    *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+  }
+  return DxlError::OK;
+}
 
 void Dynamixel::ResetIndirectRead(std::vector<uint8_t> id_arr)
 {
   IndirectInfo temp;
-  temp.cnt = temp.size = 0;
+  temp.indirect_data_addr = 0;
+  temp.size = 0;
+  temp.cnt = 0;
   temp.item_name.clear();
   temp.item_size.clear();
   for (auto it_id : id_arr) {
     indirect_info_read_[it_id] = temp;
   }
+}
+
+DxlError Dynamixel::CheckIndirectReadAvailable(uint8_t id)
+{
+  uint16_t INDIRECT_ADDR;
+  uint8_t INDIRECT_SIZE;
+  if (dxl_info_.GetDxlControlItem(
+      id, "Indirect Address Read",
+      INDIRECT_ADDR, INDIRECT_SIZE) == false)
+  {
+    return DxlError::CANNOT_FIND_CONTROL_ITEM;
+  }
+  return DxlError::OK;
 }
 
 DxlError Dynamixel::AddIndirectRead(
@@ -1273,7 +1383,7 @@ DxlError Dynamixel::SetBulkWriteHandler(std::vector<uint8_t> id_arr)
     fprintf(
       stderr,
       "set bulk write (indirect addr) : addr %d, size %d\n",
-      IN_ADDR, indirect_info_write_[id_arr.at(0)].size);
+      IN_ADDR, indirect_info_write_[it_id].size);
   }
 
   group_bulk_write_ = new dynamixel::GroupBulkWrite(port_handler_, packet_handler_);
@@ -1336,7 +1446,9 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
 void Dynamixel::ResetIndirectWrite(std::vector<uint8_t> id_arr)
 {
   IndirectInfo temp;
-  temp.cnt = temp.size = 0;
+  temp.indirect_data_addr = 0;
+  temp.size = 0;
+  temp.cnt = 0;
   temp.item_name.clear();
   temp.item_size.clear();
   for (auto it_id : id_arr) {

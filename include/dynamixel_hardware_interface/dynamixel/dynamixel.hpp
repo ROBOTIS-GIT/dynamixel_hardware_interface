@@ -126,12 +126,12 @@ private:
   std::vector<RWItemList> read_data_list_;
 
   // sync read
-  dynamixel::GroupFastSyncRead * group_sync_read_;
+  dynamixel::GroupSyncRead * group_sync_read_;
   // indirect inform for sync read
   std::map<uint8_t /*id*/, IndirectInfo> indirect_info_read_;
 
   // bulk read
-  dynamixel::GroupFastBulkRead * group_bulk_read_;
+  dynamixel::GroupBulkRead * group_bulk_read_;
 
   // write item (sync or bulk) variable
   bool write_type_;
@@ -206,7 +206,11 @@ private:
   // BulkRead
   DxlError SetBulkReadItemAndHandler();
   DxlError SetBulkReadHandler(std::vector<uint8_t> id_arr);
+  DxlError AddDirectRead(uint8_t id, std::string item_name, uint16_t item_addr, uint8_t item_size);
   DxlError GetDxlValueFromBulkRead(double period_ms);
+
+  // Check Indirect Read
+  DxlError CheckIndirectReadAvailable(uint8_t id);
 
   // Read - Indirect Address
   void ResetIndirectRead(std::vector<uint8_t> id_arr);
@@ -225,10 +229,17 @@ private:
     const std::vector<std::shared_ptr<double>> & data_ptrs,
     std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func);
 
+  DxlError ProcessDirectReadData(
+    uint8_t id,
+    const std::vector<uint16_t> & item_addrs,
+    const std::vector<uint8_t> & item_sizes,
+    const std::vector<std::shared_ptr<double>> & data_ptrs,
+    std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func);
+
   // Read - Communication
   DxlError ProcessReadCommunication(
-    dynamixel::GroupFastSyncRead * group_sync_read,
-    dynamixel::GroupFastBulkRead * group_bulk_read,
+    dynamixel::GroupSyncRead * group_sync_read,
+    dynamixel::GroupBulkRead * group_bulk_read,
     dynamixel::PortHandler * port_handler,
     double period_ms,
     bool is_sync);
