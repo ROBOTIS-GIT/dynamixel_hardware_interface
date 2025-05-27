@@ -144,6 +144,8 @@ private:
 
   // bulk write
   dynamixel::GroupBulkWrite * group_bulk_write_;
+  // direct inform for bulk write
+  std::map<uint8_t /*id*/, IndirectInfo> direct_info_write_;
 
 public:
   explicit Dynamixel(const char * path);
@@ -254,8 +256,12 @@ private:
   DxlError SetBulkWriteHandler(std::vector<uint8_t> id_arr);
   DxlError SetDxlValueToBulkWrite();
 
+  // Check Indirect Write
+  DxlError CheckIndirectWriteAvailable(uint8_t id);
+
   // Write - Indirect Address
   void ResetIndirectWrite(std::vector<uint8_t> id_arr);
+  void ResetDirectWrite(std::vector<uint8_t> id_arr);
   DxlError AddIndirectWrite(
     uint8_t id,
     std::string item_name,

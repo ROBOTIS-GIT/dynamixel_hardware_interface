@@ -244,6 +244,9 @@ private:
   std::vector<HandlerVarType> hdl_gpio_sensor_states_;
   std::vector<HandlerVarType> hdl_sensor_states_;
 
+  ///// handler controller variable
+  std::vector<HandlerVarType> hdl_gpio_controller_commands_;
+
   bool is_set_hdl_{false};
 
   // joint <-> transmission matrix

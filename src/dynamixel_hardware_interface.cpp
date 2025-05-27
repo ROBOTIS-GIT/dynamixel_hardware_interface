@@ -391,6 +391,19 @@ DynamixelHardware::export_command_interfaces()
             it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
       }
     }
+    for (auto it : hdl_gpio_controller_commands_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(logger_, "Interface name vector size mismatch for gpio controller " << it.name <<
+            ". Expected size: " << it.value_ptr_vec.size() <<
+            ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        command_interfaces.emplace_back(
+          hardware_interface::CommandInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
+    }
   } catch (const std::exception & e) {
     RCLCPP_ERROR_STREAM(logger_, "Error in export_command_interfaces: " << e.what());
   }
@@ -824,32 +837,52 @@ bool DynamixelHardware::InitDxlWriteItems()
 
   if (!is_set_hdl_) {
     hdl_trans_commands_.clear();
+    hdl_gpio_controller_commands_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-      if(gpio.parameters.at("type") != "dxl") {
-        continue;
-      }
-      uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-      HandlerVarType temp_write;
-      temp_write.id = id;
-      temp_write.name = gpio.name;
+      if (gpio.parameters.at("type") == "dxl") {
+        uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+        HandlerVarType temp_write;
+        temp_write.id = id;
+        temp_write.name = gpio.name;
 
-      for (auto it : gpio.command_interfaces) {
-        if (it.name != "Goal Position" &&
-          it.name != "Goal Velocity" &&
-          it.name != "Goal Current")
-        {
-          continue;
+        for (auto it : gpio.command_interfaces) {
+          if (it.name != "Goal Position" &&
+            it.name != "Goal Velocity" &&
+            it.name != "Goal Current")
+          {
+            continue;
+          }
+          temp_write.interface_name_vec.push_back(it.name);
+          temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
-        temp_write.interface_name_vec.push_back(it.name);
-        temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-      }
 
-      hdl_trans_commands_.push_back(temp_write);
+        hdl_trans_commands_.push_back(temp_write);
+      } else if (gpio.parameters.at("type") == "controller") {
+        uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+        HandlerVarType temp_controller;
+        temp_controller.id = id;
+        temp_controller.name = gpio.name;
+
+        for (auto it : gpio.command_interfaces) {
+          temp_controller.interface_name_vec.push_back(it.name);
+          temp_controller.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+        }
+        hdl_gpio_controller_commands_.push_back(temp_controller);
+      }
     }
     is_set_hdl_ = true;
   }
 
   for (auto it : hdl_trans_commands_) {
+    if (dxl_comm_->SetDxlWriteItems(
+        it.id, it.interface_name_vec,
+        it.value_ptr_vec) != DxlError::OK)
+    {
+      return false;
+    }
+  }
+
+  for (auto it : hdl_gpio_controller_commands_) {
     if (dxl_comm_->SetDxlWriteItems(
         it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
