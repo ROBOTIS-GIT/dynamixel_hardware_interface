@@ -394,9 +394,10 @@ DynamixelHardware::export_command_interfaces()
     for (auto it : hdl_gpio_controller_commands_) {
       for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
         if (i >= it.interface_name_vec.size()) {
-          RCLCPP_ERROR_STREAM(logger_, "Interface name vector size mismatch for gpio controller " <<
-            it.name << ". Expected size: " << it.value_ptr_vec.size() <<
-            ", Actual size: " << it.interface_name_vec.size());
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for gpio controller " <<
+              it.name << ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
         command_interfaces.emplace_back(
@@ -975,7 +976,7 @@ void DynamixelHardware::MapInterfaces(
   size_t inner_size,
   std::vector<HandlerVarType> & outer_handlers,
   const std::vector<HandlerVarType> & inner_handlers,
-  double **matrix,
+  double ** matrix,
   const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
   const std::string & conversion_iface,
   const std::string & conversion_name,
@@ -1030,7 +1031,7 @@ void DynamixelHardware::CalcTransmissionToJoint()
 {
   std::function<double(double)> conv = use_revolute_to_prismatic_ ?
     std::function<double(double)>(
-        std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1)) :
+    std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1)) :
     std::function<double(double)>();
   this->MapInterfaces(
     num_of_joints_,
@@ -1049,7 +1050,7 @@ void DynamixelHardware::CalcJointToTransmission()
 {
   std::function<double(double)> conv = use_revolute_to_prismatic_ ?
     std::function<double(double)>(
-        std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1)) :
+    std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1)) :
     std::function<double(double)>();
   this->MapInterfaces(
     num_of_transmissions_,
@@ -1076,8 +1077,9 @@ void DynamixelHardware::SyncJointCommandWithStates()
           it_commands.interface_name_vec.end(),
           pos_cmd_name);
         if (cmd_it == it_commands.interface_name_vec.end()) {
-          RCLCPP_WARN_STREAM(logger_,
-              "No position interface found in command interfaces for joint '" <<
+          RCLCPP_WARN_STREAM(
+            logger_,
+            "No position interface found in command interfaces for joint '" <<
               it_commands.name << "'. Skipping sync!");
           continue;
         }
@@ -1088,8 +1090,9 @@ void DynamixelHardware::SyncJointCommandWithStates()
           it_states.interface_name_vec.end(),
           pos_cmd_name);
         if (state_it == it_states.interface_name_vec.end()) {
-          RCLCPP_WARN_STREAM(logger_,
-              "No position interface found in state interfaces for joint '" <<
+          RCLCPP_WARN_STREAM(
+            logger_,
+            "No position interface found in state interfaces for joint '" <<
               it_states.name << "'. Skipping sync!");
           continue;
         }

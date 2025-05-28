@@ -919,10 +919,10 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
     }
     // Call AddDirectRead once per id
     if (AddDirectRead(
-          it_read_data.id,
-          group_item_names,
-          min_addr,
-          total_size) != DxlError::OK)
+        it_read_data.id,
+        group_item_names,
+        min_addr,
+        total_size) != DxlError::OK)
     {
       fprintf(stderr, "Cannot set the BulkRead handler.\n");
       return DxlError::BULK_READ_FAIL;
@@ -951,13 +951,13 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
           stderr, "[ID:%03d] Add Indirect Address Read Item : [%s]\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str());
-      } else if(result == DxlError::SET_BULK_READ_FAIL) {
+      } else if (result == DxlError::SET_BULK_READ_FAIL) {
         fprintf(
           stderr, "[ID:%03d] Failed to Indirect Address Read Item : [%s], %d\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str(),
           result);
-      } else if(result == DxlError::CANNOT_FIND_CONTROL_ITEM) {
+      } else if (result == DxlError::CANNOT_FIND_CONTROL_ITEM) {
         fprintf(
           stderr, "[ID:%03d] 'Indirect Address Read' is not defined in control table, "
           "Cannot set Indirect Address Read for : [%s]\n",
@@ -1020,10 +1020,12 @@ DxlError Dynamixel::AddDirectRead(
   uint8_t id, std::string item_name, uint16_t item_addr, uint8_t item_size)
 {
   if (group_bulk_read_->addParam(id, item_addr, item_size) == true) {
-    fprintf(stderr, "[ID:%03d] Add BulkRead item : [%s][%d][%d]\n",
+    fprintf(
+      stderr, "[ID:%03d] Add BulkRead item : [%s][%d][%d]\n",
       id, item_name.c_str(), item_addr, item_size);
   } else {
-    fprintf(stderr, "[ID:%03d] Failed to BulkRead item : [%s][%d][%d]\n",
+    fprintf(
+      stderr, "[ID:%03d] Failed to BulkRead item : [%s][%d][%d]\n",
       id, item_name.c_str(), item_addr, item_size);
     return DxlError::SET_BULK_READ_FAIL;
   }
@@ -1391,17 +1393,19 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     // Check for gaps between items
     std::vector<std::pair<uint16_t, uint16_t>> addr_ranges;
     for (size_t item_index = 0; item_index < it_write_data.item_addr.size(); ++item_index) {
-      addr_ranges.push_back({
+      addr_ranges.push_back(
+        {
           it_write_data.item_addr[item_index],
           it_write_data.item_addr[item_index] + it_write_data.item_size[item_index]
-      });
+        });
     }
     std::sort(addr_ranges.begin(), addr_ranges.end());
 
     for (size_t i = 0; i < addr_ranges.size() - 1; ++i) {
       if (addr_ranges[i].second != addr_ranges[i + 1].first) {
-        fprintf(stderr, "[ID:%03d] Error: Gap detected between items at addresses %d and %d\n",
-                it_write_data.id, addr_ranges[i].second, addr_ranges[i + 1].first);
+        fprintf(
+          stderr, "[ID:%03d] Error: Gap detected between items at addresses %d and %d\n",
+          it_write_data.id, addr_ranges[i].second, addr_ranges[i + 1].first);
         return DxlError::BULK_WRITE_FAIL;
       }
     }
