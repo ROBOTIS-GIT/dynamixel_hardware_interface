@@ -40,17 +40,18 @@ target_include_directories(
   ${PROJECT_NAME}
   PRIVATE
   include
+  ${dynamixel_sdk_INCLUDE_DIRS}
 )
 
-ament_target_dependencies(
-  ${PROJECT_NAME}
-  hardware_interface
-  pluginlib
-  rclcpp
-  dynamixel_sdk
-  std_srvs
-  dynamixel_interfaces
-  realtime_tools
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+  hardware_interface::hardware_interface
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  ${dynamixel_sdk_TARGETS}
+  ${std_srvs_TARGETS}
+  ${dynamixel_interfaces_TARGETS}
+  ${realtime_tools_TARGETS}
 )
 
 pluginlib_export_plugin_description_file(hardware_interface dynamixel_hardware_interface_plugin.xml)
@@ -96,7 +97,6 @@ ament_export_dependencies(
   pluginlib
   dynamixel_sdk
   dynamixel_interfaces
-  aimbot_log_interfaces
 )
 
 ament_package()
