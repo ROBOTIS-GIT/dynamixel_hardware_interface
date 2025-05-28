@@ -45,7 +45,7 @@ target_include_directories(
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-  hardware_interface::hardware_interface
+  ${hardware_interface_TARGETS}
   pluginlib::pluginlib
   rclcpp::rclcpp
   ${dynamixel_sdk_TARGETS}
