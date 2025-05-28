@@ -437,7 +437,7 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
       RCLCPP_ERROR_STREAM(
         logger_,
         "Dynamixel Start Fail (Timeout: " << error_duration.seconds() * 1000 << "ms/" <<
-        err_timeout_ms_ << "ms): " << Dynamixel::DxlErrorToString(dxl_comm_err_));
+          err_timeout_ms_ << "ms): " << Dynamixel::DxlErrorToString(dxl_comm_err_));
       return hardware_interface::CallbackReturn::ERROR;
     }
   }
@@ -971,20 +971,20 @@ void DynamixelHardware::SetMatrix()
 }
 
 void DynamixelHardware::MapInterfaces(
-    size_t outer_size,
-    size_t inner_size,
-    std::vector<HandlerVarType> &outer_handlers,
-    const std::vector<HandlerVarType> &inner_handlers,
-    double **matrix,
-    const std::unordered_map<std::string, std::vector<std::string>> &iface_map,
-    const std::string &conversion_iface,
-    const std::string &conversion_name,
-    std::function<double(double)> conversion)
+  size_t outer_size,
+  size_t inner_size,
+  std::vector<HandlerVarType> & outer_handlers,
+  const std::vector<HandlerVarType> & inner_handlers,
+  double **matrix,
+  const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
+  const std::string & conversion_iface,
+  const std::string & conversion_name,
+  std::function<double(double)> conversion)
 {
   for (size_t i = 0; i < outer_size; ++i) {
     for (size_t k = 0; k < outer_handlers.at(i).interface_name_vec.size(); ++k) {
       double value = 0.0;
-      const std::string &outer_iface = outer_handlers.at(i).interface_name_vec.at(k);
+      const std::string & outer_iface = outer_handlers.at(i).interface_name_vec.at(k);
       auto map_it = iface_map.find(outer_iface);
       if (map_it == iface_map.end()) {
         std::ostringstream oss;
@@ -992,17 +992,17 @@ void DynamixelHardware::MapInterfaces(
             << "', interface '" << outer_iface
             << "'. Skipping. Available mapping keys: [";
         size_t key_count = 0;
-        for (const auto &pair : iface_map) {
+        for (const auto & pair : iface_map) {
           oss << pair.first;
-          if (++key_count < iface_map.size()) oss << ", ";
+          if (++key_count < iface_map.size()) {oss << ", ";}
         }
         oss << "]";
         RCLCPP_WARN_STREAM(logger_, oss.str());
         continue;
       }
-      const std::vector<std::string> &mapped_ifaces = map_it->second;
+      const std::vector<std::string> & mapped_ifaces = map_it->second;
       for (size_t j = 0; j < inner_size; ++j) {
-        for (const auto &mapped_iface : mapped_ifaces) {
+        for (const auto & mapped_iface : mapped_ifaces) {
           auto it = std::find(
             inner_handlers.at(j).interface_name_vec.begin(),
             inner_handlers.at(j).interface_name_vec.end(),
@@ -1015,9 +1015,10 @@ void DynamixelHardware::MapInterfaces(
         }
       }
       if (!conversion_iface.empty() && !conversion_name.empty() &&
-          outer_iface == conversion_iface &&
-          outer_handlers.at(i).name == conversion_name &&
-          conversion) {
+        outer_iface == conversion_iface &&
+        outer_handlers.at(i).name == conversion_name &&
+        conversion)
+      {
         value = conversion(value);
       }
       *outer_handlers.at(i).value_ptr_vec.at(k) = value;
@@ -1027,10 +1028,10 @@ void DynamixelHardware::MapInterfaces(
 
 void DynamixelHardware::CalcTransmissionToJoint()
 {
-  std::function<double(double)> conv = use_revolute_to_prismatic_
-    ? std::function<double(double)>(
-        std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1))
-    : std::function<double(double)>();
+  std::function<double(double)> conv = use_revolute_to_prismatic_ ?
+    std::function<double(double)>(
+        std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1)) :
+    std::function<double(double)>();
   this->MapInterfaces(
     num_of_joints_,
     num_of_transmissions_,
@@ -1046,10 +1047,10 @@ void DynamixelHardware::CalcTransmissionToJoint()
 
 void DynamixelHardware::CalcJointToTransmission()
 {
-  std::function<double(double)> conv = use_revolute_to_prismatic_
-    ? std::function<double(double)>(
-        std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1))
-    : std::function<double(double)>();
+  std::function<double(double)> conv = use_revolute_to_prismatic_ ?
+    std::function<double(double)>(
+        std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1)) :
+    std::function<double(double)>();
   this->MapInterfaces(
     num_of_transmissions_,
     num_of_joints_,

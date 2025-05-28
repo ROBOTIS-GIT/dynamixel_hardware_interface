@@ -907,15 +907,15 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
     for (size_t item_index = 1; item_index < it_read_data.item_addr.size(); ++item_index) {
       uint16_t addr = it_read_data.item_addr[item_index];
       uint16_t size = it_read_data.item_size[item_index];
-      if (addr < min_addr) min_addr = addr;
-      if (addr + size > max_end_addr) max_end_addr = addr + size;
+      if (addr < min_addr) {min_addr = addr;}
+      if (addr + size > max_end_addr) {max_end_addr = addr + size;}
     }
     uint8_t total_size = max_end_addr - min_addr;
     // Concatenate all item names with '+'
     std::string group_item_names;
     for (size_t i = 0; i < it_read_data.item_name.size(); ++i) {
       group_item_names += it_read_data.item_name[i];
-      if (i + 1 < it_read_data.item_name.size()) group_item_names += " + ";
+      if (i + 1 < it_read_data.item_name.size()) {group_item_names += " + ";}
     }
     // Call AddDirectRead once per id
     if (AddDirectRead(
@@ -1383,8 +1383,8 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     for (size_t item_index = 1; item_index < it_write_data.item_addr.size(); ++item_index) {
       uint16_t addr = it_write_data.item_addr[item_index];
       uint16_t size = it_write_data.item_size[item_index];
-      if (addr < min_addr) min_addr = addr;
-      if (addr + size > max_end_addr) max_end_addr = addr + size;
+      if (addr < min_addr) {min_addr = addr;}
+      if (addr + size > max_end_addr) {max_end_addr = addr + size;}
     }
     uint8_t total_size = max_end_addr - min_addr;
 
@@ -1392,8 +1392,8 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     std::vector<std::pair<uint16_t, uint16_t>> addr_ranges;
     for (size_t item_index = 0; item_index < it_write_data.item_addr.size(); ++item_index) {
       addr_ranges.push_back({
-        it_write_data.item_addr[item_index],
-        it_write_data.item_addr[item_index] + it_write_data.item_size[item_index]
+          it_write_data.item_addr[item_index],
+          it_write_data.item_addr[item_index] + it_write_data.item_size[item_index]
       });
     }
     std::sort(addr_ranges.begin(), addr_ranges.end());
