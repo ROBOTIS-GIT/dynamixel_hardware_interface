@@ -41,6 +41,7 @@ target_include_directories(
   PRIVATE
   include
   ${dynamixel_sdk_INCLUDE_DIRS}
+  ${hardware_interface_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
