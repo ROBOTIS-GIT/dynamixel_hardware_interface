@@ -18,6 +18,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(realtime_tools REQUIRED)
 
@@ -42,6 +43,8 @@ target_include_directories(
   include
   ${dynamixel_sdk_INCLUDE_DIRS}
   ${hardware_interface_INCLUDE_DIRS}
+  ${realtime_tools_INCLUDE_DIRS}
+  ${rclcpp_lifecycle_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -49,6 +52,7 @@ target_link_libraries(${PROJECT_NAME}
   ${hardware_interface_TARGETS}
   pluginlib::pluginlib
   rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
   ${dynamixel_sdk_TARGETS}
   ${std_srvs_TARGETS}
   ${dynamixel_interfaces_TARGETS}
@@ -94,6 +98,7 @@ ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
 ament_export_dependencies(
   rclcpp
+  rclcpp_lifecycle
   hardware_interface
   pluginlib
   dynamixel_sdk
