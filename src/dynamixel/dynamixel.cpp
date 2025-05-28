@@ -1325,7 +1325,7 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
     }
 
     if (group_sync_write_->addParam(ID, param_write_value) != true) {
-      printf("[ID:%03d] groupSyncWrite addparam failed\n", ID);
+      fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed\n", ID);
       return DxlError::SYNC_WRITE_FAIL;
     }
   }
@@ -1334,7 +1334,7 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
   group_sync_write_->clearParam();
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    printf("%s\n", packet_handler_->getTxRxResult(dxl_comm_result));
+    fprintf(stderr, "%s\n", packet_handler_->getTxRxResult(dxl_comm_result));
     return DxlError::SYNC_WRITE_FAIL;
   } else {
     return DxlError::OK;
@@ -1500,10 +1500,6 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           param_write_value[added_byte + 1] = DXL_HIBYTE(value);
         } else if (size == 1) {
           param_write_value[added_byte] = static_cast<uint8_t>(data);
-          printf("[ID:%03d] Add Direct Write Item : [%s][%d][%d]\n", ID,
-                 direct_info_write_[ID].item_name.at(item_index).c_str(),
-                 direct_info_write_[ID].indirect_data_addr,
-                 size);
         }
         added_byte += size;
       }
@@ -1514,7 +1510,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           direct_info_write_[ID].size,
           param_write_value) != true)
       {
-        printf("[ID:%03d] groupBulkWrite addparam failed\n", ID);
+        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", ID);
         return DxlError::BULK_WRITE_FAIL;
       }
     } else {
@@ -1549,7 +1545,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           indirect_info_write_[ID].size,
           param_write_value) != true)
       {
-        printf("[ID:%03d] groupBulkWrite addparam failed\n", ID);
+        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", ID);
         return DxlError::BULK_WRITE_FAIL;
       }
     }
@@ -1559,7 +1555,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
   group_bulk_write_->clearParam();
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    printf("%s\n", packet_handler_->getTxRxResult(dxl_comm_result));
+    fprintf(stderr, "%s\n", packet_handler_->getTxRxResult(dxl_comm_result));
     return DxlError::BULK_WRITE_FAIL;
   } else {
     return DxlError::OK;
