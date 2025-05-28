@@ -394,8 +394,8 @@ DynamixelHardware::export_command_interfaces()
     for (auto it : hdl_gpio_controller_commands_) {
       for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
         if (i >= it.interface_name_vec.size()) {
-          RCLCPP_ERROR_STREAM(logger_, "Interface name vector size mismatch for gpio controller " << it.name <<
-            ". Expected size: " << it.value_ptr_vec.size() <<
+          RCLCPP_ERROR_STREAM(logger_, "Interface name vector size mismatch for gpio controller " <<
+            it.name << ". Expected size: " << it.value_ptr_vec.size() <<
             ", Actual size: " << it.interface_name_vec.size());
           continue;
         }
@@ -436,7 +436,8 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
     if (error_duration.seconds() * 1000 >= err_timeout_ms_) {
       RCLCPP_ERROR_STREAM(
         logger_,
-        "Dynamixel Start Fail (Timeout: " << error_duration.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms): " << Dynamixel::DxlErrorToString(dxl_comm_err_));
+        "Dynamixel Start Fail (Timeout: " << error_duration.seconds() * 1000 << "ms/" <<
+        err_timeout_ms_ << "ms): " << Dynamixel::DxlErrorToString(dxl_comm_err_));
       return hardware_interface::CallbackReturn::ERROR;
     }
   }
@@ -987,7 +988,9 @@ void DynamixelHardware::MapInterfaces(
       auto map_it = iface_map.find(outer_iface);
       if (map_it == iface_map.end()) {
         std::ostringstream oss;
-        oss << "No mapping found for '" << outer_handlers.at(i).name << "', interface '" << outer_iface << "'. Skipping. Available mapping keys: [";
+        oss << "No mapping found for '" << outer_handlers.at(i).name
+            << "', interface '" << outer_iface
+            << "'. Skipping. Available mapping keys: [";
         size_t key_count = 0;
         for (const auto &pair : iface_map) {
           oss << pair.first;
@@ -1025,7 +1028,8 @@ void DynamixelHardware::MapInterfaces(
 void DynamixelHardware::CalcTransmissionToJoint()
 {
   std::function<double(double)> conv = use_revolute_to_prismatic_
-    ? std::function<double(double)>(std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1))
+    ? std::function<double(double)>(
+        std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1))
     : std::function<double(double)>();
   this->MapInterfaces(
     num_of_joints_,
@@ -1043,7 +1047,8 @@ void DynamixelHardware::CalcTransmissionToJoint()
 void DynamixelHardware::CalcJointToTransmission()
 {
   std::function<double(double)> conv = use_revolute_to_prismatic_
-    ? std::function<double(double)>(std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1))
+    ? std::function<double(double)>(
+        std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1))
     : std::function<double(double)>();
   this->MapInterfaces(
     num_of_transmissions_,

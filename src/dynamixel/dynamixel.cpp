@@ -959,7 +959,8 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
           result);
       } else if(result == DxlError::CANNOT_FIND_CONTROL_ITEM) {
         fprintf(
-          stderr, "[ID:%03d] 'Indirect Address Read' is not defined in control table, Cannot set Indirect Address Read for : [%s]\n",
+          stderr, "[ID:%03d] 'Indirect Address Read' is not defined in control table, "
+          "Cannot set Indirect Address Read for : [%s]\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str());
       }
@@ -1015,12 +1016,15 @@ DxlError Dynamixel::SetBulkReadHandler(std::vector<uint8_t> id_arr)
   return DxlError::OK;
 }
 
-DxlError Dynamixel::AddDirectRead(uint8_t id, std::string item_name, uint16_t item_addr, uint8_t item_size)
+DxlError Dynamixel::AddDirectRead(
+  uint8_t id, std::string item_name, uint16_t item_addr, uint8_t item_size)
 {
   if (group_bulk_read_->addParam(id, item_addr, item_size) == true) {
-    fprintf(stderr, "[ID:%03d] Add BulkRead item : [%s][%d][%d]\n", id, item_name.c_str(), item_addr, item_size);
+    fprintf(stderr, "[ID:%03d] Add BulkRead item : [%s][%d][%d]\n",
+      id, item_name.c_str(), item_addr, item_size);
   } else {
-    fprintf(stderr, "[ID:%03d] Failed to BulkRead item : [%s][%d][%d]\n", id, item_name.c_str(), item_addr, item_size);
+    fprintf(stderr, "[ID:%03d] Failed to BulkRead item : [%s][%d][%d]\n",
+      id, item_name.c_str(), item_addr, item_size);
     return DxlError::SET_BULK_READ_FAIL;
   }
   return DxlError::OK;
@@ -1387,8 +1391,10 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     // Check for gaps between items
     std::vector<std::pair<uint16_t, uint16_t>> addr_ranges;
     for (size_t item_index = 0; item_index < it_write_data.item_addr.size(); ++item_index) {
-      addr_ranges.push_back({it_write_data.item_addr[item_index],
-                           it_write_data.item_addr[item_index] + it_write_data.item_size[item_index]});
+      addr_ranges.push_back({
+        it_write_data.item_addr[item_index],
+        it_write_data.item_addr[item_index] + it_write_data.item_size[item_index]
+      });
     }
     std::sort(addr_ranges.begin(), addr_ranges.end());
 
