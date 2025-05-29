@@ -224,7 +224,6 @@ private:
   bool CommReset();
 
   ///// dxl variable
-  std::shared_ptr<Dynamixel> dxl_comm_;
   std::string port_name_;
   std::string baud_rate_;
   std::vector<uint8_t> dxl_id_;
@@ -369,6 +368,9 @@ private:
     const std::string & conversion_iface = "",
     const std::string & conversion_name = "",
     std::function<double(double)> conversion = nullptr);
+
+  // Move dxl_comm_ to the end for safe destruction order
+  std::shared_ptr<Dynamixel> dxl_comm_;
 };
 
 // Conversion maps between ROS2 and Dynamixel interface names

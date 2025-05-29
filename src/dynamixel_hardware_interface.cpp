@@ -475,7 +475,12 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 
 hardware_interface::CallbackReturn DynamixelHardware::stop()
 {
-  dxl_comm_->DynamixelDisable(dxl_id_);
+  if (dxl_comm_) {
+    dxl_comm_->DynamixelDisable(dxl_id_);
+  } else {
+    RCLCPP_ERROR_STREAM(logger_, "Dynamixel Hardware Stop Fail : dxl_comm_ is nullptr");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
 
   RCLCPP_INFO_STREAM(logger_, "Dynamixel Hardware Stop!");
 

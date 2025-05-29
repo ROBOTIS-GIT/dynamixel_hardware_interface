@@ -44,6 +44,7 @@ Dynamixel::Dynamixel(const char * path)
 
 Dynamixel::~Dynamixel()
 {
+  fprintf(stderr, "Dynamixel destructor start\n");
   if (group_sync_read_) {
     delete group_sync_read_;
     group_sync_read_ = nullptr;
@@ -73,11 +74,8 @@ Dynamixel::~Dynamixel()
     delete port_handler_;
     port_handler_ = nullptr;
   }
-  if (packet_handler_) {
-    delete packet_handler_;
-    packet_handler_ = nullptr;
-  }
-  fprintf(stderr, "closed port\n");
+  packet_handler_ = nullptr;
+  fprintf(stderr, "Dynamixel destructor end\n");
 }
 
 DxlError Dynamixel::InitDxlComm(
@@ -1301,11 +1299,15 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
           "FastBulkRead failed 10 times, switching to normal BulkRead permanently.\n");
         use_fast_read_protocol_ = false;
         // Set up normal bulk read handler
-        std::vector<uint8_t> id_arr;
+        std::vector<uint8_t> indirect_id_arr;
+
         for (auto it_read_data : read_data_list_) {
-          id_arr.push_back(it_read_data.id);
+          if (CheckIndirectReadAvailable(it_read_data.id) == DxlError::OK) {
+            indirect_id_arr.push_back(it_read_data.id);
+          }
         }
-        SetBulkReadHandler(id_arr);
+
+        SetBulkReadHandler(indirect_id_arr);
       }
       // Return error for this attempt
       return DxlError::BULK_READ_FAIL;
