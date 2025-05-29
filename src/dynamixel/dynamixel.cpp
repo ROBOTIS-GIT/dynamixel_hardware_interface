@@ -976,7 +976,8 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
       fprintf(stderr, "FastSyncRead TxRx failed (attempt %d/10)\n", fast_read_fail_count_);
       if (fast_read_fail_count_ >= 10) {
         // Permanently switch to normal sync read
-        fprintf(stderr, "FastSyncRead failed 10 times, switching to normal SyncRead "
+        fprintf(
+          stderr, "FastSyncRead failed 10 times, switching to normal SyncRead "
           "permanently.\n");
         use_fast_read_protocol_ = false;
         // Set up normal sync read handler
@@ -1295,7 +1296,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
           group_fast_bulk_read_ = nullptr;
         }
         // Permanently switch to normal bulk read
-        fprintf(stderr,
+        fprintf(
+          stderr,
           "FastBulkRead failed 10 times, switching to normal BulkRead permanently.\n");
         use_fast_read_protocol_ = false;
         // Set up normal bulk read handler
