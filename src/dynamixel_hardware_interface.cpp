@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Authors: Hye-Jong KIM, Sungho Woo
+// Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie
 
 #include "dynamixel_hardware_interface/dynamixel_hardware_interface.hpp"
 
