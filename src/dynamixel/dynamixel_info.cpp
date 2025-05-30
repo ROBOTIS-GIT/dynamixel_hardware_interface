@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Authors: Hye-Jong KIM, Sungho Woo
+// Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie
 
 #include "dynamixel_hardware_interface/dynamixel/dynamixel_info.hpp"
 #include <string>
@@ -60,13 +60,13 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
     path += it->second;
   } else {
     fprintf(stderr, "[ERROR] CANNOT FIND THE DXL MODEL FROM FILE LIST.\n");
-    return;
+    throw std::runtime_error("Cannot find the DXL model from file list");
   }
 
   std::ifstream open_file(path);
   if (open_file.is_open() != 1) {
     fprintf(stderr, "[ERROR] CANNOT FIND DXL [%s] MODEL FILE.\n", path.c_str());
-    exit(-1);
+    throw std::runtime_error("Cannot find DXL model file");
   }
 
   DxlInfo temp_dxl_info;
@@ -83,18 +83,28 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
     std::vector<std::string> strs;
     boost::split(strs, line, boost::is_any_of("\t"));
 
-    if (strs.at(0) == "value_of_zero_radian_position") {
-      temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-    } else if (strs.at(0) == "value_of_max_radian_position") {
-      temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-    } else if (strs.at(0) == "value_of_min_radian_position") {
-      temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-    } else if (strs.at(0) == "min_radian") {
-      temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
-    } else if (strs.at(0) == "max_radian") {
-      temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
-    } else if (strs.at(0) == "torque_constant") {
-      temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
+    if (strs.size() < 2) {
+      continue;
+    }
+
+    try {
+      if (strs.at(0) == "value_of_zero_radian_position") {
+        temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+      } else if (strs.at(0) == "value_of_max_radian_position") {
+        temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+      } else if (strs.at(0) == "value_of_min_radian_position") {
+        temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+      } else if (strs.at(0) == "min_radian") {
+        temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
+      } else if (strs.at(0) == "max_radian") {
+        temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
+      } else if (strs.at(0) == "torque_constant") {
+        temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
+      }
+    } catch (const std::exception & e) {
+      std::string error_msg = "Error processing line in model file: " + line +
+        "\nError: " + e.what();
+      throw std::runtime_error(error_msg);
     }
   }
 
@@ -108,11 +118,28 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
     std::vector<std::string> strs;
     boost::split(strs, line, boost::is_any_of("\t"));
 
-    ControlItem temp;
-    temp.address = static_cast<uint16_t>(stoi(strs.at(0)));
-    temp.size = static_cast<uint8_t>(stoi(strs.at(1)));
-    temp.item_name = strs.at(2);
-    temp_dxl_info.item.push_back(temp);
+    if (strs.size() < 3) {
+      std::string error_msg = "Malformed control table line: " + line;
+      throw std::runtime_error(error_msg);
+    }
+
+    try {
+      ControlItem temp;
+      temp.address = static_cast<uint16_t>(stoi(strs.at(0)));
+      temp.size = static_cast<uint8_t>(stoi(strs.at(1)));
+      temp.item_name = strs.at(2);
+      temp_dxl_info.item.push_back(temp);
+    } catch (const std::exception & e) {
+      std::string error_msg = "Error processing control table line: " + line +
+        "\nError: " + e.what();
+      throw std::runtime_error(error_msg);
+    }
+  }
+
+  if (temp_dxl_info.item.empty()) {
+    std::string error_msg = "No control table items found in model file for ID " +
+      std::to_string(id);
+    throw std::runtime_error(error_msg);
   }
 
   dxl_info_[id] = temp_dxl_info;
