@@ -41,6 +41,8 @@ target_include_directories(
   ${PROJECT_NAME}
   PRIVATE
   include
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
   ${dynamixel_sdk_INCLUDE_DIRS}
   ${hardware_interface_INCLUDE_DIRS}
   ${realtime_tools_INCLUDE_DIRS}
@@ -53,7 +55,7 @@ target_link_libraries(${PROJECT_NAME}
   pluginlib::pluginlib
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
-  ${dynamixel_sdk_TARGETS}
+  ${dynamixel_sdk_LIBRARIES}
   ${std_srvs_TARGETS}
   ${dynamixel_interfaces_TARGETS}
   ${realtime_tools_TARGETS}
