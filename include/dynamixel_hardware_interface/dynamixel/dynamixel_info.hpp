@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Authors: Hye-Jong KIM, Sungho Woo
+// Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie
 
 #ifndef DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL__DYNAMIXEL_INFO_HPP_
 #define DYNAMIXEL_HARDWARE_INTERFACE__DYNAMIXEL__DYNAMIXEL_INFO_HPP_

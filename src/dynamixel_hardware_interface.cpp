@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Authors: Hye-Jong KIM, Sungho Woo
+// Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie
 
 #include "dynamixel_hardware_interface/dynamixel_hardware_interface.hpp"
 
@@ -22,6 +22,8 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <map>
+#include <unordered_map>
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -73,17 +75,6 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       logger_, "Failed to parse error_timeout_ms parameter: %s, using default value",
-      e.what());
-  }
-
-  try {
-    global_torque_enable_ =
-      std::stoi(info_.hardware_parameters["torque_enable"]) != 0;
-    RCLCPP_INFO_STREAM(
-      logger_, "Torque enable parameter: " << global_torque_enable_);
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(
-      logger_, "Failed to parse torque_enable parameter: %s, using default value",
       e.what());
   }
 
@@ -209,15 +200,6 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     HandlerVarType temp_state;
     temp_state.name = joint.name;
 
-    temp_state.interface_name_vec.push_back(hardware_interface::HW_IF_POSITION);
-    temp_state.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
-    temp_state.interface_name_vec.push_back(hardware_interface::HW_IF_VELOCITY);
-    temp_state.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
-    temp_state.interface_name_vec.push_back(hardware_interface::HW_IF_EFFORT);
-    temp_state.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
     for (auto it : joint.state_interfaces) {
       if (hardware_interface::HW_IF_POSITION != it.name &&
         hardware_interface::HW_IF_VELOCITY != it.name &&
@@ -230,15 +212,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
           logger_, "Error: invalid joint state interface " << it.name);
         return hardware_interface::CallbackReturn::ERROR;
       }
-      if (it.name != hardware_interface::HW_IF_POSITION &&
-        it.name != hardware_interface::HW_IF_VELOCITY &&
-        it.name != hardware_interface::HW_IF_EFFORT)
-      {
-        RCLCPP_ERROR_STREAM(
-          logger_, "Error: invalid joint command interface " << it.name);
-        temp_state.interface_name_vec.push_back(it.name);
-        temp_state.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-      }
+      temp_state.interface_name_vec.push_back(it.name);
+      temp_state.value_ptr_vec.push_back(std::make_shared<double>(0.0));
     }
     hdl_joint_states_.push_back(temp_state);
   }
@@ -254,6 +229,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
         hardware_interface::HW_IF_ACCELERATION != it.name &&
         hardware_interface::HW_IF_EFFORT != it.name)
       {
+        RCLCPP_ERROR_STREAM(
+          logger_, "Error: invalid joint command interface " << it.name);
         return hardware_interface::CallbackReturn::ERROR;
       }
       temp_cmd.interface_name_vec.push_back(it.name);
@@ -329,27 +306,54 @@ DynamixelHardware::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
 
-  for (auto it : hdl_trans_states_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      state_interfaces.emplace_back(
-        hardware_interface::StateInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+  try {
+    for (auto it : hdl_trans_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_,
+            "Interface name vector size mismatch for " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
-  }
-  for (auto it : hdl_joint_states_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      state_interfaces.emplace_back(
-        hardware_interface::StateInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+    for (auto it : hdl_joint_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for joint " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
-  }
-  for (auto it : hdl_sensor_states_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      state_interfaces.emplace_back(
-        hardware_interface::StateInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+    for (auto it : hdl_sensor_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for sensor " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR_STREAM(logger_, "Error in export_state_interfaces: " << e.what());
   }
+
   return state_interfaces;
 }
 
@@ -358,20 +362,53 @@ DynamixelHardware::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
 
-  for (auto it : hdl_trans_commands_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      command_interfaces.emplace_back(
-        hardware_interface::CommandInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+  try {
+    for (auto it : hdl_trans_commands_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        command_interfaces.emplace_back(
+          hardware_interface::CommandInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
-  }
-  for (auto it : hdl_joint_commands_) {
-    for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
-      command_interfaces.emplace_back(
-        hardware_interface::CommandInterface(
-          it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+    for (auto it : hdl_joint_commands_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for joint " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        command_interfaces.emplace_back(
+          hardware_interface::CommandInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
     }
+    for (auto it : hdl_gpio_controller_commands_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for gpio controller " <<
+              it.name << ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        command_interfaces.emplace_back(
+          hardware_interface::CommandInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
+    }
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR_STREAM(logger_, "Error in export_command_interfaces: " << e.what());
   }
+
   return command_interfaces;
 }
 
@@ -389,40 +426,46 @@ hardware_interface::CallbackReturn DynamixelHardware::on_deactivate(
 
 hardware_interface::CallbackReturn DynamixelHardware::start()
 {
-  dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(0.0));
-  if (dxl_comm_err_ != DxlError::OK) {
-    RCLCPP_ERROR_STREAM(
-      logger_,
-      "Dynamixel Start Fail :" << Dynamixel::DxlErrorToString(dxl_comm_err_));
-    return hardware_interface::CallbackReturn::ERROR;
+  rclcpp::Time start_time = this->now();
+  rclcpp::Duration error_duration(0, 0);
+  while (true) {
+    dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(0.0));
+    if (dxl_comm_err_ == DxlError::OK) {
+      break;
+    }
+    error_duration = this->now() - start_time;
+    if (error_duration.seconds() * 1000 >= err_timeout_ms_) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "Dynamixel Start Fail (Timeout: " << error_duration.seconds() * 1000 << "ms/" <<
+          err_timeout_ms_ << "ms): " << Dynamixel::DxlErrorToString(dxl_comm_err_));
+      return hardware_interface::CallbackReturn::ERROR;
+    }
   }
 
   CalcTransmissionToJoint();
 
   // sync commands = states joint
-  for (auto it_states : hdl_joint_states_) {
-    for (auto it_commands : hdl_joint_commands_) {
-      if (it_states.name == it_commands.name) {
-        for (size_t i = 0; i < it_states.interface_name_vec.size(); i++) {
-          if (it_commands.interface_name_vec.at(0) == it_states.interface_name_vec.at(i)) {
-            *it_commands.value_ptr_vec.at(0) = *it_states.value_ptr_vec.at(i);
-            RCLCPP_INFO_STREAM(
-              logger_, "Sync joint state to command (" <<
-                it_commands.interface_name_vec.at(0).c_str() << ", " <<
-                *it_commands.value_ptr_vec.at(0) * 180.0 / 3.141592 << " <- " <<
-                it_states.interface_name_vec.at(i).c_str() << ", " <<
-                *it_states.value_ptr_vec.at(i) * 180.0 / 3.141592);
-          }
-        }
-      }
-    }
-  }
+  SyncJointCommandWithStates();
   usleep(500 * 1000);
 
-  if (global_torque_enable_) {
-    dxl_comm_->DynamixelEnable(dxl_id_);
-  } else {
-    RCLCPP_INFO_STREAM(logger_, "Global Torque is disabled!");
+  // Enable torque only for Dynamixels that have torque enabled in their parameters
+  std::vector<uint8_t> torque_enabled_ids;
+  for (const auto & [id, enabled] : dxl_torque_enable_) {
+    if (enabled) {
+      torque_enabled_ids.push_back(id);
+    }
+  }
+
+  if (torque_enabled_ids.size() > 0) {
+    RCLCPP_INFO_STREAM(logger_, "Enabling torque for Dynamixels");
+    for (int i = 0; i < 10; i++) {
+      if (dxl_comm_->DynamixelEnable(torque_enabled_ids) == DxlError::OK) {
+        break;
+      }
+      RCLCPP_ERROR_STREAM(logger_, "Failed to enable torque for Dynamixels, retry...");
+      usleep(100 * 1000);
+    }
   }
 
   RCLCPP_INFO_STREAM(logger_, "Dynamixel Hardware Start!");
@@ -432,7 +475,12 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 
 hardware_interface::CallbackReturn DynamixelHardware::stop()
 {
-  dxl_comm_->DynamixelDisable(dxl_id_);
+  if (dxl_comm_) {
+    dxl_comm_->DynamixelDisable(dxl_id_);
+  } else {
+    RCLCPP_ERROR_STREAM(logger_, "Dynamixel Hardware Stop Fail : dxl_comm_ is nullptr");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
 
   RCLCPP_INFO_STREAM(logger_, "Dynamixel Hardware Stop!");
 
@@ -443,6 +491,7 @@ hardware_interface::return_type DynamixelHardware::read(
   [[maybe_unused]] const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   double period_ms = period.seconds() * 1000;
+
   if (dxl_status_ == REBOOTING) {
     RCLCPP_ERROR_STREAM(logger_, "Dynamixel Read Fail : REBOOTING");
     return hardware_interface::return_type::ERROR;
@@ -666,21 +715,49 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     }
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
 
-    // First write items containing "Limit"
-    for (auto it : gpio.parameters) {
-      if (it.first != "ID" && it.first != "type" && it.first.find("Limit") != std::string::npos) {
-        if (!retryWriteItem(id, it.first, static_cast<uint32_t>(stoi(it.second)))) {
+    // Handle torque enable parameter
+    bool torque_enabled = type_filter == "dxl";
+    if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
+      torque_enabled = std::stoi(gpio.parameters.at("Torque Enable")) != 0;
+    }
+    dxl_torque_enable_[id] = torque_enabled;
+
+    // 1. First pass: Write Operating Mode parameters
+    for (const auto & param : gpio.parameters) {
+      const std::string & param_name = param.first;
+      if (param_name == "Operating Mode") {
+        if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
           return false;
         }
       }
     }
 
-    // Then write the remaining items
-    for (auto it : gpio.parameters) {
-      if (it.first != "ID" && it.first != "type" && it.first.find("Limit") == std::string::npos) {
-        if (!retryWriteItem(id, it.first, static_cast<uint32_t>(stoi(it.second)))) {
+    // 2. Second pass: Write all Limit parameters
+    for (const auto & param : gpio.parameters) {
+      const std::string & param_name = param.first;
+      if (param_name == "ID" || param_name == "type" ||
+        param_name == "Torque Enable" || param_name == "Operating Mode")
+      {
+        continue;
+      }
+      if (param_name.find("Limit") != std::string::npos) {
+        if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
           return false;
         }
+      }
+    }
+
+    // 3. Third pass: Write all other parameters (excluding already written ones)
+    for (const auto & param : gpio.parameters) {
+      const std::string & param_name = param.first;
+      if (param_name == "ID" || param_name == "type" ||
+        param_name == "Torque Enable" || param_name == "Operating Mode" ||
+        param_name.find("Limit") != std::string::npos)
+      {
+        continue;
+      }
+      if (!retryWriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second)))) {
+        return false;
       }
     }
   }
@@ -709,51 +786,29 @@ bool DynamixelHardware::InitDxlReadItems()
       if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "dxl") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_read;
-
         temp_read.id = id;
         temp_read.name = gpio.name;
 
-        // Present Position
-        temp_read.interface_name_vec.push_back("Present Position");
-        temp_read.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
-        // Present Velocity
-        temp_read.interface_name_vec.push_back("Present Velocity");
-        temp_read.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
-        // effort third
         for (auto it : gpio.state_interfaces) {
-          if (it.name == "Present Current" || it.name == "Present Load") {
-            temp_read.interface_name_vec.push_back(it.name);
-            temp_read.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+          temp_read.interface_name_vec.push_back(it.name);
+          temp_read.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+
+          if (it.name == "Hardware Error Status") {
+            dxl_hw_err_[id] = 0x00;
           }
         }
 
-        for (auto it : gpio.state_interfaces) {
-          if (it.name != "Present Position" && it.name != "Present Velocity" &&
-            it.name != "Present Current" && it.name != "Present Load")
-          {
-            temp_read.interface_name_vec.push_back(it.name);
-            temp_read.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
-            if (it.name == "Hardware Error Status") {
-              dxl_hw_err_[id] = 0x00;
-            }
-          }
-        }
         hdl_trans_states_.push_back(temp_read);
 
       } else if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "sensor") {
+        uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_sensor;
-        for (auto it : gpio.state_interfaces) {
-          uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+        temp_sensor.id = id;
+        temp_sensor.name = gpio.name;
 
-          temp_sensor.id = id;
-          temp_sensor.name = gpio.name;
-          for (auto it : gpio.state_interfaces) {
-            temp_sensor.interface_name_vec.push_back(it.name);
-            temp_sensor.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-          }
+        for (auto it : gpio.state_interfaces) {
+          temp_sensor.interface_name_vec.push_back(it.name);
+          temp_sensor.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
         hdl_gpio_sensor_states_.push_back(temp_sensor);
       }
@@ -761,6 +816,14 @@ bool DynamixelHardware::InitDxlReadItems()
     is_set_hdl_ = true;
   }
   for (auto it : hdl_trans_states_) {
+    if (dxl_comm_->SetDxlReadItems(
+        it.id, it.interface_name_vec,
+        it.value_ptr_vec) != DxlError::OK)
+    {
+      return false;
+    }
+  }
+  for (auto it : hdl_gpio_sensor_states_) {
     if (dxl_comm_->SetDxlReadItems(
         it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
@@ -781,30 +844,52 @@ bool DynamixelHardware::InitDxlWriteItems()
 
   if (!is_set_hdl_) {
     hdl_trans_commands_.clear();
+    hdl_gpio_controller_commands_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-      if (gpio.command_interfaces.size()) {
+      if (gpio.parameters.at("type") == "dxl") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_write;
         temp_write.id = id;
         temp_write.name = gpio.name;
 
-        temp_write.interface_name_vec.push_back("Goal Position");
-        temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-
         for (auto it : gpio.command_interfaces) {
-          if (it.name == "Goal Current") {
-            temp_write.interface_name_vec.push_back("Goal Current");
-            temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+          if (it.name != "Goal Position" &&
+            it.name != "Goal Velocity" &&
+            it.name != "Goal Current")
+          {
+            continue;
           }
+          temp_write.interface_name_vec.push_back(it.name);
+          temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
 
         hdl_trans_commands_.push_back(temp_write);
+      } else if (gpio.parameters.at("type") == "controller") {
+        uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+        HandlerVarType temp_controller;
+        temp_controller.id = id;
+        temp_controller.name = gpio.name;
+
+        for (auto it : gpio.command_interfaces) {
+          temp_controller.interface_name_vec.push_back(it.name);
+          temp_controller.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+        }
+        hdl_gpio_controller_commands_.push_back(temp_controller);
       }
     }
     is_set_hdl_ = true;
   }
 
   for (auto it : hdl_trans_commands_) {
+    if (dxl_comm_->SetDxlWriteItems(
+        it.id, it.interface_name_vec,
+        it.value_ptr_vec) != DxlError::OK)
+    {
+      return false;
+    }
+  }
+
+  for (auto it : hdl_gpio_controller_commands_) {
     if (dxl_comm_->SetDxlWriteItems(
         it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
@@ -823,14 +908,12 @@ bool DynamixelHardware::InitDxlWriteItems()
 void DynamixelHardware::ReadSensorData(const HandlerVarType & sensor)
 {
   for (auto item : sensor.interface_name_vec) {
-    uint32_t data;
-    dxl_comm_->ReadItem(sensor.id, item, data);
     for (size_t i = 0; i < hdl_sensor_states_.size(); i++) {
       for (size_t j = 0; j < hdl_sensor_states_.at(i).interface_name_vec.size(); j++) {
         if (hdl_sensor_states_.at(i).name == sensor.name &&
           hdl_sensor_states_.at(i).interface_name_vec.at(j) == item)
         {
-          *hdl_sensor_states_.at(i).value_ptr_vec.at(j) = data;
+          *hdl_sensor_states_.at(i).value_ptr_vec.at(j) = *sensor.value_ptr_vec.at(j);
         }
       }
     }
@@ -892,92 +975,141 @@ void DynamixelHardware::SetMatrix()
     fprintf(stderr, "\n");
   }
 }
+
+void DynamixelHardware::MapInterfaces(
+  size_t outer_size,
+  size_t inner_size,
+  std::vector<HandlerVarType> & outer_handlers,
+  const std::vector<HandlerVarType> & inner_handlers,
+  double ** matrix,
+  const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
+  const std::string & conversion_iface,
+  const std::string & conversion_name,
+  std::function<double(double)> conversion)
+{
+  for (size_t i = 0; i < outer_size; ++i) {
+    for (size_t k = 0; k < outer_handlers.at(i).interface_name_vec.size(); ++k) {
+      double value = 0.0;
+      const std::string & outer_iface = outer_handlers.at(i).interface_name_vec.at(k);
+      auto map_it = iface_map.find(outer_iface);
+      if (map_it == iface_map.end()) {
+        std::ostringstream oss;
+        oss << "No mapping found for '" << outer_handlers.at(i).name
+            << "', interface '" << outer_iface
+            << "'. Skipping. Available mapping keys: [";
+        size_t key_count = 0;
+        for (const auto & pair : iface_map) {
+          oss << pair.first;
+          if (++key_count < iface_map.size()) {oss << ", ";}
+        }
+        oss << "]";
+        RCLCPP_WARN_STREAM(logger_, oss.str());
+        continue;
+      }
+      const std::vector<std::string> & mapped_ifaces = map_it->second;
+      for (size_t j = 0; j < inner_size; ++j) {
+        for (const auto & mapped_iface : mapped_ifaces) {
+          auto it = std::find(
+            inner_handlers.at(j).interface_name_vec.begin(),
+            inner_handlers.at(j).interface_name_vec.end(),
+            mapped_iface);
+          if (it != inner_handlers.at(j).interface_name_vec.end()) {
+            size_t idx = std::distance(inner_handlers.at(j).interface_name_vec.begin(), it);
+            value += matrix[i][j] * (*inner_handlers.at(j).value_ptr_vec.at(idx));
+            break;
+          }
+        }
+      }
+      if (!conversion_iface.empty() && !conversion_name.empty() &&
+        outer_iface == conversion_iface &&
+        outer_handlers.at(i).name == conversion_name &&
+        conversion)
+      {
+        value = conversion(value);
+      }
+      *outer_handlers.at(i).value_ptr_vec.at(k) = value;
+    }
+  }
+}
+
 void DynamixelHardware::CalcTransmissionToJoint()
 {
-  for (size_t i = 0; i < num_of_joints_; i++) {
-    double value = 0.0;
-    for (size_t j = 0; j < num_of_transmissions_; j++) {
-      value += transmission_to_joint_matrix_[i][j] *
-        (*hdl_trans_states_.at(j).value_ptr_vec.at(PRESENT_POSITION_INDEX));
-    }
-
-    if (hdl_joint_states_.at(i).name == conversion_joint_name_) {
-      value = revoluteToPrismatic(value);
-    }
-    *hdl_joint_states_.at(i).value_ptr_vec.at(PRESENT_POSITION_INDEX) = value;
-  }
-
-  for (size_t i = 0; i < num_of_joints_; i++) {
-    double value = 0.0;
-    for (size_t j = 0; j < num_of_transmissions_; j++) {
-      value += transmission_to_joint_matrix_[i][j] *
-        (*hdl_trans_states_.at(j).value_ptr_vec.at(PRESENT_VELOCITY_INDEX));
-    }
-    *hdl_joint_states_.at(i).value_ptr_vec.at(PRESENT_VELOCITY_INDEX) = value;
-  }
-
-  for (size_t i = 0; i < num_of_joints_; i++) {
-    double value = 0.0;
-    for (size_t j = 0; j < num_of_transmissions_; j++) {
-      value += transmission_to_joint_matrix_[i][j] *
-        (*hdl_trans_states_.at(j).value_ptr_vec.at(PRESENT_EFFORT_INDEX));
-    }
-    *hdl_joint_states_.at(i).value_ptr_vec.at(PRESENT_EFFORT_INDEX) = value;
-  }
+  std::function<double(double)> conv = use_revolute_to_prismatic_ ?
+    std::function<double(double)>(
+    std::bind(&DynamixelHardware::revoluteToPrismatic, this, std::placeholders::_1)) :
+    std::function<double(double)>();
+  this->MapInterfaces(
+    num_of_joints_,
+    num_of_transmissions_,
+    hdl_joint_states_,
+    hdl_trans_states_,
+    transmission_to_joint_matrix_,
+    dynamixel_hardware_interface::ros2_to_dxl_state_map,
+    "Present Position",
+    conversion_joint_name_,
+    conv
+  );
 }
 
 void DynamixelHardware::CalcJointToTransmission()
 {
-  for (size_t i = 0; i < num_of_transmissions_; i++) {
-    double value = 0.0;
-    for (size_t j = 0; j < num_of_joints_; j++) {
-      value += joint_to_transmission_matrix_[i][j] *
-        (*hdl_joint_commands_.at(j).value_ptr_vec.at(GOAL_POSITION_INDEX));
-    }
-
-    if (hdl_trans_commands_.at(i).name == conversion_dxl_name_) {
-      value = prismaticToRevolute(value);
-    }
-    *hdl_trans_commands_.at(i).value_ptr_vec.at(GOAL_POSITION_INDEX) = value;
-  }
-
-  for (size_t i = 0; i < num_of_transmissions_; i++) {
-    if (hdl_trans_commands_.at(i).interface_name_vec.size() > GOAL_CURRENT_INDEX &&
-      hdl_trans_commands_.at(i).interface_name_vec.at(GOAL_CURRENT_INDEX) == "Goal Current")
-    {
-      for (size_t j = 0; j < hdl_joint_commands_.size(); j++) {
-        if (hdl_joint_commands_.at(j).interface_name_vec.size() > GOAL_CURRENT_INDEX &&
-          hdl_joint_commands_.at(j).interface_name_vec.at(GOAL_CURRENT_INDEX) ==
-          hardware_interface::HW_IF_EFFORT)
-        {
-          double value = 0.0;
-          for (size_t k = 0; k < num_of_joints_; k++) {
-            value += joint_to_transmission_matrix_[i][k] *
-              (*hdl_joint_commands_.at(k).value_ptr_vec.at(GOAL_CURRENT_INDEX));
-          }
-          *hdl_trans_commands_.at(i).value_ptr_vec.at(GOAL_CURRENT_INDEX) = value;
-        }
-      }
-    }
-  }
+  std::function<double(double)> conv = use_revolute_to_prismatic_ ?
+    std::function<double(double)>(
+    std::bind(&DynamixelHardware::prismaticToRevolute, this, std::placeholders::_1)) :
+    std::function<double(double)>();
+  this->MapInterfaces(
+    num_of_transmissions_,
+    num_of_joints_,
+    hdl_trans_commands_,
+    hdl_joint_commands_,
+    joint_to_transmission_matrix_,
+    dynamixel_hardware_interface::dxl_to_ros2_cmd_map,
+    "Goal Position",
+    conversion_dxl_name_,
+    conv
+  );
 }
 
 void DynamixelHardware::SyncJointCommandWithStates()
 {
-  for (auto it_states : hdl_joint_states_) {
-    for (auto it_commands : hdl_joint_commands_) {
+  for (auto & it_states : hdl_joint_states_) {
+    for (auto & it_commands : hdl_joint_commands_) {
       if (it_states.name == it_commands.name) {
-        for (size_t i = 0; i < it_states.interface_name_vec.size(); i++) {
-          if (it_commands.interface_name_vec.at(0) == it_states.interface_name_vec.at(i)) {
-            *it_commands.value_ptr_vec.at(0) = *it_states.value_ptr_vec.at(i);
-            RCLCPP_INFO_STREAM(
-              logger_, "Sync joint state to command (" <<
-                it_commands.interface_name_vec.at(0).c_str() << ", " <<
-                *it_commands.value_ptr_vec.at(0) << " <- " <<
-                it_states.interface_name_vec.at(i).c_str() << ", " <<
-                *it_states.value_ptr_vec.at(i));
-          }
+        std::string pos_cmd_name = hardware_interface::HW_IF_POSITION;
+        // Find index in command interfaces
+        auto cmd_it = std::find(
+          it_commands.interface_name_vec.begin(),
+          it_commands.interface_name_vec.end(),
+          pos_cmd_name);
+        if (cmd_it == it_commands.interface_name_vec.end()) {
+          RCLCPP_WARN_STREAM(
+            logger_,
+            "No position interface found in command interfaces for joint '" <<
+              it_commands.name << "'. Skipping sync!");
+          continue;
         }
+        size_t cmd_idx = std::distance(it_commands.interface_name_vec.begin(), cmd_it);
+        // Find index in state interfaces
+        auto state_it = std::find(
+          it_states.interface_name_vec.begin(),
+          it_states.interface_name_vec.end(),
+          pos_cmd_name);
+        if (state_it == it_states.interface_name_vec.end()) {
+          RCLCPP_WARN_STREAM(
+            logger_,
+            "No position interface found in state interfaces for joint '" <<
+              it_states.name << "'. Skipping sync!");
+          continue;
+        }
+        size_t state_idx = std::distance(it_states.interface_name_vec.begin(), state_it);
+        // Sync the value
+        *it_commands.value_ptr_vec.at(cmd_idx) = *it_states.value_ptr_vec.at(state_idx);
+        RCLCPP_INFO_STREAM(
+          logger_, "Sync joint state to command (joint: " << it_states.name << ", " <<
+            it_commands.interface_name_vec.at(cmd_idx).c_str() << ", " <<
+            *it_commands.value_ptr_vec.at(cmd_idx) << " <- " <<
+            it_states.interface_name_vec.at(state_idx).c_str() << ", " <<
+            *it_states.value_ptr_vec.at(state_idx));
       }
     }
   }
