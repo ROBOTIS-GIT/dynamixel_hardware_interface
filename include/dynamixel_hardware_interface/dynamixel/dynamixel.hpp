@@ -45,6 +45,9 @@ namespace dynamixel_hardware_interface
 #define SYNC 0  ///< Synchronous communication.
 #define BULK 1  ///< Bulk communication.
 
+/// @brief Maximum number of retries for write operations
+#define MAX_WRITE_RETRIES 10  ///< Maximum number of retries for write operations
+
 /// @brief Error codes for Dynamixel operations.
 enum DxlError
 {

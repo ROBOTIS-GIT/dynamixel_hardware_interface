@@ -835,10 +835,13 @@ DxlError Dynamixel::SetSyncReadItemAndHandler()
       if (result == DxlError::OK) {
       } else {
         fprintf(
-          stderr, "[ID:%03d] Failed to Indirect Address Read Item : [%s], %d\n",
+          stderr, "[ID:%03d] Failed to Set Indirect Address Read Item: [%s], Addr: %d, Size: %d, Error code: %d\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str(),
+          it_read_data.item_addr.at(item_index),
+          it_read_data.item_size.at(item_index),
           result);
+        return DxlError::SET_SYNC_READ_FAIL;
       }
     }
   }
@@ -1099,18 +1102,22 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
           stderr, "[ID:%03d] Add Indirect Address Read Item : [%s]\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str());
-      } else if (result == DxlError::SET_BULK_READ_FAIL) {
+      } else if (result == DxlError::INDIRECT_ADDR_FAIL) {
         fprintf(
-          stderr, "[ID:%03d] Failed to Indirect Address Read Item : [%s], %d\n",
+          stderr, "[ID:%03d] Failed to Set Indirect Address Read Item : [%s], Addr: %d, Size: %d, Error code: %d\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str(),
+          it_read_data.item_addr.at(item_index),
+          it_read_data.item_size.at(item_index),
           result);
+          return DxlError::INDIRECT_ADDR_FAIL;
       } else if (result == DxlError::CANNOT_FIND_CONTROL_ITEM) {
         fprintf(
           stderr, "[ID:%03d] 'Indirect Address Read' is not defined in control table, "
           "Cannot set Indirect Address Read for : [%s]\n",
           it_read_data.id,
           it_read_data.item_name.at(item_index).c_str());
+        return DxlError::CANNOT_FIND_CONTROL_ITEM;
       }
     }
   }
@@ -1528,8 +1535,22 @@ DxlError Dynamixel::AddIndirectRead(
     uint8_t using_size = indirect_info_read_[id].size;
 
     for (uint16_t i = 0; i < item_size; i++) {
-      if (WriteItem(id, INDIRECT_ADDR + (using_size * 2), 2, item_addr + i) != DxlError::OK) {
-        return DxlError::SET_BULK_READ_FAIL;
+      DxlError write_result = DxlError::INDIRECT_ADDR_FAIL;
+      int retry_count = 0;
+      uint16_t addr = INDIRECT_ADDR + (using_size * 2);
+      uint16_t item_addr_i = item_addr + i;
+
+      while (write_result != DxlError::OK && retry_count < MAX_WRITE_RETRIES) {
+        write_result = WriteItem(id, addr, 2, item_addr_i);
+        if (write_result != DxlError::OK) {
+          retry_count++;
+          fprintf(stderr, "[ID:%03d] AddIndirectRead failed, retry %d/%d, addr: %d, item_addr_i: %d\n", id, retry_count, MAX_WRITE_RETRIES, addr, item_addr_i);
+        }
+      }
+
+      if (write_result != DxlError::OK) {
+        fprintf(stderr, "[ID:%03d] AddIndirectRead failed after %d retries\n", id, MAX_WRITE_RETRIES);
+        return DxlError::INDIRECT_ADDR_FAIL;
       }
       using_size++;
     }
@@ -1581,6 +1602,11 @@ DxlError Dynamixel::SetSyncWriteItemAndHandler()
 
 DxlError Dynamixel::SetSyncWriteHandler(std::vector<uint8_t> id_arr)
 {
+  if (id_arr.size() == 0) {
+    fprintf(stderr, "No Sync Write Item, not setting sync write handler\n");
+    return DxlError::OK;
+  }
+
   uint16_t INDIRECT_ADDR = 0;
   uint8_t INDIRECT_SIZE;
 
@@ -1613,6 +1639,10 @@ DxlError Dynamixel::SetSyncWriteHandler(std::vector<uint8_t> id_arr)
 }
 DxlError Dynamixel::SetDxlValueToSyncWrite()
 {
+  if (write_data_list_.size() == 0) {
+    return DxlError::OK;
+  }
+
   for (auto it_write_data : write_data_list_) {
     uint8_t ID = it_write_data.id;
     uint8_t * param_write_value = new uint8_t[indirect_info_write_[ID].size];
