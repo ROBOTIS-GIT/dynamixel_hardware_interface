@@ -62,6 +62,7 @@ constexpr char HW_IF_TORQUE_ENABLE[] = "torque_enable";
 typedef struct HandlerVarType_
 {
   uint8_t id;                                /**< ID of the Dynamixel component. */
+  uint8_t comm_id;                           /**< ID of the Dynamixel to be communicated. */
   std::string name;                          /**< Name of the component. */
   std::vector<std::string> interface_name_vec; /**< Vector of interface names. */
   std::vector<std::shared_ptr<double>> value_ptr_vec; /**< Vector interface values. */
@@ -227,6 +228,7 @@ private:
   std::string port_name_;
   std::string baud_rate_;
   std::vector<uint8_t> dxl_id_;
+  std::vector<uint8_t> virtual_dxl_id_;
 
   std::vector<uint8_t> sensor_id_;
   std::map<uint8_t /*id*/, std::string /*interface_name*/> sensor_item_;
@@ -270,7 +272,7 @@ private:
    * @param value The value to write.
    * @return True if write was successful, false if timeout occurred.
    */
-  bool retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value);
+  // bool retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value);
 
   /**
    * @brief Initializes Dynamixel items.

@@ -102,7 +102,8 @@ typedef struct
  */
 typedef struct
 {
-  uint8_t id;                                  ///< ID of the Dynamixel motor.
+  uint8_t comm_id;                             ///< ID of the Dynamixel to be communicated.
+  std::vector<uint8_t> id_arr;                 ///< ID of the Dynamixel motor.
   std::vector<std::string> item_name;          ///< List of control item names.
   std::vector<uint8_t> item_size;              ///< Sizes of the control items.
   std::vector<uint16_t> item_addr;             ///< Addresses of the control items.
@@ -159,6 +160,8 @@ private:
   // direct inform for bulk write
   std::map<uint8_t /*id*/, IndirectInfo> direct_info_write_;
 
+  std::map<uint8_t /*id*/, uint8_t> comm_id_;
+
 public:
   explicit Dynamixel(const char * path);
   ~Dynamixel();
@@ -170,13 +173,13 @@ public:
 
   // DXL Read Setting
   DxlError SetDxlReadItems(
-    uint8_t id, std::vector<std::string> item_names,
+    uint8_t id, uint8_t comm_id, std::vector<std::string> item_names,
     std::vector<std::shared_ptr<double>> data_vec_ptr);
   DxlError SetMultiDxlRead();
 
   // DXL Write Setting
   DxlError SetDxlWriteItems(
-    uint8_t id, std::vector<std::string> item_names,
+    uint8_t id, uint8_t comm_id, std::vector<std::string> item_names,
     std::vector<std::shared_ptr<double>> data_vec_ptr);
   DxlError SetMultiDxlWrite();
 
@@ -186,7 +189,7 @@ public:
   DxlError WriteMultiDxlData();
 
   // Set Dxl Option
-  DxlError SetOperatingMode(uint8_t id, uint8_t dynamixel_mode);
+  // DxlError SetOperatingMode(uint8_t id, uint8_t dynamixel_mode);
   DxlError DynamixelEnable(std::vector<uint8_t> id_arr);
   DxlError DynamixelDisable(std::vector<uint8_t> id_arr);
 
@@ -207,6 +210,10 @@ public:
   std::map<uint8_t, bool> GetDxlTorqueState() {return torque_state_;}
 
   static std::string DxlErrorToString(DxlError error_num);
+
+  DxlError ReadDxlModelFile(uint8_t id, uint16_t model_num);
+
+  void SetCommId(uint8_t id, uint8_t comm_id) {comm_id_[id] = comm_id;}
 
 private:
   bool checkReadType();
@@ -240,8 +247,9 @@ private:
 
   // Read - Data Processing
   DxlError ProcessReadData(
-    uint8_t id,
+    uint8_t comm_id,
     uint16_t indirect_addr,
+    const std::vector<uint8_t> & id_arr,
     const std::vector<std::string> & item_names,
     const std::vector<uint8_t> & item_sizes,
     const std::vector<std::shared_ptr<double>> & data_ptrs,
