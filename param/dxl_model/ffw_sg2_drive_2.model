@@ -44,6 +44,21 @@ Address	Size	Data Name
 1206	4	Velocity Limit
 1210	4	Max Position Limit
 1214	4	Min Position Limit
+1230	4	GearRatio Num
+1234	4	GearRatio Den
+1238	2	Safe Stop Time
+1240	2	Brake Delay
+1242	2	Goal Update Delay
+1244	1	Overexcitation Voltage
+1245	1	Normal Excitation Voltage
+1246	2	Overexcitation Time
+1248	2	Goal Current BSF Freqency
+1250	2	Goal Current BSF Bandwith.
+1252	2	Goal Current BSF Depth.
+1254	2	Present Velocity LPF Freqency
+1256	2	Goal Current LPF Freqency
+1258	2	Position FF LPF Freqency
+1260	2	Velocity FF LPF Freqency
 1273	1	Controller State
 1316	1	Error Code
 1317	1	Error Code History 1

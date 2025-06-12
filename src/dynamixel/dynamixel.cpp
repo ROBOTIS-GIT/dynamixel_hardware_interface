@@ -2012,7 +2012,6 @@ DxlError Dynamixel::AddIndirectWrite(
   uint8_t using_size = indirect_info_write_[id].size;
 
   for (uint16_t i = 0; i < item_size; i++) {
-    fprintf(stderr, "[ID:%03d] addr : %d, data : %d\n", id, INDIRECT_ADDR + (using_size * 2), item_addr + i);
     if (WriteItem(id, INDIRECT_ADDR + (using_size * 2), 2, item_addr + i) != DxlError::OK) {
       return DxlError::SET_BULK_WRITE_FAIL;
     }

@@ -823,7 +823,7 @@ bool DynamixelHardware::InitDxlReadItems()
     hdl_gpio_sensor_states_.clear();
     hdl_gpio_controller_states_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-      if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "dxl") {
+      if (gpio.parameters.at("type") == "dxl") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_read;
         temp_read.id = id;
@@ -839,7 +839,7 @@ bool DynamixelHardware::InitDxlReadItems()
           }
         }
         hdl_trans_states_.push_back(temp_read);
-      } else if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "sensor") {
+      } else if (gpio.parameters.at("type") == "sensor") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_sensor;
         temp_sensor.id = id;
@@ -863,7 +863,7 @@ bool DynamixelHardware::InitDxlReadItems()
           temp_controller.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
         hdl_gpio_controller_states_.push_back(temp_controller);
-      } else if (gpio.state_interfaces.size() && gpio.parameters.at("type") == "virtual_dxl") {
+      } else if (gpio.parameters.at("type") == "virtual_dxl") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         uint8_t comm_id = static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id")));
         HandlerVarType temp_read;
@@ -923,7 +923,7 @@ bool DynamixelHardware::InitDxlWriteItems()
     hdl_trans_commands_.clear();
     hdl_gpio_controller_commands_.clear();
     for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-      if (gpio.command_interfaces.size() && gpio.parameters.at("type") == "dxl") {
+      if (gpio.parameters.at("type") == "dxl") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_write;
         temp_write.id = id;
@@ -941,7 +941,7 @@ bool DynamixelHardware::InitDxlWriteItems()
           temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
         hdl_trans_commands_.push_back(temp_write);
-      } else if (gpio.command_interfaces.size() && gpio.parameters.at("type") == "controller") {
+      } else if (gpio.parameters.at("type") == "controller") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         HandlerVarType temp_controller;
         temp_controller.id = id;
@@ -953,7 +953,7 @@ bool DynamixelHardware::InitDxlWriteItems()
           temp_controller.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
         hdl_gpio_controller_commands_.push_back(temp_controller);
-      } else if (gpio.command_interfaces.size() && gpio.parameters.at("type") == "virtual_dxl") {
+      } else if (gpio.parameters.at("type") == "virtual_dxl") {
         uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
         uint8_t comm_id = static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id")));
         HandlerVarType temp_write;
@@ -1076,7 +1076,7 @@ void DynamixelHardware::MapInterfaces(
   size_t outer_size,
   size_t inner_size,
   std::vector<HandlerVarType> & outer_handlers,
-  const std::vector<HandlerVarType> & inner_handlers,
+  std::vector<HandlerVarType> & inner_handlers,
   double ** matrix,
   const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
   const std::string & conversion_iface,

@@ -44,6 +44,21 @@ Address	Size	Data Name
 182	4	Velocity Limit
 186	4	Max Position Limit
 190	4	Min Position Limit
+206	4	GearRatio Num
+210	4	GearRatio Den
+214	2	Safe Stop Time
+216	2	Brake Delay
+218	2	Goal Update Delay
+220	1	Overexcitation Voltage
+221	1	Normal Excitation Voltage
+222	2	Overexcitation Time
+224	2	Goal Current BSF Freqency
+226	2	Goal Current BSF Bandwith.
+228	2	Goal Current BSF Depth.
+230	2	Present Velocity LPF Freqency
+232	2	Goal Current LPF Freqency
+234	2	Position FF LPF Freqency
+236	2	Velocity FF LPF Freqency
 249	1	Controller State
 292	1	Error Code
 293	1	Error Code History 1

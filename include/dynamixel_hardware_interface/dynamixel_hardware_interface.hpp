@@ -365,7 +365,7 @@ private:
     size_t outer_size,
     size_t inner_size,
     std::vector<HandlerVarType> & outer_handlers,
-    const std::vector<HandlerVarType> & inner_handlers,
+    std::vector<HandlerVarType> & inner_handlers,
     double ** matrix,
     const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
     const std::string & conversion_iface = "",
