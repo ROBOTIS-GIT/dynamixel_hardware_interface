@@ -48,3 +48,10 @@ Number	Name
 230	omy_end.model
 536 sensorxel_joy.model
 600 sensorxel_joy.model
+602 ffw_g10_rcu.model
+620 ffw_sg2_steer_1.model
+621 ffw_sg2_steer_2.model
+622 ffw_sg2_steer_3.model
+623 ffw_sg2_drive_1.model
+624 ffw_sg2_drive_2.model
+625 ffw_sg2_drive_3.model
