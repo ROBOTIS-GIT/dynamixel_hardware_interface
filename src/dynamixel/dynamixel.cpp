@@ -1456,7 +1456,7 @@ DxlError Dynamixel::ProcessReadData(
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Velocity") {
       *data_ptrs[item_index] =
-        dxl_info_.ConvertValueRPMToVelocityRPS(static_cast<int32_t>(dxl_getdata));
+        dxl_info_.ConvertValueRPMToVelocityRPS(id, static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Current") {
       *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
         id,
@@ -1628,7 +1628,7 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
       } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
-        int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+        int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
@@ -1847,7 +1847,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
           param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
         } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
-          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));

@@ -74,6 +74,7 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
 
   temp_dxl_info.model_num = model_num;
 
+  auto velocity_unit_found = false;
   while (!open_file.eof() ) {
     getline(open_file, line);
     if (strcmp(line.c_str(), "[control table]") == 0) {
@@ -100,12 +101,21 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
         temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
       } else if (strs.at(0) == "torque_constant") {
         temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
+      } else if (strs.at(0) == "velocity_unit") {
+        temp_dxl_info.velocity_unit = static_cast<double>(stod(strs.at(1)));
+        velocity_unit_found = true;
       }
     } catch (const std::exception & e) {
       std::string error_msg = "Error processing line in model file: " + line +
         "\nError: " + e.what();
       throw std::runtime_error(error_msg);
     }
+  }
+  if (!velocity_unit_found) {
+    fprintf(stdout,
+        "velocity_unit not explicitly set in model file for ID %i. "
+        "Using default value %f rpm per unit.\n",
+        id, temp_dxl_info.velocity_unit);
   }
 
   getline(open_file, line);
@@ -177,7 +187,8 @@ bool DynamixelInfo::GetDxlTypeInfo(
   int32_t & value_of_min_radian_position,
   double & min_radian,
   double & max_radian,
-  double & torque_constant)
+  double & torque_constant,
+  double & velocity_unit)
 {
   value_of_zero_radian_position = dxl_info_[id].value_of_zero_radian_position;
   value_of_max_radian_position = dxl_info_[id].value_of_max_radian_position;
@@ -185,6 +196,7 @@ bool DynamixelInfo::GetDxlTypeInfo(
   min_radian = dxl_info_[id].min_radian;
   max_radian = dxl_info_[id].max_radian;
   torque_constant = dxl_info_[id].torque_constant;
+  velocity_unit = dxl_info_[id].velocity_unit;
   return true;
 }
 

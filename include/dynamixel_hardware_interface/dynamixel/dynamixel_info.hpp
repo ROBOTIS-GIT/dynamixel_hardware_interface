@@ -43,6 +43,7 @@ typedef  struct
   double torque_constant;
   double min_radian;
   double max_radian;
+  double velocity_unit = 0.01;  // default rpm per unit unless specified in model file
   int32_t value_of_zero_radian_position;
   int32_t value_of_max_radian_position;
   int32_t value_of_min_radian_position;
@@ -79,17 +80,18 @@ public:
     int32_t & value_of_min_radian_position,
     double & min_radian,
     double & max_radian,
-    double & torque_constant);
+    double & torque_constant,
+    double & velocity_unit);
   int32_t ConvertRadianToValue(uint8_t id, double radian);
   double ConvertValueToRadian(uint8_t id, int32_t value);
   inline int16_t ConvertEffortToCurrent(uint8_t id, double effort)
   {return static_cast<int16_t>(effort / dxl_info_[id].torque_constant);}
   inline double ConvertCurrentToEffort(uint8_t id, int16_t current)
   {return static_cast<double>(current * dxl_info_[id].torque_constant);}
-  inline double ConvertValueRPMToVelocityRPS(int32_t value_rpm)
-  {return static_cast<double>(value_rpm * 0.01 / 60.0 * 2.0 * M_PI);}
-  inline int32_t ConvertVelocityRPSToValueRPM(double vel_rps)
-  {return static_cast<int32_t>(vel_rps * 100.0 * 60.0 / 2.0 / M_PI);}
+  inline double ConvertValueRPMToVelocityRPS(uint8_t id, int32_t value_rpm)
+  {return static_cast<double>(value_rpm * dxl_info_[id].velocity_unit / 60.0 * 2.0 * M_PI);}
+  inline int32_t ConvertVelocityRPSToValueRPM(uint8_t id, double vel_rps)
+  {return static_cast<int32_t>(vel_rps * 60.0 / dxl_info_[id].velocity_unit / 2.0 / M_PI);}
 };
 
 }  // namespace dynamixel_hardware_interface
