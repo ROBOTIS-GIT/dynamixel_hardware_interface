@@ -103,7 +103,7 @@ typedef struct
 typedef struct
 {
   uint8_t comm_id;                             ///< ID of the Dynamixel to be communicated.
-  std::vector<uint8_t> id_arr;                 ///< ID of the Dynamixel motor.
+  std::vector<uint8_t> id_arr;                 ///< IDs of the Dynamixel motors.
   std::vector<std::string> item_name;          ///< List of control item names.
   std::vector<uint8_t> item_size;              ///< Sizes of the control items.
   std::vector<uint16_t> item_addr;             ///< Addresses of the control items.
