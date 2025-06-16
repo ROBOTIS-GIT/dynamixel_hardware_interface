@@ -83,13 +83,15 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   if (info_.hardware_parameters.find("disable_torque_at_init") != info_.hardware_parameters.end()) {
     disable_torque_at_init = info_.hardware_parameters.at("disable_torque_at_init") == "true";
     if (disable_torque_at_init) {
-      RCLCPP_INFO(logger_,
-          "Torque will be disabled during initialization if it is enabled at initialization.");
+      RCLCPP_INFO(
+        logger_,
+        "Torque will be disabled during initialization if it is enabled at initialization.");
     }
   } else {
-    RCLCPP_INFO(logger_,
-        "If there is a torque enabled Dynamixel, the program will be terminated. Set "
-        "'disable_torque_at_init' parameter to 'true' to disable torque at initialization.");
+    RCLCPP_INFO(
+      logger_,
+      "If there is a torque enabled Dynamixel, the program will be terminated. Set "
+      "'disable_torque_at_init' parameter to 'true' to disable torque at initialization.");
   }
 
   RCLCPP_INFO_STREAM(
@@ -194,9 +196,13 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   std::vector<uint8_t> dxl_id_with_virtual_dxl;
   dxl_id_with_virtual_dxl.insert(dxl_id_with_virtual_dxl.end(), dxl_id_.begin(), dxl_id_.end());
-  dxl_id_with_virtual_dxl.insert(dxl_id_with_virtual_dxl.end(), virtual_dxl_id_.begin(),
-      virtual_dxl_id_.end());
-  if(dxl_comm_->InitTorqueStates(dxl_id_with_virtual_dxl, disable_torque_at_init) != DxlError::OK) {
+  dxl_id_with_virtual_dxl.insert(
+    dxl_id_with_virtual_dxl.end(), virtual_dxl_id_.begin(),
+    virtual_dxl_id_.end());
+  if (dxl_comm_->InitTorqueStates(
+      dxl_id_with_virtual_dxl,
+      disable_torque_at_init) != DxlError::OK)
+  {
     RCLCPP_ERROR_STREAM(logger_, "Error: InitTorqueStates");
     return hardware_interface::CallbackReturn::ERROR;
   }
@@ -774,10 +780,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     for (const auto & param : gpio.parameters) {
       const std::string & param_name = param.first;
       if (param_name == "Operating Mode") {
-        RCLCPP_INFO_STREAM(logger_,
-            "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+        RCLCPP_INFO_STREAM(
+          logger_,
+          "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
             param.second);
-        if (dxl_comm_->WriteItem(id, param_name,
+        if (dxl_comm_->WriteItem(
+            id, param_name,
             static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
         {
           return false;
@@ -795,10 +803,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
         continue;
       }
       if (param_name.find("Limit") != std::string::npos) {
-        RCLCPP_INFO_STREAM(logger_,
-            "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+        RCLCPP_INFO_STREAM(
+          logger_,
+          "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
             param.second);
-        if (dxl_comm_->WriteItem(id, param_name,
+        if (dxl_comm_->WriteItem(
+            id, param_name,
             static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
         {
           return false;
@@ -816,10 +826,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
       {
         continue;
       }
-      RCLCPP_INFO_STREAM(logger_,
-          "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+      RCLCPP_INFO_STREAM(
+        logger_,
+        "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
           param.second);
-      if (dxl_comm_->WriteItem(id, param_name,
+      if (dxl_comm_->WriteItem(
+          id, param_name,
           static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
       {
         return false;

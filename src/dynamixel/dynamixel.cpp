@@ -105,8 +105,9 @@ DxlError Dynamixel::InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_t
 
         if (torque_state_[it_id] == TORQUE_ON) {
           if (disable_torque) {
-            fprintf(stderr, "[InitTorqueStates][ID:%03d] Torque is enabled, disabling torque\n",
-                it_id);
+            fprintf(
+              stderr, "[InitTorqueStates][ID:%03d] Torque is enabled, disabling torque\n",
+              it_id);
             result = WriteItem(it_id, "Torque Enable", TORQUE_OFF);
             if (result != DxlError::OK) {
               fprintf(stderr, "[InitTorqueStates][ID:%03d] Error disabling torque\n", it_id);
@@ -115,21 +116,24 @@ DxlError Dynamixel::InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_t
             torque_state_[it_id] = TORQUE_OFF;
           } else {
             torque_state_[it_id] = TORQUE_OFF;
-            fprintf(stderr,
-                "[InitTorqueStates][ID:%03d] Torque is enabled, cannot proceed. Set "
-                "'disable_torque_at_init' parameter to 'true' to disable torque at initialization "
-                "or disable torque manually.\n",
-                it_id);
+            fprintf(
+              stderr,
+              "[InitTorqueStates][ID:%03d] Torque is enabled, cannot proceed. Set "
+              "'disable_torque_at_init' parameter to 'true' to disable torque at initialization "
+              "or disable torque manually.\n",
+              it_id);
             return DxlError::DLX_HARDWARE_ERROR;
           }
         }
 
-        fprintf(stderr, "[InitTorqueStates][ID:%03d] Current torque state: %s\n", it_id,
-                torque_state_[it_id] ? "ON" : "OFF");
+        fprintf(
+          stderr, "[InitTorqueStates][ID:%03d] Current torque state: %s\n", it_id,
+          torque_state_[it_id] ? "ON" : "OFF");
       }
     } catch (const std::exception & e) {
-      fprintf(stderr, "[InitTorqueStates][ID:%03d] Error checking control item: %s\n", it_id,
-          e.what());
+      fprintf(
+        stderr, "[InitTorqueStates][ID:%03d] Error checking control item: %s\n", it_id,
+        e.what());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
   }
@@ -171,7 +175,7 @@ DxlError Dynamixel::InitDxlComm(
     } else if (dxl_error != 0) {
       fprintf(stderr, " - RX_PACKET_ERROR : %s\n", packet_handler_->getRxPacketError(dxl_error));
       uint32_t err = 0;
-      if(ReadItem(it_id, "Hardware Error Status", err) == DxlError::OK) {
+      if (ReadItem(it_id, "Hardware Error Status", err) == DxlError::OK) {
         fprintf(stderr, "[ID:%03d] Read Hardware Error Status : %x\n", it_id, err);
       }
       fprintf(stderr, "[ID:%03d] Hardware Error detected, rebooting...\n", it_id);
@@ -266,14 +270,18 @@ DxlError Dynamixel::SetDxlReadItems(
     if (existing_item.comm_id == comm_id) {
       // Found existing entry, append new items
       existing_item.id_arr.insert(existing_item.id_arr.end(), item_ids.begin(), item_ids.end());
-      existing_item.item_name.insert(existing_item.item_name.end(), item_names.begin(),
-          item_names.end());
-      existing_item.item_addr.insert(existing_item.item_addr.end(), item_addrs.begin(),
-          item_addrs.end());
-      existing_item.item_size.insert(existing_item.item_size.end(), item_sizes.begin(),
-          item_sizes.end());
-      existing_item.item_data_ptr_vec.insert(existing_item.item_data_ptr_vec.end(),
-          data_vec_ptr.begin(), data_vec_ptr.end());
+      existing_item.item_name.insert(
+        existing_item.item_name.end(), item_names.begin(),
+        item_names.end());
+      existing_item.item_addr.insert(
+        existing_item.item_addr.end(), item_addrs.begin(),
+        item_addrs.end());
+      existing_item.item_size.insert(
+        existing_item.item_size.end(), item_sizes.begin(),
+        item_sizes.end());
+      existing_item.item_data_ptr_vec.insert(
+        existing_item.item_data_ptr_vec.end(),
+        data_vec_ptr.begin(), data_vec_ptr.end());
       return DxlError::OK;
     }
   }
@@ -355,8 +363,9 @@ DxlError Dynamixel::SetDxlWriteItems(
     uint16_t ITEM_ADDR;
     uint8_t ITEM_SIZE;
     if (dxl_info_.GetDxlControlItem(id, it_name, ITEM_ADDR, ITEM_SIZE) == false) {
-      fprintf(stderr, "[ID:%03d] Cannot find control item in model file : %s\n", id,
-          it_name.c_str());
+      fprintf(
+        stderr, "[ID:%03d] Cannot find control item in model file : %s\n", id,
+        it_name.c_str());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
     item_ids.push_back(id);
@@ -367,14 +376,18 @@ DxlError Dynamixel::SetDxlWriteItems(
   for (auto & existing_item : write_data_list_) {
     if (existing_item.comm_id == comm_id) {
       existing_item.id_arr.insert(existing_item.id_arr.end(), item_ids.begin(), item_ids.end());
-      existing_item.item_name.insert(existing_item.item_name.end(), item_names.begin(),
-          item_names.end());
-      existing_item.item_addr.insert(existing_item.item_addr.end(), item_addrs.begin(),
-          item_addrs.end());
-      existing_item.item_size.insert(existing_item.item_size.end(), item_sizes.begin(),
-          item_sizes.end());
-      existing_item.item_data_ptr_vec.insert(existing_item.item_data_ptr_vec.end(),
-          data_vec_ptr.begin(), data_vec_ptr.end());
+      existing_item.item_name.insert(
+        existing_item.item_name.end(), item_names.begin(),
+        item_names.end());
+      existing_item.item_addr.insert(
+        existing_item.item_addr.end(), item_addrs.begin(),
+        item_addrs.end());
+      existing_item.item_size.insert(
+        existing_item.item_size.end(), item_sizes.begin(),
+        item_sizes.end());
+      existing_item.item_data_ptr_vec.insert(
+        existing_item.item_data_ptr_vec.end(),
+        data_vec_ptr.begin(), data_vec_ptr.end());
       return DxlError::OK;
     }
   }
@@ -970,8 +983,8 @@ DxlError Dynamixel::SetSyncReadItemAndHandler()
       } else {
         fprintf(
           stderr,
-            "[ID:%03d] Failed to Set Indirect Address Read Item: [%s], Addr: %d, Size: %d, "
-            "Error code: %d\n",
+          "[ID:%03d] Failed to Set Indirect Address Read Item: [%s], Addr: %d, Size: %d, "
+          "Error code: %d\n",
           it_read_data.comm_id,
           it_read_data.item_name.at(item_index).c_str(),
           it_read_data.item_addr.at(item_index),
