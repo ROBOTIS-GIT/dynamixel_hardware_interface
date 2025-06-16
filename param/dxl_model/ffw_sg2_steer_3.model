@@ -81,8 +81,6 @@ Address	Size	Data Name
 5478	4	Profile Acceleration Time
 5482	4	Profile Time
 5486	2	Indirect Address 1
-5486	2	Indirect Address 1
-5486	2	Indirect Address Write
 5488	2	Indirect Address 2
 5490	2	Indirect Address 3
 5492	2	Indirect Address 4
