@@ -1179,7 +1179,7 @@ void DynamixelHardware::CalcTransmissionToJoint()
     hdl_trans_states_,
     transmission_to_joint_matrix_,
     dynamixel_hardware_interface::ros2_to_dxl_state_map,
-    "Present Position",
+    hardware_interface::HW_IF_POSITION,
     conversion_joint_name_,
     conv
   );
