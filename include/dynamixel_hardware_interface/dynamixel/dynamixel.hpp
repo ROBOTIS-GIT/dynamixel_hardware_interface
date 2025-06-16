@@ -45,8 +45,8 @@ namespace dynamixel_hardware_interface
 #define SYNC 0  ///< Synchronous communication.
 #define BULK 1  ///< Bulk communication.
 
-/// @brief Maximum number of retries for write operations
-#define MAX_WRITE_RETRIES 10  ///< Maximum number of retries for write operations
+/// @brief Maximum number of retries for communication operations
+#define MAX_COMM_RETRIES 5  ///< Maximum number of retries for communication operations
 
 /// @brief Error codes for Dynamixel operations.
 enum DxlError
@@ -214,6 +214,8 @@ public:
   DxlError ReadDxlModelFile(uint8_t id, uint16_t model_num);
 
   void SetCommId(uint8_t id, uint8_t comm_id) {comm_id_[id] = comm_id;}
+
+  DxlError InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_torque = false);
 
 private:
   bool checkReadType();

@@ -78,6 +78,20 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       e.what());
   }
 
+  // Add new parameter for torque initialization
+  bool disable_torque_at_init = false;
+  if (info_.hardware_parameters.find("disable_torque_at_init") != info_.hardware_parameters.end()) {
+    disable_torque_at_init = info_.hardware_parameters.at("disable_torque_at_init") == "true";
+    if (disable_torque_at_init) {
+      RCLCPP_INFO(logger_,
+          "Torque will be disabled during initialization if it is enabled at initialization.");
+    }
+  } else {
+    RCLCPP_INFO(logger_,
+        "If there is a torque enabled Dynamixel, the program will be terminated. Set "
+        "'disable_torque_at_init' parameter to 'true' to disable torque at initialization.");
+  }
+
   RCLCPP_INFO_STREAM(
     logger_,
     "port_name " << port_name_.c_str() << " / baudrate " << baud_rate_.c_str());
@@ -113,7 +127,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
 
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-    const std::string& type = gpio.parameters.at("type");
+    const std::string & type = gpio.parameters.at("type");
 
     if (type == "dxl") {
       dxl_id_.push_back(id);
@@ -134,25 +148,20 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     dxl_comm_->SetCommId(id, comm_id);
   }
 
-  bool trying_connect = true;
-  int trying_cnt = 60;
-  int cnt = 0;
-
   if (controller_id_.size() > 0) {
-    while (trying_connect) {
+    for (int i = 0; i < 10; i++) {
       std::vector<uint8_t> id_arr;
       for (auto controller : controller_id_) {
         id_arr.push_back(controller);
       }
       if (dxl_comm_->InitDxlComm(id_arr, port_name_, baud_rate_) == DxlError::OK) {
         RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
-        trying_connect = false;
+        break;
       } else {
         sleep(1);
-        cnt++;
-        if (cnt > trying_cnt) {
+        if (i == 9) {
           RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
-          cnt = 0;
+          return hardware_interface::CallbackReturn::ERROR;
         }
       }
     }
@@ -163,11 +172,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     return hardware_interface::CallbackReturn::ERROR;
   }
 
-  trying_connect = true;
-  trying_cnt = 60;
-  cnt = 0;
-
-  while (trying_connect) {
+  for (int i = 0; i < 10; i++) {
     std::vector<uint8_t> id_arr;
     for (auto dxl : dxl_id_) {
       id_arr.push_back(dxl);
@@ -177,15 +182,23 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
     if (dxl_comm_->InitDxlComm(id_arr, port_name_, baud_rate_) == DxlError::OK) {
       RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
-      trying_connect = false;
+      break;
     } else {
       sleep(1);
-      cnt++;
-      if (cnt > trying_cnt) {
+      if (i == 9) {
         RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
-        cnt = 0;
+        return hardware_interface::CallbackReturn::ERROR;
       }
     }
+  }
+
+  std::vector<uint8_t> dxl_id_with_virtual_dxl;
+  dxl_id_with_virtual_dxl.insert(dxl_id_with_virtual_dxl.end(), dxl_id_.begin(), dxl_id_.end());
+  dxl_id_with_virtual_dxl.insert(dxl_id_with_virtual_dxl.end(), virtual_dxl_id_.begin(),
+      virtual_dxl_id_.end());
+  if(dxl_comm_->InitTorqueStates(dxl_id_with_virtual_dxl, disable_torque_at_init) != DxlError::OK) {
+    RCLCPP_ERROR_STREAM(logger_, "Error: InitTorqueStates");
+    return hardware_interface::CallbackReturn::ERROR;
   }
 
   if (!InitDxlItems()) {
@@ -722,7 +735,8 @@ bool DynamixelHardware::CommReset()
 //     if (dxl_comm_->WriteItem(id, item_name, value) == DxlError::OK) {
 //       RCLCPP_INFO_STREAM(
 //         logger_,
-//         "[ID:" << std::to_string(id) << "] item_name:" << item_name.c_str() << "\tdata:" << value);
+//         "[ID:" << std::to_string(id) << "] item_name:" << item_name.c_str() <<
+//         "\tdata:" << value);
 //       return true;
 //     }
 
@@ -760,8 +774,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     for (const auto & param : gpio.parameters) {
       const std::string & param_name = param.first;
       if (param_name == "Operating Mode") {
-        RCLCPP_INFO_STREAM(logger_, "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" << param.second);
-        if (dxl_comm_->WriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second))) != DxlError::OK) {
+        RCLCPP_INFO_STREAM(logger_,
+            "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+            param.second);
+        if (dxl_comm_->WriteItem(id, param_name,
+            static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
+        {
           return false;
         }
       }
@@ -777,8 +795,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
         continue;
       }
       if (param_name.find("Limit") != std::string::npos) {
-        RCLCPP_INFO_STREAM(logger_, "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" << param.second);
-        if (dxl_comm_->WriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second))) != DxlError::OK) {
+        RCLCPP_INFO_STREAM(logger_,
+            "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+            param.second);
+        if (dxl_comm_->WriteItem(id, param_name,
+            static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
+        {
           return false;
         }
       }
@@ -794,8 +816,12 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
       {
         continue;
       }
-      RCLCPP_INFO_STREAM(logger_, "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" << param.second);
-      if (dxl_comm_->WriteItem(id, param_name, static_cast<uint32_t>(stoi(param.second))) != DxlError::OK) {
+      RCLCPP_INFO_STREAM(logger_,
+          "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+          param.second);
+      if (dxl_comm_->WriteItem(id, param_name,
+          static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
+      {
         return false;
       }
     }
@@ -805,7 +831,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
 
 bool DynamixelHardware::InitControllerItems()
 {
-  return initItems("controller") && initItems("virtual_dxl");;
+  return initItems("controller") && initItems("virtual_dxl");
 }
 
 bool DynamixelHardware::InitDxlItems()
@@ -874,7 +900,7 @@ bool DynamixelHardware::InitDxlReadItems()
         for (auto it : gpio.state_interfaces) {
           temp_read.interface_name_vec.push_back(it.name);
           temp_read.value_ptr_vec.push_back(std::make_shared<double>(0.0));
-         
+
           if (it.name == "Hardware Error Status") {
             dxl_hw_err_[id] = 0x00;
           }
