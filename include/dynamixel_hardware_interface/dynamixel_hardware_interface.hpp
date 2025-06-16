@@ -266,15 +266,6 @@ private:
   bool initItems(const std::string & type_filter);
 
   /**
-   * @brief Helper function to retry writing an item to a Dynamixel device.
-   * @param id The ID of the Dynamixel device.
-   * @param item_name The name of the item to write.
-   * @param value The value to write.
-   * @return True if write was successful, false if timeout occurred.
-   */
-  // bool retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value);
-
-  /**
    * @brief Initializes Dynamixel items.
    * @return True if initialization was successful, false otherwise.
    */

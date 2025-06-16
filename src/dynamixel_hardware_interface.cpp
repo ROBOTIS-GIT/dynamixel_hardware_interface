@@ -732,34 +732,6 @@ bool DynamixelHardware::CommReset()
   return false;
 }
 
-// bool DynamixelHardware::retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value)
-// {
-//   rclcpp::Time start_time = this->now();
-//   rclcpp::Duration error_duration(0, 0);
-
-//   while (true) {
-//     if (dxl_comm_->WriteItem(id, item_name, value) == DxlError::OK) {
-//       RCLCPP_INFO_STREAM(
-//         logger_,
-//         "[ID:" << std::to_string(id) << "] item_name:" << item_name.c_str() <<
-//         "\tdata:" << value);
-//       return true;
-//     }
-
-//     error_duration = this->now() - start_time;
-//     if (error_duration.seconds() * 1000 >= err_timeout_ms_) {
-//       RCLCPP_ERROR_STREAM(
-//         logger_,
-//         "[ID:" << std::to_string(id) << "] Write Item error (Timeout: " <<
-//           error_duration.seconds() * 1000 << "ms/" << err_timeout_ms_ << "ms)");
-//       return false;
-//     }
-//     RCLCPP_WARN_STREAM(
-//       logger_,
-//       "[ID:" << std::to_string(id) << "] Write Item retry...");
-//   }
-// }
-
 bool DynamixelHardware::initItems(const std::string & type_filter)
 {
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Items for type: " << type_filter);
