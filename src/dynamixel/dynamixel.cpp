@@ -1608,6 +1608,7 @@ DxlError Dynamixel::ProcessReadData(
   uint16_t current_addr = indirect_addr;
 
   for (size_t item_index = 0; item_index < item_names.size(); item_index++) {
+    uint8_t ID = id_arr[item_index];
     uint8_t size = item_sizes[item_index];
     if (item_index > 0) {current_addr += item_sizes[item_index - 1];}
 
@@ -1615,14 +1616,15 @@ DxlError Dynamixel::ProcessReadData(
 
     if (item_names[item_index] == "Present Position") {
       *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
-        id_arr[item_index],
+        ID,
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] =
-        dxl_info_.ConvertValueRPMToVelocityRPS(static_cast<int32_t>(dxl_getdata));
+      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
+        ID,
+        static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Current") {
       *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
-        id_arr[item_index],
+        ID,
         static_cast<int16_t>(dxl_getdata));
     } else {
       *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
@@ -1807,7 +1809,7 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
       } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
@@ -2030,7 +2032,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
           param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
         } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
