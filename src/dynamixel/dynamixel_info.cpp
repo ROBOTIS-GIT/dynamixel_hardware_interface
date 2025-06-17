@@ -116,13 +116,15 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
 
   // Set default values and warn if parameters are missing
   if (!torque_constant_set) {
-    fprintf(stderr, "[WARN] Model file doesn't contain torque_constant parameter. "
-    "Using default value: 1.0\n");
+    fprintf(
+      stderr, "[WARN] Model file doesn't contain torque_constant parameter. "
+      "Using default value: 1.0\n");
     temp_dxl_info.torque_constant = 1.0;
   }
   if (!velocity_unit_set) {
-    fprintf(stderr, "[WARN] Model file doesn't contain velocity_unit parameter. "
-    "Using default value: 0.01\n");
+    fprintf(
+      stderr, "[WARN] Model file doesn't contain velocity_unit parameter. "
+      "Using default value: 0.01\n");
     temp_dxl_info.velocity_unit = 0.01;
   }
 
