@@ -1807,7 +1807,7 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
       } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-        int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
@@ -1975,19 +1975,22 @@ DxlError Dynamixel::SetBulkWriteHandler(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::SetDxlValueToBulkWrite()
 {
+  if (write_data_list_.size() == 0) {
+    return DxlError::OK;
+  }
+
   for (auto it_write_data : write_data_list_) {
-    uint8_t ID = it_write_data.comm_id;
+    uint8_t comm_id = it_write_data.comm_id;
     uint8_t * param_write_value;
     uint8_t added_byte = 0;
 
     // Check if this is a direct write
-    if (direct_info_write_.find(ID) != direct_info_write_.end()) {
-      param_write_value = new uint8_t[direct_info_write_[ID].size];
+    if (direct_info_write_.find(comm_id) != direct_info_write_.end()) {
+      param_write_value = new uint8_t[direct_info_write_[comm_id].size];
 
-      for (uint16_t item_index = 0; item_index < direct_info_write_[ID].cnt; item_index++) {
+      for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
-        uint8_t size = direct_info_write_[ID].item_size.at(item_index);
-
+        uint8_t size = direct_info_write_[comm_id].item_size.at(item_index);
         if (size == 4) {
           int32_t value = static_cast<int32_t>(data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
@@ -2005,47 +2008,48 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
       }
 
       if (group_bulk_write_->addParam(
-          ID,
-          direct_info_write_[ID].indirect_data_addr,
-          direct_info_write_[ID].size,
+          comm_id,
+          direct_info_write_[comm_id].indirect_data_addr,
+          direct_info_write_[comm_id].size,
           param_write_value) != true)
       {
-        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", ID);
+        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", comm_id);
         return DxlError::BULK_WRITE_FAIL;
       }
     } else {
       // Handle indirect write
-      param_write_value = new uint8_t[indirect_info_write_[ID].size];
+      param_write_value = new uint8_t[indirect_info_write_[comm_id].size];
 
-      for (uint16_t item_index = 0; item_index < indirect_info_write_[ID].cnt; item_index++) {
+      for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
-        if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Position") {
+        uint8_t ID = it_write_data.id_arr.at(item_index);
+        if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
           int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
           param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
           param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-        } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
+        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
           int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
           param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-        } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
+        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
           int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
           param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
         }
-        added_byte += indirect_info_write_[ID].item_size.at(item_index);
+        added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
       }
 
       if (group_bulk_write_->addParam(
-          ID,
-          indirect_info_write_[ID].indirect_data_addr,
-          indirect_info_write_[ID].size,
+          comm_id,
+          indirect_info_write_[comm_id].indirect_data_addr,
+          indirect_info_write_[comm_id].size,
           param_write_value) != true)
       {
-        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", ID);
+        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", comm_id);
         return DxlError::BULK_WRITE_FAIL;
       }
     }
