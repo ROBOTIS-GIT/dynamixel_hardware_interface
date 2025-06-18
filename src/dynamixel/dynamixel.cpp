@@ -840,6 +840,10 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
 
 DxlError Dynamixel::ReadMultiDxlData(double period_ms)
 {
+  if (read_data_list_.empty()) {
+    return DxlError::OK;
+  }
+
   if (read_type_ == SYNC) {
     return GetDxlValueFromSyncRead(period_ms);
   } else {
@@ -849,6 +853,10 @@ DxlError Dynamixel::ReadMultiDxlData(double period_ms)
 
 DxlError Dynamixel::WriteMultiDxlData()
 {
+  if (write_data_list_.empty()) {
+    return DxlError::OK;
+  }
+
   if (write_type_ == SYNC) {
     return SetDxlValueToSyncWrite();
   } else {
@@ -1790,10 +1798,6 @@ DxlError Dynamixel::SetSyncWriteHandler(std::vector<uint8_t> id_arr)
 }
 DxlError Dynamixel::SetDxlValueToSyncWrite()
 {
-  if (write_data_list_.size() == 0) {
-    return DxlError::OK;
-  }
-
   for (auto it_write_data : write_data_list_) {
     uint8_t comm_id = it_write_data.comm_id;
     uint8_t * param_write_value = new uint8_t[indirect_info_write_[comm_id].size];
@@ -1977,10 +1981,6 @@ DxlError Dynamixel::SetBulkWriteHandler(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::SetDxlValueToBulkWrite()
 {
-  if (write_data_list_.size() == 0) {
-    return DxlError::OK;
-  }
-
   for (auto it_write_data : write_data_list_) {
     uint8_t comm_id = it_write_data.comm_id;
     uint8_t * param_write_value;
