@@ -160,7 +160,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
         RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
         break;
       } else {
-        sleep(1);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         if (i == 9) {
           RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
           return hardware_interface::CallbackReturn::ERROR;
@@ -186,7 +186,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
       break;
     } else {
-      sleep(1);
+      std::this_thread::sleep_for(std::chrono::seconds(1));
       if (i == 9) {
         RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
         return hardware_interface::CallbackReturn::ERROR;
@@ -499,7 +499,7 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 
   // sync commands = states joint
   SyncJointCommandWithStates();
-  usleep(500 * 1000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   // Enable torque only for Dynamixels that have torque enabled in their parameters
   std::vector<uint8_t> torque_enabled_ids;
@@ -516,7 +516,7 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
         break;
       }
       RCLCPP_ERROR_STREAM(logger_, "Failed to enable torque for Dynamixels, retry...");
-      usleep(100 * 1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 
@@ -703,7 +703,7 @@ bool DynamixelHardware::CommReset()
 
   auto start_time = this->now();
   while ((this->now() - start_time) < rclcpp::Duration(3, 0)) {
-    usleep(200 * 1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     RCLCPP_INFO_STREAM(logger_, "Reset Start");
     bool result = true;
     for (auto id : dxl_id_) {
@@ -712,7 +712,7 @@ bool DynamixelHardware::CommReset()
         result = false;
         break;
       }
-      usleep(200 * 1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     if (!result) {continue;}
     if (!InitControllerItems()) {continue;}
@@ -721,13 +721,13 @@ bool DynamixelHardware::CommReset()
     if (!InitDxlWriteItems()) {continue;}
 
     RCLCPP_INFO_STREAM(logger_, "RESET Success");
-    usleep(1000 * 1000);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     start();
     dxl_status_ = DXL_OK;
     return true;
   }
   RCLCPP_ERROR_STREAM(logger_, "RESET Failure");
-  usleep(1000 * 1000);
+  std::this_thread::sleep_for(std::chrono::seconds(1));
   start();
   return false;
 }

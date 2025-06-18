@@ -21,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <chrono>
 
 namespace dynamixel_hardware_interface
 {
@@ -564,6 +565,7 @@ DxlError Dynamixel::WriteItem(uint8_t id, uint16_t addr, uint8_t size, uint32_t 
     } else {
       return DxlError::OK;
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   fprintf(stderr, "MAX_COMM_RETRIES should be set to 1 or more\n");
   return DxlError::ITEM_WRITE_FAIL;
