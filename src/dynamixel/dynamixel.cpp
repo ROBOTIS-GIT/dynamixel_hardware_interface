@@ -318,8 +318,12 @@ DxlError Dynamixel::SetMultiDxlRead()
     }
     fprintf(stderr, "\n");
     fprintf(stderr, "Read items : ");
-    for (auto it_read_data_list_item_name : read_data_list_.at(0).item_name) {
-      fprintf(stderr, "\t%s", it_read_data_list_item_name.c_str());
+    if (!read_data_list_.empty()) {
+      for (auto it_read_data_list_item_name : read_data_list_.at(0).item_name) {
+        fprintf(stderr, "\t%s", it_read_data_list_item_name.c_str());
+      }
+    } else {
+      fprintf(stderr, "(none)");
     }
     fprintf(stderr, "\n");
   } else {
