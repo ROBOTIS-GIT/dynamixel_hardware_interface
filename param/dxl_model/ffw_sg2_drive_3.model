@@ -1,0 +1,382 @@
+[type info]
+name	value
+value_of_zero_radian_position	0
+value_of_max_radian_position	262144
+value_of_min_radian_position	-262144
+min_radian	-3.14159265
+max_radian	3.14159265
+velocity_unit	0.01
+
+[control table]
+Address	Size	Data Name
+2158	2	Model Number
+2160	4	Model Information
+2164	1	Firmware Version
+2165	1	ID
+2166	1	Bus Watchdog
+2168	1	Virtual ID
+2169	1	Protocol Type
+2170	1	Baud Rate (Bus)
+2171	1	Return Delay Time
+2172	1	Bit Rate (CAN)
+2173	1	Status Return Level
+2174	1	Registered Instruction
+2175	1	Dump Control
+2176	2	Dump Time
+2178	2	Dump Step Time
+2180	2	Dump Interval Time
+2182	1	Dump Item
+2186	4	Build Date
+2190	1	Drive Mode
+2191	1	Operating Mode
+2192	1	Startup Configuration
+2198	4	In-Position Threshold
+2202	4	Following Error Threshold
+2206	4	Moving Threshold
+2210	4	Homing Offset
+2214	1	Temperature Limit
+2215	1	Temperature Limit (Motor)
+2218	2	Max Voltage Limit
+2220	2	Min Voltage Limit
+2222	2	PWM Limit
+2224	2	Current Limit
+2226	4	Acceleration Limit
+2230	4	Velocity Limit
+2234	4	Max Position Limit
+2238	4	Min Position Limit
+2254	4	GearRatio Num
+2258	4	GearRatio Den
+2262	2	Safe Stop Time
+2264	2	Brake Delay
+2266	2	Goal Update Delay
+2268	1	Overexcitation Voltage
+2269	1	Normal Excitation Voltage
+2270	2	Overexcitation Time
+2272	2	Goal Current BSF Freqency
+2274	2	Goal Current BSF Bandwith.
+2276	2	Goal Current BSF Depth.
+2278	2	Present Velocity LPF Freqency
+2280	2	Goal Current LPF Freqency
+2282	2	Position FF LPF Freqency
+2284	2	Velocity FF LPF Freqency
+2297	1	Controller State
+2340	1	Error Code
+2341	1	Error Code History 1
+2342	1	Error Code History 2
+2343	1	Error Code History 3
+2344	1	Error Code History 4
+2345	1	Error Code History 5
+2346	1	Error Code History 6
+2347	1	Error Code History 7
+2348	1	Error Code History 8
+2349	1	Error Code History 9
+2350	1	Error Code History 10
+2351	1	Error Code History 11
+2352	1	Error Code History 12
+2353	1	Error Code History 13
+2354	1	Error Code History 14
+2355	1	Error Code History 15
+2356	1	Error Code History 16
+2414	2	Indirect Address 1
+2416	2	Indirect Address 2
+2418	2	Indirect Address 3
+2420	2	Indirect Address 4
+2422	2	Indirect Address 5
+2424	2	Indirect Address 6
+2426	2	Indirect Address 7
+2428	2	Indirect Address 8
+2430	2	Indirect Address 9
+2432	2	Indirect Address 10
+2434	2	Indirect Address 11
+2436	2	Indirect Address 12
+2438	2	Indirect Address 13
+2440	2	Indirect Address 14
+2442	2	Indirect Address 15
+2444	2	Indirect Address 16
+2446	2	Indirect Address 17
+2448	2	Indirect Address 18
+2450	2	Indirect Address 19
+2452	2	Indirect Address 20
+2454	2	Indirect Address 21
+2456	2	Indirect Address 22
+2458	2	Indirect Address 23
+2460	2	Indirect Address 24
+2462	2	Indirect Address 25
+2464	2	Indirect Address 26
+2466	2	Indirect Address 27
+2468	2	Indirect Address 28
+2470	2	Indirect Address 29
+2472	2	Indirect Address 30
+2474	2	Indirect Address 31
+2476	2	Indirect Address 32
+2478	2	Indirect Address 33
+2480	2	Indirect Address 34
+2482	2	Indirect Address 35
+2484	2	Indirect Address 36
+2486	2	Indirect Address 37
+2488	2	Indirect Address 38
+2490	2	Indirect Address 39
+2492	2	Indirect Address 40
+2494	2	Indirect Address 41
+2496	2	Indirect Address 42
+2498	2	Indirect Address 43
+2500	2	Indirect Address 44
+2502	2	Indirect Address 45
+2504	2	Indirect Address 46
+2506	2	Indirect Address 47
+2508	2	Indirect Address 48
+2510	2	Indirect Address 49
+2512	2	Indirect Address 50
+2514	2	Indirect Address 51
+2516	2	Indirect Address 52
+2518	2	Indirect Address 53
+2520	2	Indirect Address 54
+2522	2	Indirect Address 55
+2524	2	Indirect Address 56
+2526	2	Indirect Address 57
+2528	2	Indirect Address 58
+2530	2	Indirect Address 59
+2532	2	Indirect Address 60
+2534	2	Indirect Address 61
+2536	2	Indirect Address 62
+2538	2	Indirect Address 63
+2540	2	Indirect Address 64
+2542	2	Indirect Address 65
+2544	2	Indirect Address 66
+2546	2	Indirect Address 67
+2548	2	Indirect Address 68
+2550	2	Indirect Address 69
+2552	2	Indirect Address 70
+2554	2	Indirect Address 71
+2556	2	Indirect Address 72
+2558	2	Indirect Address 73
+2560	2	Indirect Address 74
+2562	2	Indirect Address 75
+2564	2	Indirect Address 76
+2566	2	Indirect Address 77
+2568	2	Indirect Address 78
+2570	2	Indirect Address 79
+2572	2	Indirect Address 80
+2574	2	Indirect Address 81
+2576	2	Indirect Address 82
+2578	2	Indirect Address 83
+2580	2	Indirect Address 84
+2582	2	Indirect Address 85
+2584	2	Indirect Address 86
+2586	2	Indirect Address 87
+2588	2	Indirect Address 88
+2590	2	Indirect Address 89
+2592	2	Indirect Address 90
+2594	2	Indirect Address 91
+2596	2	Indirect Address 92
+2598	2	Indirect Address 93
+2600	2	Indirect Address 94
+2602	2	Indirect Address 95
+2604	2	Indirect Address 96
+2606	2	Indirect Address 97
+2608	2	Indirect Address 98
+2610	2	Indirect Address 99
+2612	2	Indirect Address 100
+2614	2	Indirect Address 101
+2616	2	Indirect Address 102
+2618	2	Indirect Address 103
+2620	2	Indirect Address 104
+2622	2	Indirect Address 105
+2624	2	Indirect Address 106
+2626	2	Indirect Address 107
+2628	2	Indirect Address 108
+2630	2	Indirect Address 109
+2632	2	Indirect Address 110
+2634	2	Indirect Address 111
+2636	2	Indirect Address 112
+2638	2	Indirect Address 113
+2640	2	Indirect Address 114
+2642	2	Indirect Address 115
+2644	2	Indirect Address 116
+2646	2	Indirect Address 117
+2648	2	Indirect Address 118
+2650	2	Indirect Address 119
+2652	2	Indirect Address 120
+2654	2	Indirect Address 121
+2656	2	Indirect Address 122
+2658	2	Indirect Address 123
+2660	2	Indirect Address 124
+2662	2	Indirect Address 125
+2664	2	Indirect Address 126
+2666	2	Indirect Address 127
+2668	2	Indirect Address 128
+2670	1	Torque Enable
+2671	1	LED
+2672	1	Gain Save
+2710	4	Current I Gain
+2714	4	Current P Gain
+2718	4	Velocity I Gain
+2722	4	Velocity P Gain
+2726	4	Velocity FF Gain
+2730	4	Position D Gain
+2734	4	Position I Gain
+2738	4	Position P Gain
+2742	4	Position FF Gain
+2746	4	Profile Acceleration
+2750	4	Profile Velocity
+2754	4	Profile Acceleration Time
+2758	4	Profile Time
+2762	2	PWM Offset
+2764	2	Current Offset
+2766	4	Velocity Offset
+2770	2	Goal PWM
+2772	2	Goal Current
+2774	4	Goal Velocity
+2778	4	Goal Position
+2782	4	Goal Position (H)
+2787	1	Moving Status
+2788	2	Realtime Tick
+2790	2	Present PWM
+2792	2	Present Current
+2794	4	Present Velocity
+2798	4	Present Position
+2802	4	Present Position (H)
+2806	4	Position Trajectory
+2810	4	Velocity Trajectory
+2814	2	Present Input Voltage
+2816	1	Present Temperature
+2817	1	Present Temperature (Motor)
+2846	2	Voltage A
+2848	2	Voltage B
+2850	2	Voltage C
+2852	2	Present Impact
+2872	2	Current A
+2874	2	Current B
+2876	2	Current C
+2878	4	Present Single Position
+2882	4	Present Multi Position
+2886	2	Elec. Angle
+3049	1	Backup Ready
+3054	1	Indirect Data 1
+3055	1	Indirect Data 2
+3056	1	Indirect Data 3
+3057	1	Indirect Data 4
+3058	1	Indirect Data 5
+3059	1	Indirect Data 6
+3060	1	Indirect Data 7
+3061	1	Indirect Data 8
+3062	1	Indirect Data 9
+3063	1	Indirect Data 10
+3064	1	Indirect Data 11
+3065	1	Indirect Data 12
+3066	1	Indirect Data 13
+3067	1	Indirect Data 14
+3068	1	Indirect Data 15
+3069	1	Indirect Data 16
+3070	1	Indirect Data 17
+3071	1	Indirect Data 18
+3072	1	Indirect Data 19
+3073	1	Indirect Data 20
+3074	1	Indirect Data 21
+3075	1	Indirect Data 22
+3076	1	Indirect Data 23
+3077	1	Indirect Data 24
+3078	1	Indirect Data 25
+3079	1	Indirect Data 26
+3080	1	Indirect Data 27
+3081	1	Indirect Data 28
+3082	1	Indirect Data 29
+3083	1	Indirect Data 30
+3084	1	Indirect Data 31
+3085	1	Indirect Data 32
+3086	1	Indirect Data 33
+3087	1	Indirect Data 34
+3088	1	Indirect Data 35
+3089	1	Indirect Data 36
+3090	1	Indirect Data 37
+3091	1	Indirect Data 38
+3092	1	Indirect Data 39
+3093	1	Indirect Data 40
+3094	1	Indirect Data 41
+3095	1	Indirect Data 42
+3096	1	Indirect Data 43
+3097	1	Indirect Data 44
+3098	1	Indirect Data 45
+3099	1	Indirect Data 46
+3100	1	Indirect Data 47
+3101	1	Indirect Data 48
+3102	1	Indirect Data 49
+3103	1	Indirect Data 50
+3104	1	Indirect Data 51
+3105	1	Indirect Data 52
+3106	1	Indirect Data 53
+3107	1	Indirect Data 54
+3108	1	Indirect Data 55
+3109	1	Indirect Data 56
+3110	1	Indirect Data 57
+3111	1	Indirect Data 58
+3112	1	Indirect Data 59
+3113	1	Indirect Data 60
+3114	1	Indirect Data 61
+3115	1	Indirect Data 62
+3116	1	Indirect Data 63
+3117	1	Indirect Data 64
+3118	1	Indirect Data 65
+3119	1	Indirect Data 66
+3120	1	Indirect Data 67
+3121	1	Indirect Data 68
+3122	1	Indirect Data 69
+3123	1	Indirect Data 70
+3124	1	Indirect Data 71
+3125	1	Indirect Data 72
+3126	1	Indirect Data 73
+3127	1	Indirect Data 74
+3128	1	Indirect Data 75
+3129	1	Indirect Data 76
+3130	1	Indirect Data 77
+3131	1	Indirect Data 78
+3132	1	Indirect Data 79
+3133	1	Indirect Data 80
+3134	1	Indirect Data 81
+3135	1	Indirect Data 82
+3136	1	Indirect Data 83
+3137	1	Indirect Data 84
+3138	1	Indirect Data 85
+3139	1	Indirect Data 86
+3140	1	Indirect Data 87
+3141	1	Indirect Data 88
+3142	1	Indirect Data 89
+3143	1	Indirect Data 90
+3144	1	Indirect Data 91
+3145	1	Indirect Data 92
+3146	1	Indirect Data 93
+3147	1	Indirect Data 94
+3148	1	Indirect Data 95
+3149	1	Indirect Data 96
+3150	1	Indirect Data 97
+3151	1	Indirect Data 98
+3152	1	Indirect Data 99
+3153	1	Indirect Data 100
+3154	1	Indirect Data 101
+3155	1	Indirect Data 102
+3156	1	Indirect Data 103
+3157	1	Indirect Data 104
+3158	1	Indirect Data 105
+3159	1	Indirect Data 106
+3160	1	Indirect Data 107
+3161	1	Indirect Data 108
+3162	1	Indirect Data 109
+3163	1	Indirect Data 110
+3164	1	Indirect Data 111
+3165	1	Indirect Data 112
+3166	1	Indirect Data 113
+3167	1	Indirect Data 114
+3168	1	Indirect Data 115
+3169	1	Indirect Data 116
+3170	1	Indirect Data 117
+3171	1	Indirect Data 118
+3172	1	Indirect Data 119
+3173	1	Indirect Data 120
+3174	1	Indirect Data 121
+3175	1	Indirect Data 122
+3176	1	Indirect Data 123
+3177	1	Indirect Data 124
+3178	1	Indirect Data 125
+3179	1	Indirect Data 126
+3180	1	Indirect Data 127
+3181	1	Indirect Data 128

@@ -62,6 +62,7 @@ constexpr char HW_IF_TORQUE_ENABLE[] = "torque_enable";
 typedef struct HandlerVarType_
 {
   uint8_t id;                                /**< ID of the Dynamixel component. */
+  uint8_t comm_id;                           /**< ID of the Dynamixel to be communicated. */
   std::string name;                          /**< Name of the component. */
   std::vector<std::string> interface_name_vec; /**< Vector of interface names. */
   std::vector<std::shared_ptr<double>> value_ptr_vec; /**< Vector interface values. */
@@ -227,6 +228,7 @@ private:
   std::string port_name_;
   std::string baud_rate_;
   std::vector<uint8_t> dxl_id_;
+  std::vector<uint8_t> virtual_dxl_id_;
 
   std::vector<uint8_t> sensor_id_;
   std::map<uint8_t /*id*/, std::string /*interface_name*/> sensor_item_;
@@ -245,6 +247,7 @@ private:
   std::vector<HandlerVarType> hdl_sensor_states_;
 
   ///// handler controller variable
+  std::vector<HandlerVarType> hdl_gpio_controller_states_;
   std::vector<HandlerVarType> hdl_gpio_controller_commands_;
 
   bool is_set_hdl_{false};
@@ -261,15 +264,6 @@ private:
    * @return True if initialization was successful, false otherwise.
    */
   bool initItems(const std::string & type_filter);
-
-  /**
-   * @brief Helper function to retry writing an item to a Dynamixel device.
-   * @param id The ID of the Dynamixel device.
-   * @param item_name The name of the item to write.
-   * @param value The value to write.
-   * @return True if write was successful, false if timeout occurred.
-   */
-  bool retryWriteItem(uint8_t id, const std::string & item_name, uint32_t value);
 
   /**
    * @brief Initializes Dynamixel items.
@@ -362,7 +356,7 @@ private:
     size_t outer_size,
     size_t inner_size,
     std::vector<HandlerVarType> & outer_handlers,
-    const std::vector<HandlerVarType> & inner_handlers,
+    std::vector<HandlerVarType> & inner_handlers,
     double ** matrix,
     const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
     const std::string & conversion_iface = "",
