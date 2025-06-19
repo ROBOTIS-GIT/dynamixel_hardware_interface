@@ -21,6 +21,8 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <thread>
+#include <chrono>
 
 namespace dynamixel_hardware_interface
 {
@@ -78,6 +80,68 @@ Dynamixel::~Dynamixel()
   fprintf(stderr, "Dynamixel destructor end\n");
 }
 
+DxlError Dynamixel::ReadDxlModelFile(uint8_t id, uint16_t model_num)
+{
+  try {
+    dxl_info_.ReadDxlModelFile(id, model_num);
+    return DxlError::OK;
+  } catch (const std::exception & e) {
+    fprintf(stderr, "[ReadDxlModelFile][ID:%03d] Error reading model file: %s\n", id, e.what());
+    return DxlError::CANNOT_FIND_CONTROL_ITEM;
+  }
+}
+
+DxlError Dynamixel::InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_torque)
+{
+  for (auto it_id : id_arr) {
+    try {
+      if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable")) {
+        uint32_t torque_state = 0;
+        DxlError result = ReadItem(it_id, "Torque Enable", torque_state);
+        if (result != DxlError::OK) {
+          fprintf(stderr, "[InitTorqueStates][ID:%03d] Error reading torque state\n", it_id);
+          return result;
+        }
+
+        torque_state_[it_id] = torque_state;
+
+        if (torque_state_[it_id] == TORQUE_ON) {
+          if (disable_torque) {
+            fprintf(
+              stderr, "[InitTorqueStates][ID:%03d] Torque is enabled, disabling torque\n",
+              it_id);
+            result = WriteItem(it_id, "Torque Enable", TORQUE_OFF);
+            if (result != DxlError::OK) {
+              fprintf(stderr, "[InitTorqueStates][ID:%03d] Error disabling torque\n", it_id);
+              return result;
+            }
+            torque_state_[it_id] = TORQUE_OFF;
+          } else {
+            torque_state_[it_id] = TORQUE_OFF;
+            fprintf(
+              stderr,
+              "[InitTorqueStates][ID:%03d] Torque is enabled, cannot proceed. Set "
+              "'disable_torque_at_init' parameter to 'true' to disable torque at initialization "
+              "or disable torque manually.\n",
+              it_id);
+            return DxlError::DLX_HARDWARE_ERROR;
+          }
+        }
+
+        fprintf(
+          stderr, "[InitTorqueStates][ID:%03d] Current torque state: %s\n", it_id,
+          torque_state_[it_id] ? "ON" : "OFF");
+      }
+    } catch (const std::exception & e) {
+      fprintf(
+        stderr, "[InitTorqueStates][ID:%03d] Error checking control item: %s\n", it_id,
+        e.what());
+      return DxlError::CANNOT_FIND_CONTROL_ITEM;
+    }
+  }
+  return DxlError::OK;
+}
+
 DxlError Dynamixel::InitDxlComm(
   std::vector<uint8_t> id_arr,
   std::string port_name,
@@ -113,9 +177,12 @@ DxlError Dynamixel::InitDxlComm(
     } else if (dxl_error != 0) {
       fprintf(stderr, " - RX_PACKET_ERROR : %s\n", packet_handler_->getRxPacketError(dxl_error));
       uint32_t err = 0;
-      ReadItem(it_id, "Hardware Error Status", err);
-      fprintf(stderr, "Read Hardware Error Status : %x\n", err);
-      return DxlError::CANNOT_FIND_CONTROL_ITEM;
+      if (ReadItem(it_id, "Hardware Error Status", err) == DxlError::OK) {
+        fprintf(stderr, "[ID:%03d] Read Hardware Error Status : %x\n", it_id, err);
+      }
+      fprintf(stderr, "[ID:%03d] Hardware Error detected, rebooting...\n", it_id);
+      Reboot(it_id);
+      return DxlError::DLX_HARDWARE_ERROR;
     } else {
       fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d\n", dxl_model_number);
     }
@@ -123,24 +190,13 @@ DxlError Dynamixel::InitDxlComm(
     try {
       dxl_info_.ReadDxlModelFile(it_id, dxl_model_number);
     } catch (const std::exception & e) {
-      fprintf(stderr, "Error reading model file for ID %d: %s\n", it_id, e.what());
+      fprintf(stderr, "[InitDxlComm][ID:%03d] Error reading model file: %s\n", it_id, e.what());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
   }
 
   read_data_list_.clear();
   write_data_list_.clear();
-
-  for (auto it_id : id_arr) {
-    try {
-      if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable")) {
-        torque_state_[it_id] = TORQUE_OFF;
-      }
-    } catch (const std::exception & e) {
-      fprintf(stderr, "Error checking control item for ID %d: %s\n", it_id, e.what());
-      return DxlError::CANNOT_FIND_CONTROL_ITEM;
-    }
-  }
 
   return DxlError::OK;
 }
@@ -177,6 +233,7 @@ void Dynamixel::RWDataReset()
 
 DxlError Dynamixel::SetDxlReadItems(
   uint8_t id,
+  uint8_t comm_id,
   std::vector<std::string> item_names,
   std::vector<std::shared_ptr<double>> data_vec_ptr)
 {
@@ -185,23 +242,6 @@ DxlError Dynamixel::SetDxlReadItems(
     return DxlError::OK;
   }
 
-  RWItemList read_item;
-  read_item.id = id;
-
-  for (auto it_name : item_names) {
-    uint16_t ITEM_ADDR;
-    uint8_t ITEM_SIZE;
-    if (dxl_info_.GetDxlControlItem(id, it_name, ITEM_ADDR, ITEM_SIZE) == false) {
-      fprintf(
-        stderr, "[ID:%03d] Cannot find control item in model file. : %s\n", id,
-        it_name.c_str());
-      return DxlError::CANNOT_FIND_CONTROL_ITEM;
-    }
-
-    read_item.item_name.push_back(it_name);
-    read_item.item_addr.push_back(ITEM_ADDR);
-    read_item.item_size.push_back(ITEM_SIZE);
-  }
   if (item_names.size() != data_vec_ptr.size()) {
     fprintf(
       stderr, "Incorrect Read Data Size!!![%zu] [%zu]\n",
@@ -209,7 +249,53 @@ DxlError Dynamixel::SetDxlReadItems(
     return DxlError::SET_READ_ITEM_FAIL;
   }
 
-  read_item.item_data_ptr_vec = data_vec_ptr;
+  // Process items and get their addresses and sizes
+  std::vector<uint8_t> item_ids;
+  std::vector<uint16_t> item_addrs;
+  std::vector<uint8_t> item_sizes;
+  for (auto it_name : item_names) {
+    uint16_t ITEM_ADDR;
+    uint8_t ITEM_SIZE;
+    if (dxl_info_.GetDxlControlItem(id, it_name, ITEM_ADDR, ITEM_SIZE) == false) {
+      fprintf(
+        stderr, "[ID:%03d] Cannot find control item in model file : %s\n", id,
+        it_name.c_str());
+      return DxlError::CANNOT_FIND_CONTROL_ITEM;
+    }
+    item_ids.push_back(id);
+    item_addrs.push_back(ITEM_ADDR);
+    item_sizes.push_back(ITEM_SIZE);
+  }
+
+  // Check if there's already an entry with this comm_id
+  for (auto & existing_item : read_data_list_) {
+    if (existing_item.comm_id == comm_id) {
+      // Found existing entry, append new items
+      existing_item.id_arr.insert(existing_item.id_arr.end(), item_ids.begin(), item_ids.end());
+      existing_item.item_name.insert(
+        existing_item.item_name.end(), item_names.begin(),
+        item_names.end());
+      existing_item.item_addr.insert(
+        existing_item.item_addr.end(), item_addrs.begin(),
+        item_addrs.end());
+      existing_item.item_size.insert(
+        existing_item.item_size.end(), item_sizes.begin(),
+        item_sizes.end());
+      existing_item.item_data_ptr_vec.insert(
+        existing_item.item_data_ptr_vec.end(),
+        data_vec_ptr.begin(), data_vec_ptr.end());
+      return DxlError::OK;
+    }
+  }
+
+  // No existing entry found, create new one
+  RWItemList read_item;
+  read_item.comm_id = comm_id;
+  read_item.id_arr = std::move(item_ids);
+  read_item.item_name = std::move(item_names);
+  read_item.item_addr = std::move(item_addrs);
+  read_item.item_size = std::move(item_sizes);
+  read_item.item_data_ptr_vec = std::move(data_vec_ptr);
 
   read_data_list_.push_back(read_item);
 
@@ -228,17 +314,21 @@ DxlError Dynamixel::SetMultiDxlRead()
   if (read_type_ == SYNC) {
     fprintf(stderr, "ID : ");
     for (auto it_read_data_list : read_data_list_) {
-      fprintf(stderr, "%d, ", it_read_data_list.id);
+      fprintf(stderr, "%d, ", it_read_data_list.comm_id);
     }
     fprintf(stderr, "\n");
     fprintf(stderr, "Read items : ");
-    for (auto it_read_data_list_item_name : read_data_list_.at(0).item_name) {
-      fprintf(stderr, "\t%s", it_read_data_list_item_name.c_str());
+    if (!read_data_list_.empty()) {
+      for (auto it_read_data_list_item_name : read_data_list_.at(0).item_name) {
+        fprintf(stderr, "\t%s", it_read_data_list_item_name.c_str());
+      }
+    } else {
+      fprintf(stderr, "(none)");
     }
     fprintf(stderr, "\n");
   } else {
     for (auto it_read_data_list : read_data_list_) {
-      fprintf(stderr, "ID : %d", it_read_data_list.id);
+      fprintf(stderr, "ID : %d", it_read_data_list.comm_id);
       fprintf(stderr, "\tRead items : ");
       for (auto it_read_data_list_item_name : it_read_data_list.item_name) {
         fprintf(stderr, "\t%s", it_read_data_list_item_name.c_str());
@@ -256,6 +346,7 @@ DxlError Dynamixel::SetMultiDxlRead()
 
 DxlError Dynamixel::SetDxlWriteItems(
   uint8_t id,
+  uint8_t comm_id,
   std::vector<std::string> item_names,
   std::vector<std::shared_ptr<double>> data_vec_ptr)
 {
@@ -264,28 +355,57 @@ DxlError Dynamixel::SetDxlWriteItems(
     return DxlError::OK;
   }
 
-  RWItemList write_item;
-  write_item.id = id;
+  if (item_names.size() != data_vec_ptr.size()) {
+    fprintf(
+      stderr, "Incorrect Write Data Size!!![%zu] [%zu]\n",
+      item_names.size(), data_vec_ptr.size());
+    return DxlError::SET_WRITE_ITEM_FAIL;
+  }
 
+  std::vector<uint8_t> item_ids;
+  std::vector<uint16_t> item_addrs;
+  std::vector<uint8_t> item_sizes;
   for (auto it_name : item_names) {
     uint16_t ITEM_ADDR;
     uint8_t ITEM_SIZE;
     if (dxl_info_.GetDxlControlItem(id, it_name, ITEM_ADDR, ITEM_SIZE) == false) {
       fprintf(
-        stderr, "[ID:%03d] Cannot find control item in model file. : .%s\n", id,
+        stderr, "[ID:%03d] Cannot find control item in model file : %s\n", id,
         it_name.c_str());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
+    item_ids.push_back(id);
+    item_addrs.push_back(ITEM_ADDR);
+    item_sizes.push_back(ITEM_SIZE);
+  }
 
-    write_item.item_name.push_back(it_name);
-    write_item.item_addr.push_back(ITEM_ADDR);
-    write_item.item_size.push_back(ITEM_SIZE);
+  for (auto & existing_item : write_data_list_) {
+    if (existing_item.comm_id == comm_id) {
+      existing_item.id_arr.insert(existing_item.id_arr.end(), item_ids.begin(), item_ids.end());
+      existing_item.item_name.insert(
+        existing_item.item_name.end(), item_names.begin(),
+        item_names.end());
+      existing_item.item_addr.insert(
+        existing_item.item_addr.end(), item_addrs.begin(),
+        item_addrs.end());
+      existing_item.item_size.insert(
+        existing_item.item_size.end(), item_sizes.begin(),
+        item_sizes.end());
+      existing_item.item_data_ptr_vec.insert(
+        existing_item.item_data_ptr_vec.end(),
+        data_vec_ptr.begin(), data_vec_ptr.end());
+      return DxlError::OK;
+    }
   }
-  if (item_names.size() != data_vec_ptr.size()) {
-    fprintf(stderr, "Incorrect Write Data Size!!!");
-    return DxlError::SET_WRITE_ITEM_FAIL;
-  }
-  write_item.item_data_ptr_vec = data_vec_ptr;
+
+  // No existing entry found, create new one
+  RWItemList write_item;
+  write_item.comm_id = comm_id;
+  write_item.id_arr = std::move(item_ids);
+  write_item.item_name = std::move(item_names);
+  write_item.item_addr = std::move(item_addrs);
+  write_item.item_size = std::move(item_sizes);
+  write_item.item_data_ptr_vec = std::move(data_vec_ptr);
 
   write_data_list_.push_back(write_item);
 
@@ -303,7 +423,7 @@ DxlError Dynamixel::SetMultiDxlWrite()
   if (write_type_ == SYNC) {
     fprintf(stderr, "ID : ");
     for (auto it_id : write_data_list_) {
-      fprintf(stderr, "%d, ", it_id.id);
+      fprintf(stderr, "%d, ", it_id.comm_id);
     }
     fprintf(stderr, "\n");
     fprintf(stderr, "Write items : ");
@@ -317,7 +437,7 @@ DxlError Dynamixel::SetMultiDxlWrite()
     fprintf(stderr, "\n");
   } else {
     for (auto it_id : write_data_list_) {
-      fprintf(stderr, "ID : %d", it_id.id);
+      fprintf(stderr, "ID : %d", it_id.comm_id);
       fprintf(stderr, "\tWrite items : ");
       for (auto it_name : it_id.item_name) {
         fprintf(stderr, "\t%s", it_name.c_str());
@@ -367,25 +487,25 @@ DxlError Dynamixel::DynamixelDisable(std::vector<uint8_t> id_arr)
   return result;
 }
 
-DxlError Dynamixel::SetOperatingMode(uint8_t dxl_id, uint8_t dynamixel_mode)
-{
-  if (WriteItem(dxl_id, "Operating Mode", dynamixel_mode) == false) {
-    return DxlError::ITEM_WRITE_FAIL;
-  }
+// DxlError Dynamixel::SetOperatingMode(uint8_t dxl_id, uint8_t dynamixel_mode)
+// {
+//   if (WriteItem(dxl_id, "Operating Mode", dynamixel_mode) == false) {
+//     return DxlError::ITEM_WRITE_FAIL;
+//   }
 
-  fprintf(stderr, "[ID:%03d] Succeeded to set operating mode(", dxl_id);
-  if (dynamixel_mode == DXL_POSITION_CTRL_MODE) {
-    fprintf(stderr, "Position Control Mode)\n");
-  } else if (dynamixel_mode == DXL_CURRENT_CTRL_MODE) {
-    fprintf(stderr, "Current Control Mode)\n");
-  } else if (dynamixel_mode == DXL_VELOCITY_CTRL_MODE) {
-    fprintf(stderr, "Velocity Control Mode)\n");
-  } else {
-    fprintf(stderr, "Not Defined Control Mode)\n");
-  }
+//   fprintf(stderr, "[ID:%03d] Succeeded to set operating mode(", dxl_id);
+//   if (dynamixel_mode == DXL_POSITION_CTRL_MODE) {
+//     fprintf(stderr, "Position Control Mode)\n");
+//   } else if (dynamixel_mode == DXL_CURRENT_CTRL_MODE) {
+//     fprintf(stderr, "Current Control Mode)\n");
+//   } else if (dynamixel_mode == DXL_VELOCITY_CTRL_MODE) {
+//     fprintf(stderr, "Velocity Control Mode)\n");
+//   } else {
+//     fprintf(stderr, "Not Defined Control Mode)\n");
+//   }
 
-  return DxlError::OK;
-}
+//   return DxlError::OK;
+// }
 
 DxlError Dynamixel::WriteItem(uint8_t id, std::string item_name, uint32_t data)
 {
@@ -393,7 +513,7 @@ DxlError Dynamixel::WriteItem(uint8_t id, std::string item_name, uint32_t data)
   uint8_t ITEM_SIZE;
   if (dxl_info_.GetDxlControlItem(id, item_name, ITEM_ADDR, ITEM_SIZE) == false) {
     fprintf(
-      stderr, "[ID:%03d] Cannot find control item in model file. : %s\n", id,
+      stderr, "[WriteItem][ID:%03d] Cannot find control item in model file. : %s\n", id,
       item_name.c_str());
     return DxlError::CANNOT_FIND_CONTROL_ITEM;
   }
@@ -403,41 +523,57 @@ DxlError Dynamixel::WriteItem(uint8_t id, std::string item_name, uint32_t data)
 
 DxlError Dynamixel::WriteItem(uint8_t id, uint16_t addr, uint8_t size, uint32_t data)
 {
-  int dxl_comm_result = COMM_TX_FAIL;
-  uint8_t dxl_error = 0;
+  uint8_t comm_id = comm_id_[id];
+  for (int i = 0; i < MAX_COMM_RETRIES; i++) {
+    int dxl_comm_result = COMM_TX_FAIL;
+    uint8_t dxl_error = 0;
 
+    if (size == 1) {
+      dxl_comm_result =
+        packet_handler_->write1ByteTxRx(
+        port_handler_, comm_id, addr, static_cast<uint8_t>(data),
+        &dxl_error);
+    } else if (size == 2) {
+      dxl_comm_result = packet_handler_->write2ByteTxRx(
+        port_handler_, comm_id, addr,
+        static_cast<uint16_t>(data), &dxl_error);
+    } else if (size == 4) {
+      dxl_comm_result = packet_handler_->write4ByteTxRx(
+        port_handler_, comm_id, addr,
+        static_cast<uint32_t>(data), &dxl_error);
+    }
 
-  if (size == 1) {
-    dxl_comm_result =
-      packet_handler_->write1ByteTxRx(
-      port_handler_, id, addr, static_cast<uint8_t>(data),
-      &dxl_error);
-  } else if (size == 2) {
-    dxl_comm_result = packet_handler_->write2ByteTxRx(
-      port_handler_, id, addr,
-      static_cast<uint16_t>(data), &dxl_error);
-  } else if (size == 4) {
-    dxl_comm_result = packet_handler_->write4ByteTxRx(
-      port_handler_, id, addr,
-      static_cast<uint32_t>(data), &dxl_error);
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr,
+        "[WriteItem][ID:%03d][comm_id:%03d] COMM_ERROR : %s (retry %d/%d)\n",
+        id,
+        comm_id,
+        packet_handler_->getTxRxResult(dxl_comm_result),
+        i + 1,
+        MAX_COMM_RETRIES);
+      if (i == MAX_COMM_RETRIES - 1) {
+        return DxlError::ITEM_WRITE_FAIL;
+      }
+    } else if (dxl_error != 0) {
+      fprintf(
+        stderr,
+        "[WriteItem][ID:%03d][comm_id:%03d] RX_PACKET_ERROR : %s (retry %d/%d)\n",
+        id,
+        comm_id,
+        packet_handler_->getRxPacketError(dxl_error),
+        i + 1,
+        MAX_COMM_RETRIES);
+      if (i == MAX_COMM_RETRIES - 1) {
+        return DxlError::ITEM_WRITE_FAIL;
+      }
+    } else {
+      return DxlError::OK;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-
-  if (dxl_comm_result != COMM_SUCCESS) {
-    fprintf(
-      stderr,
-      "[ID:%03d] COMM_ERROR : %s\n",
-      id,
-      packet_handler_->getTxRxResult(dxl_comm_result));
-    return DxlError::ITEM_WRITE_FAIL;
-  } else if (dxl_error != 0) {
-    fprintf(
-      stderr,
-      "[ID:%03d] RX_PACKET_ERROR : %s\n",
-      id,
-      packet_handler_->getRxPacketError(dxl_error));
-    return DxlError::ITEM_WRITE_FAIL;
-  }
-  return DxlError::OK;
+  fprintf(stderr, "MAX_COMM_RETRIES should be set to 1 or more\n");
+  return DxlError::ITEM_WRITE_FAIL;
 }
 
 DxlError Dynamixel::InsertWriteItemBuf(uint8_t id, std::string item_name, uint32_t data)
@@ -508,48 +644,66 @@ DxlError Dynamixel::ReadItem(uint8_t id, std::string item_name, uint32_t & data)
   uint8_t ITEM_SIZE;
   if (dxl_info_.GetDxlControlItem(id, item_name, ITEM_ADDR, ITEM_SIZE) == false) {
     fprintf(
-      stderr, "[ID:%03d] Cannot find control item in model file. : %s\n", id,
+      stderr, "[ReadItem][ID:%03d] Cannot find control item in model file. : %s\n", id,
       item_name.c_str());
     return DxlError::CANNOT_FIND_CONTROL_ITEM;
   }
 
-  int dxl_comm_result = COMM_TX_FAIL;
-  uint8_t dxl_error = 0;
+  uint8_t comm_id = comm_id_[id];
+  for (int i = 0; i < MAX_COMM_RETRIES; i++) {
+    int dxl_comm_result = COMM_TX_FAIL;
+    uint8_t dxl_error = 0;
 
-  if (ITEM_SIZE == 1) {
-    uint8_t read_data;
-    dxl_comm_result = packet_handler_->read1ByteTxRx(
-      port_handler_, id, ITEM_ADDR,
-      &read_data, &dxl_error);
-    data = read_data;
-  } else if (ITEM_SIZE == 2) {
-    uint16_t read_data;
-    dxl_comm_result = packet_handler_->read2ByteTxRx(
-      port_handler_, id, ITEM_ADDR,
-      &read_data, &dxl_error);
-    data = read_data;
-  } else if (ITEM_SIZE == 4) {
-    uint32_t read_data;
-    dxl_comm_result = packet_handler_->read4ByteTxRx(
-      port_handler_, id, ITEM_ADDR,
-      &read_data, &dxl_error);
-    data = read_data;
-  }
+    if (ITEM_SIZE == 1) {
+      uint8_t read_data;
+      dxl_comm_result = packet_handler_->read1ByteTxRx(
+        port_handler_, comm_id, ITEM_ADDR,
+        &read_data, &dxl_error);
+      data = read_data;
+    } else if (ITEM_SIZE == 2) {
+      uint16_t read_data;
+      dxl_comm_result = packet_handler_->read2ByteTxRx(
+        port_handler_, comm_id, ITEM_ADDR,
+        &read_data, &dxl_error);
+      data = read_data;
+    } else if (ITEM_SIZE == 4) {
+      uint32_t read_data;
+      dxl_comm_result = packet_handler_->read4ByteTxRx(
+        port_handler_, comm_id, ITEM_ADDR,
+        &read_data, &dxl_error);
+      data = read_data;
+    }
 
-  if (dxl_comm_result != COMM_SUCCESS) {
-    fprintf(
-      stderr, "[ID:%03d] COMM_ERROR : %s\n",
-      id,
-      packet_handler_->getTxRxResult(dxl_comm_result));
-    return DxlError::ITEM_READ_FAIL;
-  } else if (dxl_error != 0) {
-    fprintf(
-      stderr, "[ID:%03d] RX_PACKET_ERROR : %s\n",
-      id,
-      packet_handler_->getRxPacketError(dxl_error));
-    return DxlError::ITEM_READ_FAIL;
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr,
+        "[ReadItem][ID:%03d][comm_id:%03d] COMM_ERROR : %s (retry %d/%d)\n",
+        id,
+        comm_id,
+        packet_handler_->getTxRxResult(dxl_comm_result),
+        i + 1,
+        MAX_COMM_RETRIES);
+      if (i == MAX_COMM_RETRIES - 1) {
+        return DxlError::ITEM_READ_FAIL;
+      }
+    } else if (dxl_error != 0) {
+      fprintf(
+        stderr,
+        "[ReadItem][ID:%03d][comm_id:%03d] RX_PACKET_ERROR : %s (retry %d/%d)\n",
+        id,
+        comm_id,
+        packet_handler_->getRxPacketError(dxl_error),
+        i + 1,
+        MAX_COMM_RETRIES);
+      if (i == MAX_COMM_RETRIES - 1) {
+        return DxlError::ITEM_READ_FAIL;
+      }
+    } else {
+      return DxlError::OK;
+    }
   }
-  return DxlError::OK;
+  fprintf(stderr, "MAX_COMM_RETRIES should be set to 1 or more\n");
+  return DxlError::ITEM_READ_FAIL;
 }
 
 
@@ -693,6 +847,10 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
 
 DxlError Dynamixel::ReadMultiDxlData(double period_ms)
 {
+  if (read_data_list_.empty()) {
+    return DxlError::OK;
+  }
+
   if (read_type_ == SYNC) {
     return GetDxlValueFromSyncRead(period_ms);
   } else {
@@ -702,6 +860,10 @@ DxlError Dynamixel::ReadMultiDxlData(double period_ms)
 
 DxlError Dynamixel::WriteMultiDxlData()
 {
+  if (write_data_list_.empty()) {
+    return DxlError::OK;
+  }
+
   if (write_type_ == SYNC) {
     return SetDxlValueToSyncWrite();
   } else {
@@ -716,15 +878,15 @@ bool Dynamixel::checkReadType()
     uint16_t indirect_addr[2];  // [i-1], [i]
     uint8_t indirect_size[2];   // [i-1], [i]
 
-    if (CheckIndirectReadAvailable(read_data_list_.at(dxl_index - 1).id) != DxlError::OK) {
+    if (CheckIndirectReadAvailable(read_data_list_.at(dxl_index - 1).comm_id) != DxlError::OK) {
       return BULK;
     }
 
     if (!dxl_info_.GetDxlControlItem(
-        read_data_list_.at(dxl_index).id, "Indirect Data Read", indirect_addr[1],
+        read_data_list_.at(dxl_index).comm_id, "Indirect Data Read", indirect_addr[1],
         indirect_size[1]) ||
       !dxl_info_.GetDxlControlItem(
-        read_data_list_.at(dxl_index - 1).id, "Indirect Data Read", indirect_addr[0],
+        read_data_list_.at(dxl_index - 1).comm_id, "Indirect Data Read", indirect_addr[0],
         indirect_size[0]))
     {
       return BULK;
@@ -762,15 +924,15 @@ bool Dynamixel::checkWriteType()
     uint16_t indirect_addr[2];  // [i-1], [i]
     uint8_t indirect_size[2];   // [i-1], [i]
 
-    if (CheckIndirectWriteAvailable(write_data_list_.at(dxl_index - 1).id) != DxlError::OK) {
+    if (CheckIndirectWriteAvailable(write_data_list_.at(dxl_index - 1).comm_id) != DxlError::OK) {
       return BULK;
     }
 
     if (!dxl_info_.GetDxlControlItem(
-        write_data_list_.at(dxl_index).id, "Indirect Data Write", indirect_addr[1],
+        write_data_list_.at(dxl_index).comm_id, "Indirect Data Write", indirect_addr[1],
         indirect_size[1]) ||
       !dxl_info_.GetDxlControlItem(
-        write_data_list_.at(dxl_index - 1).id, "Indirect Data Write", indirect_addr[0],
+        write_data_list_.at(dxl_index - 1).comm_id, "Indirect Data Write", indirect_addr[0],
         indirect_size[0]))
     {
       return BULK;
@@ -818,7 +980,7 @@ DxlError Dynamixel::SetSyncReadItemAndHandler()
 {
   std::vector<uint8_t> id_arr;
   for (auto it_read_data : read_data_list_) {
-    id_arr.push_back(it_read_data.id);
+    id_arr.push_back(it_read_data.comm_id);
   }
 
   DynamixelDisable(id_arr);
@@ -827,7 +989,7 @@ DxlError Dynamixel::SetSyncReadItemAndHandler()
   for (auto it_read_data : read_data_list_) {
     for (size_t item_index = 0; item_index < it_read_data.item_name.size(); item_index++) {
       auto result = AddIndirectRead(
-        it_read_data.id,
+        it_read_data.comm_id,
         it_read_data.item_name.at(item_index),
         it_read_data.item_addr.at(item_index),
         it_read_data.item_size.at(item_index));
@@ -835,10 +997,15 @@ DxlError Dynamixel::SetSyncReadItemAndHandler()
       if (result == DxlError::OK) {
       } else {
         fprintf(
-          stderr, "[ID:%03d] Failed to Indirect Address Read Item : [%s], %d\n",
-          it_read_data.id,
+          stderr,
+          "[ID:%03d] Failed to Set Indirect Address Read Item: [%s], Addr: %d, Size: %d, "
+          "Error code: %d\n",
+          it_read_data.comm_id,
           it_read_data.item_name.at(item_index).c_str(),
+          it_read_data.item_addr.at(item_index),
+          it_read_data.item_size.at(item_index),
           result);
+        return DxlError::SET_SYNC_READ_FAIL;
       }
     }
   }
@@ -892,6 +1059,11 @@ DxlError Dynamixel::SetFastSyncReadHandler(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
 {
+  if (id_arr.size() == 0) {
+    fprintf(stderr, "No Sync Read Item, not setting sync read handler\n");
+    return DxlError::OK;
+  }
+
   // Try to set up fast sync read first
   if (use_fast_read_protocol_) {
     DxlError fast_result = SetFastSyncReadHandler(id_arr);
@@ -955,11 +1127,12 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
     if (comm_result == DxlError::OK) {
       // Success, process data, and use fast sync read permanently
       for (auto it_read_data : read_data_list_) {
-        uint8_t id = it_read_data.id;
+        uint8_t id = it_read_data.comm_id;
         uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
         ProcessReadData(
           id,
           indirect_addr,
+          it_read_data.id_arr,
           indirect_info_read_[id].item_name,
           indirect_info_read_[id].item_size,
           it_read_data.item_data_ptr_vec,
@@ -983,7 +1156,7 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
         // Set up normal sync read handler
         std::vector<uint8_t> id_arr;
         for (auto it_read_data : read_data_list_) {
-          id_arr.push_back(it_read_data.id);
+          id_arr.push_back(it_read_data.comm_id);
         }
         SetSyncReadHandler(id_arr);
       }
@@ -1000,11 +1173,12 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
     return comm_result;
   }
   for (auto it_read_data : read_data_list_) {
-    uint8_t id = it_read_data.id;
+    uint8_t id = it_read_data.comm_id;
     uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
     ProcessReadData(
       id,
       indirect_addr,
+      it_read_data.id_arr,
       indirect_info_read_[id].item_name,
       indirect_info_read_[id].item_size,
       it_read_data.item_data_ptr_vec,
@@ -1036,11 +1210,11 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
   std::vector<RWItemList> direct_read_data_list;
 
   for (auto it_read_data : read_data_list_) {
-    if (CheckIndirectReadAvailable(it_read_data.id) == DxlError::OK) {
-      indirect_id_arr.push_back(it_read_data.id);
+    if (CheckIndirectReadAvailable(it_read_data.comm_id) == DxlError::OK) {
+      indirect_id_arr.push_back(it_read_data.comm_id);
       indirect_read_data_list.push_back(it_read_data);
     } else {
-      direct_id_arr.push_back(it_read_data.id);
+      direct_id_arr.push_back(it_read_data.comm_id);
       direct_read_data_list.push_back(it_read_data);
     }
   }
@@ -1067,7 +1241,7 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
     }
     // Call AddDirectRead once per id
     if (AddDirectRead(
-        it_read_data.id,
+        it_read_data.comm_id,
         group_item_names,
         min_addr,
         total_size) != DxlError::OK)
@@ -1089,7 +1263,7 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
       item_index++)
     {
       auto result = AddIndirectRead(
-        it_read_data.id,
+        it_read_data.comm_id,
         it_read_data.item_name.at(item_index),
         it_read_data.item_addr.at(item_index),
         it_read_data.item_size.at(item_index));
@@ -1097,20 +1271,26 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
       if (result == DxlError::OK) {
         fprintf(
           stderr, "[ID:%03d] Add Indirect Address Read Item : [%s]\n",
-          it_read_data.id,
+          it_read_data.comm_id,
           it_read_data.item_name.at(item_index).c_str());
-      } else if (result == DxlError::SET_BULK_READ_FAIL) {
+      } else if (result == DxlError::INDIRECT_ADDR_FAIL) {
         fprintf(
-          stderr, "[ID:%03d] Failed to Indirect Address Read Item : [%s], %d\n",
-          it_read_data.id,
+          stderr,
+          "[ID:%03d] Failed to Set Indirect Address Read Item : [%s], Addr: %d, Size: %d, "
+          "Error code: %d\n",
+          it_read_data.comm_id,
           it_read_data.item_name.at(item_index).c_str(),
+          it_read_data.item_addr.at(item_index),
+          it_read_data.item_size.at(item_index),
           result);
+        return DxlError::INDIRECT_ADDR_FAIL;
       } else if (result == DxlError::CANNOT_FIND_CONTROL_ITEM) {
         fprintf(
           stderr, "[ID:%03d] 'Indirect Address Read' is not defined in control table, "
           "Cannot set Indirect Address Read for : [%s]\n",
-          it_read_data.id,
+          it_read_data.comm_id,
           it_read_data.item_name.at(item_index).c_str());
+        return DxlError::CANNOT_FIND_CONTROL_ITEM;
       }
     }
   }
@@ -1260,7 +1440,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
       }
 
       for (auto it_read_data : read_data_list_) {
-        uint8_t id = it_read_data.id;
+        uint8_t id = it_read_data.comm_id;
         uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
         if (CheckIndirectReadAvailable(id) != DxlError::OK) {
           ProcessDirectReadData(
@@ -1275,6 +1455,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
           ProcessReadData(
             id,
             indirect_addr,
+            it_read_data.id_arr,
             indirect_info_read_[id].item_name,
             indirect_info_read_[id].item_size,
             it_read_data.item_data_ptr_vec,
@@ -1304,8 +1485,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
         std::vector<uint8_t> indirect_id_arr;
 
         for (auto it_read_data : read_data_list_) {
-          if (CheckIndirectReadAvailable(it_read_data.id) == DxlError::OK) {
-            indirect_id_arr.push_back(it_read_data.id);
+          if (CheckIndirectReadAvailable(it_read_data.comm_id) == DxlError::OK) {
+            indirect_id_arr.push_back(it_read_data.comm_id);
           }
         }
 
@@ -1324,7 +1505,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
   }
 
   for (auto it_read_data : read_data_list_) {
-    uint8_t id = it_read_data.id;
+    uint8_t id = it_read_data.comm_id;
     uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
     if (CheckIndirectReadAvailable(id) != DxlError::OK) {
       ProcessDirectReadData(
@@ -1339,6 +1520,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
       ProcessReadData(
         id,
         indirect_addr,
+        it_read_data.id_arr,
         indirect_info_read_[id].item_name,
         indirect_info_read_[id].item_size,
         it_read_data.item_data_ptr_vec,
@@ -1435,8 +1617,9 @@ DxlError Dynamixel::ProcessReadCommunication(
 }
 
 DxlError Dynamixel::ProcessReadData(
-  uint8_t id,
+  uint8_t comm_id,
   uint16_t indirect_addr,
+  const std::vector<uint8_t> & id_arr,
   const std::vector<std::string> & item_names,
   const std::vector<uint8_t> & item_sizes,
   const std::vector<std::shared_ptr<double>> & data_ptrs,
@@ -1445,21 +1628,23 @@ DxlError Dynamixel::ProcessReadData(
   uint16_t current_addr = indirect_addr;
 
   for (size_t item_index = 0; item_index < item_names.size(); item_index++) {
+    uint8_t ID = id_arr[item_index];
     uint8_t size = item_sizes[item_index];
     if (item_index > 0) {current_addr += item_sizes[item_index - 1];}
 
-    uint32_t dxl_getdata = get_data_func(id, current_addr, size);
+    uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
     if (item_names[item_index] == "Present Position") {
       *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
-        id,
+        ID,
         static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] =
-        dxl_info_.ConvertValueRPMToVelocityRPS(static_cast<int32_t>(dxl_getdata));
+      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
+        ID,
+        static_cast<int32_t>(dxl_getdata));
     } else if (item_names[item_index] == "Present Current") {
       *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
-        id,
+        ID,
         static_cast<int16_t>(dxl_getdata));
     } else {
       *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
@@ -1469,7 +1654,7 @@ DxlError Dynamixel::ProcessReadData(
 }
 
 DxlError Dynamixel::ProcessDirectReadData(
-  uint8_t id,
+  uint8_t comm_id,
   const std::vector<uint16_t> & item_addrs,
   const std::vector<uint8_t> & item_sizes,
   const std::vector<std::shared_ptr<double>> & data_ptrs,
@@ -1479,7 +1664,7 @@ DxlError Dynamixel::ProcessDirectReadData(
     uint16_t current_addr = item_addrs[item_index];
     uint8_t size = item_sizes[item_index];
 
-    uint32_t dxl_getdata = get_data_func(id, current_addr, size);
+    uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
     *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
   }
@@ -1528,8 +1713,15 @@ DxlError Dynamixel::AddIndirectRead(
     uint8_t using_size = indirect_info_read_[id].size;
 
     for (uint16_t i = 0; i < item_size; i++) {
-      if (WriteItem(id, INDIRECT_ADDR + (using_size * 2), 2, item_addr + i) != DxlError::OK) {
-        return DxlError::SET_BULK_READ_FAIL;
+      DxlError write_result = DxlError::INDIRECT_ADDR_FAIL;
+      uint16_t addr = INDIRECT_ADDR + (using_size * 2);
+      uint16_t item_addr_i = item_addr + i;
+
+      write_result = WriteItem(id, addr, 2, item_addr_i);
+
+      if (write_result != DxlError::OK) {
+        fprintf(stderr, "[AddIndirectRead][ID:%03d] WriteItem failed\n", id);
+        return DxlError::INDIRECT_ADDR_FAIL;
       }
       using_size++;
     }
@@ -1548,7 +1740,7 @@ DxlError Dynamixel::SetSyncWriteItemAndHandler()
 {
   std::vector<uint8_t> id_arr;
   for (auto it_write_data : write_data_list_) {
-    id_arr.push_back(it_write_data.id);
+    id_arr.push_back(it_write_data.comm_id);
   }
 
   DynamixelDisable(id_arr);
@@ -1559,7 +1751,7 @@ DxlError Dynamixel::SetSyncWriteItemAndHandler()
       item_index++)
     {
       if (AddIndirectWrite(
-          it_write_data.id,
+          it_write_data.comm_id,
           it_write_data.item_name.at(item_index),
           it_write_data.item_addr.at(item_index),
           it_write_data.item_size.at(item_index)) != DxlError::OK)
@@ -1581,6 +1773,11 @@ DxlError Dynamixel::SetSyncWriteItemAndHandler()
 
 DxlError Dynamixel::SetSyncWriteHandler(std::vector<uint8_t> id_arr)
 {
+  if (id_arr.size() == 0) {
+    fprintf(stderr, "No Sync Write Item, not setting sync write handler\n");
+    return DxlError::OK;
+  }
+
   uint16_t INDIRECT_ADDR = 0;
   uint8_t INDIRECT_SIZE;
 
@@ -1614,35 +1811,35 @@ DxlError Dynamixel::SetSyncWriteHandler(std::vector<uint8_t> id_arr)
 DxlError Dynamixel::SetDxlValueToSyncWrite()
 {
   for (auto it_write_data : write_data_list_) {
-    uint8_t ID = it_write_data.id;
-    uint8_t * param_write_value = new uint8_t[indirect_info_write_[ID].size];
+    uint8_t comm_id = it_write_data.comm_id;
+    uint8_t * param_write_value = new uint8_t[indirect_info_write_[comm_id].size];
     uint8_t added_byte = 0;
 
-
-    for (uint16_t item_index = 0; item_index < indirect_info_write_[ID].cnt; item_index++) {
+    for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
       double data = *it_write_data.item_data_ptr_vec.at(item_index);
-      if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Position") {
+      uint8_t ID = it_write_data.id_arr.at(item_index);
+      if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
         int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-      } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
-        int16_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+      } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
+        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
         param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
         param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-      } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
+      } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
         int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
         param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
       }
-      added_byte += indirect_info_write_[ID].item_size.at(item_index);
+      added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
     }
 
-    if (group_sync_write_->addParam(ID, param_write_value) != true) {
-      fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed\n", ID);
+    if (group_sync_write_->addParam(comm_id, param_write_value) != true) {
+      fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed\n", comm_id);
       return DxlError::SYNC_WRITE_FAIL;
     }
   }
@@ -1662,7 +1859,7 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
 {
   std::vector<uint8_t> id_arr;
   for (auto it_write_data : write_data_list_) {
-    id_arr.push_back(it_write_data.id);
+    id_arr.push_back(it_write_data.comm_id);
   }
 
   group_bulk_write_ = new dynamixel::GroupBulkWrite(port_handler_, packet_handler_);
@@ -1674,11 +1871,11 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
   std::vector<RWItemList> direct_write_data_list;
 
   for (auto it_write_data : write_data_list_) {
-    if (CheckIndirectWriteAvailable(it_write_data.id) == DxlError::OK) {
-      indirect_id_arr.push_back(it_write_data.id);
+    if (CheckIndirectWriteAvailable(it_write_data.comm_id) == DxlError::OK) {
+      indirect_id_arr.push_back(it_write_data.comm_id);
       indirect_write_data_list.push_back(it_write_data);
     } else {
-      direct_id_arr.push_back(it_write_data.id);
+      direct_id_arr.push_back(it_write_data.comm_id);
       direct_write_data_list.push_back(it_write_data);
     }
   }
@@ -1716,17 +1913,17 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
       if (addr_ranges[i].second != addr_ranges[i + 1].first) {
         fprintf(
           stderr, "[ID:%03d] Error: Gap detected between items at addresses %d and %d\n",
-          it_write_data.id, addr_ranges[i].second, addr_ranges[i + 1].first);
+          it_write_data.comm_id, addr_ranges[i].second, addr_ranges[i + 1].first);
         return DxlError::BULK_WRITE_FAIL;
       }
     }
 
     // Store direct write info
-    direct_info_write_[it_write_data.id].indirect_data_addr = min_addr;
-    direct_info_write_[it_write_data.id].size = total_size;
-    direct_info_write_[it_write_data.id].cnt = it_write_data.item_name.size();
-    direct_info_write_[it_write_data.id].item_name = it_write_data.item_name;
-    direct_info_write_[it_write_data.id].item_size = it_write_data.item_size;
+    direct_info_write_[it_write_data.comm_id].indirect_data_addr = min_addr;
+    direct_info_write_[it_write_data.comm_id].size = total_size;
+    direct_info_write_[it_write_data.comm_id].cnt = it_write_data.item_name.size();
+    direct_info_write_[it_write_data.comm_id].item_name = it_write_data.item_name;
+    direct_info_write_[it_write_data.comm_id].item_size = it_write_data.item_size;
 
     fprintf(
       stderr,
@@ -1743,7 +1940,7 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
       item_index++)
     {
       if (AddIndirectWrite(
-          it_write_data.id,
+          it_write_data.comm_id,
           it_write_data.item_name.at(item_index),
           it_write_data.item_addr.at(item_index),
           it_write_data.item_size.at(item_index)) != DxlError::OK)
@@ -1754,7 +1951,7 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
 
       fprintf(
         stderr, "[ID:%03d] Add Indirect Address Write Item : [%s]\n",
-        it_write_data.id,
+        it_write_data.comm_id,
         it_write_data.item_name.at(item_index).c_str());
     }
   }
@@ -1797,18 +1994,17 @@ DxlError Dynamixel::SetBulkWriteHandler(std::vector<uint8_t> id_arr)
 DxlError Dynamixel::SetDxlValueToBulkWrite()
 {
   for (auto it_write_data : write_data_list_) {
-    uint8_t ID = it_write_data.id;
+    uint8_t comm_id = it_write_data.comm_id;
     uint8_t * param_write_value;
     uint8_t added_byte = 0;
 
     // Check if this is a direct write
-    if (direct_info_write_.find(ID) != direct_info_write_.end()) {
-      param_write_value = new uint8_t[direct_info_write_[ID].size];
+    if (direct_info_write_.find(comm_id) != direct_info_write_.end()) {
+      param_write_value = new uint8_t[direct_info_write_[comm_id].size];
 
-      for (uint16_t item_index = 0; item_index < direct_info_write_[ID].cnt; item_index++) {
+      for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
-        uint8_t size = direct_info_write_[ID].item_size.at(item_index);
-
+        uint8_t size = direct_info_write_[comm_id].item_size.at(item_index);
         if (size == 4) {
           int32_t value = static_cast<int32_t>(data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
@@ -1826,47 +2022,48 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
       }
 
       if (group_bulk_write_->addParam(
-          ID,
-          direct_info_write_[ID].indirect_data_addr,
-          direct_info_write_[ID].size,
+          comm_id,
+          direct_info_write_[comm_id].indirect_data_addr,
+          direct_info_write_[comm_id].size,
           param_write_value) != true)
       {
-        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", ID);
+        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", comm_id);
         return DxlError::BULK_WRITE_FAIL;
       }
     } else {
       // Handle indirect write
-      param_write_value = new uint8_t[indirect_info_write_[ID].size];
+      param_write_value = new uint8_t[indirect_info_write_[comm_id].size];
 
-      for (uint16_t item_index = 0; item_index < indirect_info_write_[ID].cnt; item_index++) {
+      for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
-        if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Position") {
+        uint8_t ID = it_write_data.id_arr.at(item_index);
+        if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
           int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
           param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
           param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-        } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Velocity") {
-          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(data);
+        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
+          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
           param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
           param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-        } else if (indirect_info_write_[ID].item_name.at(item_index) == "Goal Current") {
+        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
           int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
           param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
         }
-        added_byte += indirect_info_write_[ID].item_size.at(item_index);
+        added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
       }
 
       if (group_bulk_write_->addParam(
-          ID,
-          indirect_info_write_[ID].indirect_data_addr,
-          indirect_info_write_[ID].size,
+          comm_id,
+          indirect_info_write_[comm_id].indirect_data_addr,
+          indirect_info_write_[comm_id].size,
           param_write_value) != true)
       {
-        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", ID);
+        fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed\n", comm_id);
         return DxlError::BULK_WRITE_FAIL;
       }
     }

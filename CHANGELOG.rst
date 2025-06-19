@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.7 (2025-06-19)
+------------------
+* Added virtual_dxl and support for rcu
+* Contributors: Woojin Wie
+
 1.4.6 (2025-05-30)
 ------------------
 * Changed dynamixel_sdk_TARGETS to dynamixel_sdk_LIBRARIES in target_link_libraries
