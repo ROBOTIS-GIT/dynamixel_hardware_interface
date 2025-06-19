@@ -1,10 +1,11 @@
 [type info]
 name	value
-value_of_zero_radian_position	262144
-value_of_max_radian_position	524287
-value_of_min_radian_position	0
+value_of_zero_radian_position	0
+value_of_max_radian_position	262144
+value_of_min_radian_position	-262144
 min_radian	-3.14159265
 max_radian	3.14159265
+velocity_unit	0.01
 
 [control table]
 Address	Size	Data Name
