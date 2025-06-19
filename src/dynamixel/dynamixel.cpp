@@ -1059,6 +1059,11 @@ DxlError Dynamixel::SetFastSyncReadHandler(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
 {
+  if (id_arr.size() == 0) {
+    fprintf(stderr, "No Sync Read Item, not setting sync read handler\n");
+    return DxlError::OK;
+  }
+
   // Try to set up fast sync read first
   if (use_fast_read_protocol_) {
     DxlError fast_result = SetFastSyncReadHandler(id_arr);
