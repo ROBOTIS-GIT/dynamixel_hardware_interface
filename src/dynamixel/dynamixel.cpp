@@ -21,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <thread>
 #include <chrono>
 
 namespace dynamixel_hardware_interface
