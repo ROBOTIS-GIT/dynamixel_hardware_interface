@@ -1,0 +1,21 @@
+[type info]
+name	value
+value_of_zero_radian_position	0
+value_of_max_radian_position	740
+value_of_min_radian_position	-740
+min_radian	-1.099
+max_radian	1.099
+velocity_unit	0.114
+
+[control table]
+Address	Size	Data Name
+72	1	Hardware Error Status
+73	1	Moving
+74	2	Present Current
+76	4	Present Velocity
+80	4	Present Position
+84	4	Position Trajectory
+200	1	Torque Enable
+202	2	Goal Current
+204	4	Goal Velocity
+208	4	Goal Position
