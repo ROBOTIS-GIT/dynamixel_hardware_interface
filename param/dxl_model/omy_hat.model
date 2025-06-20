@@ -33,3 +33,7 @@ Address	Size	Data Name
 560	1	SyncTable Read Data
 688	1	SyncTable Write Data
 816	1	Indirect Data
+112	2	Indirect Address Write
+816	1	Indirect Data Write
+176	2	Indirect Address Read
+848	1	Indirect Data Read
