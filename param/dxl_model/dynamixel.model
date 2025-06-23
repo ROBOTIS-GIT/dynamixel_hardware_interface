@@ -46,6 +46,7 @@ Number	Name
 35074	rh_p12_rn.model
 220	omy_hat.model
 230	omy_end.model
+231	omy_end_rh_p12_rn.model
 536 sensorxel_joy.model
 600 sensorxel_joy.model
 602 ffw_g10_rcu.model
