@@ -497,9 +497,11 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 
   CalcTransmissionToJoint();
 
-  // sync commands = states joint
   SyncJointCommandWithStates();
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+  CalcJointToTransmission();
+
+  dxl_comm_->WriteMultiDxlData();
 
   // Enable torque only for Dynamixels that have torque enabled in their parameters
   std::vector<uint8_t> torque_enabled_ids;

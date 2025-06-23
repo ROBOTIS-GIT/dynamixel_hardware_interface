@@ -2,6 +2,12 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.8 (2025-06-23)
+------------------
+* Added new model for OMY to use virtual_dxl
+* Added goal position synchronization before torque enable for OMY sync table feature
+* Contributors: Woojin Wie
+
 1.4.7 (2025-06-19)
 ------------------
 * Added virtual_dxl and support for rcu

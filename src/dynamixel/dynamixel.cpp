@@ -1834,6 +1834,20 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
         param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
         param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+      } else {
+        if (indirect_info_write_[comm_id].item_size.at(item_index) == 4) {
+          int32_t value = static_cast<int32_t>(data);
+          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
+          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
+          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
+          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
+        } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 2) {
+          int16_t value = static_cast<int16_t>(data);
+          param_write_value[added_byte + 0] = DXL_LOBYTE(value);
+          param_write_value[added_byte + 1] = DXL_HIBYTE(value);
+        } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 1) {
+          param_write_value[added_byte] = static_cast<uint8_t>(data);
+        }
       }
       added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
     }
@@ -2053,6 +2067,20 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
           param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
           param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+        } else {
+          if (indirect_info_write_[comm_id].item_size.at(item_index) == 4) {
+            int32_t value = static_cast<int32_t>(data);
+            param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
+            param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
+            param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
+            param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
+          } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 2) {
+            int16_t value = static_cast<int16_t>(data);
+            param_write_value[added_byte + 0] = DXL_LOBYTE(value);
+            param_write_value[added_byte + 1] = DXL_HIBYTE(value);
+          } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 1) {
+            param_write_value[added_byte] = static_cast<uint8_t>(data);
+          }
         }
         added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
       }
