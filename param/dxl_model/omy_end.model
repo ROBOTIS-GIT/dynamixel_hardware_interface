@@ -1,12 +1,3 @@
-[type info]
-name	value
-value_of_zero_radian_position	0
-value_of_max_radian_position	740
-value_of_min_radian_position	-740
-min_radian	-1.099
-max_radian	1.099
-velocity_unit	0.114
-
 [control table]
 Address	Size	Data Name
 0	2	Model Number
