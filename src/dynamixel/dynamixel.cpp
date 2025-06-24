@@ -304,7 +304,7 @@ DxlError Dynamixel::SetDxlReadItems(
 
 DxlError Dynamixel::SetMultiDxlRead()
 {
-    read_type_ = checkReadType();
+  read_type_ = checkReadType();
 
   fprintf(stderr, "Dynamixel Read Type : %s\n", read_type_ ? "bulk read" : "sync read");
   if (read_type_ == SYNC) {
@@ -409,7 +409,7 @@ DxlError Dynamixel::SetDxlWriteItems(
 }
 DxlError Dynamixel::SetMultiDxlWrite()
 {
-    write_type_ = checkWriteType();
+  write_type_ = checkWriteType();
 
   fprintf(stderr, "Dynamixel Write Type : %s\n", write_type_ ? "bulk write" : "sync write");
   if (write_type_ == SYNC) {
