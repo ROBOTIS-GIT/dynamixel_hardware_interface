@@ -1,0 +1,30 @@
+[control table]
+Address	Size	Data Name
+0	2	Model Number
+2	1	ROBOT_Generation
+3	1	Board_Number
+5	1	Firmware_Version_Major
+6	1	Firmware_Version_Minor
+7	1	ID
+8	1	Baud Rate (Bus)
+9	1	HW_REV
+10	1	Boot_Version_Major
+11	1	Boot_Version_Minor
+12	4	Error_Code
+20	4	Micros
+24	4	Millis
+100	1	Neopixel_Head_Left_Red
+101	1	Neopixel_Head_Left_Green
+102	1	Neopixel_Head_Left_Blue
+103	1	Neopixel_Head_Left_Brightness
+104	1	Neopixel_Head_Left_Mode
+105	2	Neopixel_Head_Left_Control_Time
+107	1	Neopixel_Head_Left_Led_Count
+108	2	Dummy_1
+110	1	Neopixel_Head_Right_Red
+111	1	Neopixel_Head_Right_Green
+112	1	Neopixel_Head_Right_Blue
+113	1	Neopixel_Head_Right_Brightness
+114	1	Neopixel_Head_Right_Mode
+115	2	Neopixel_Head_Right_Control_Time
+117	1	Neopixel_Head_Right_Led_Count
