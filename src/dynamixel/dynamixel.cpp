@@ -407,6 +407,7 @@ DxlError Dynamixel::SetDxlWriteItems(
 
   return DxlError::OK;
 }
+
 DxlError Dynamixel::SetMultiDxlWrite()
 {
   write_type_ = checkWriteType();
@@ -439,12 +440,10 @@ DxlError Dynamixel::SetMultiDxlWrite()
   }
 
   if (write_type_ == SYNC) {
-    SetSyncWriteItemAndHandler();
+    return SetSyncWriteItemAndHandler();
   } else {
-    SetBulkWriteItemAndHandler();
+    return SetBulkWriteItemAndHandler();
   }
-
-  return DxlError::OK;
 }
 
 DxlError Dynamixel::DynamixelEnable(std::vector<uint8_t> id_arr)
