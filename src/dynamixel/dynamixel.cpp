@@ -864,7 +864,7 @@ DxlError Dynamixel::WriteMultiDxlData()
 
 bool Dynamixel::checkReadType()
 {
-  if (read_data_list_.size() == 1){
+  if (read_data_list_.size() == 1) {
     if (CheckIndirectReadAvailable(read_data_list_.at(0).comm_id) != DxlError::OK) {
       return BULK;
     }
@@ -916,7 +916,7 @@ bool Dynamixel::checkReadType()
 
 bool Dynamixel::checkWriteType()
 {
-  if (write_data_list_.size() == 1){
+  if (write_data_list_.size() == 1) {
     if (CheckIndirectWriteAvailable(write_data_list_.at(0).comm_id) != DxlError::OK) {
       return BULK;
     }
