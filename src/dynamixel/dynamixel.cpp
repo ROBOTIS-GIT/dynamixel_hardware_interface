@@ -304,11 +304,7 @@ DxlError Dynamixel::SetDxlReadItems(
 
 DxlError Dynamixel::SetMultiDxlRead()
 {
-  if (read_data_list_.size() < 2) {
-    read_type_ = SYNC;
-  } else {
-    read_type_ = checkReadType();
-  }
+  read_type_ = checkReadType();
 
   fprintf(stderr, "Dynamixel Read Type : %s\n", read_type_ ? "bulk read" : "sync read");
   if (read_type_ == SYNC) {
@@ -411,13 +407,10 @@ DxlError Dynamixel::SetDxlWriteItems(
 
   return DxlError::OK;
 }
+
 DxlError Dynamixel::SetMultiDxlWrite()
 {
-  if (write_data_list_.size() < 2) {
-    write_type_ = SYNC;
-  } else {
-    write_type_ = checkWriteType();
-  }
+  write_type_ = checkWriteType();
 
   fprintf(stderr, "Dynamixel Write Type : %s\n", write_type_ ? "bulk write" : "sync write");
   if (write_type_ == SYNC) {
@@ -447,12 +440,10 @@ DxlError Dynamixel::SetMultiDxlWrite()
   }
 
   if (write_type_ == SYNC) {
-    SetSyncWriteItemAndHandler();
+    return SetSyncWriteItemAndHandler();
   } else {
-    SetBulkWriteItemAndHandler();
+    return SetBulkWriteItemAndHandler();
   }
-
-  return DxlError::OK;
 }
 
 DxlError Dynamixel::DynamixelEnable(std::vector<uint8_t> id_arr)
@@ -873,6 +864,12 @@ DxlError Dynamixel::WriteMultiDxlData()
 
 bool Dynamixel::checkReadType()
 {
+  if (read_data_list_.size() == 1) {
+    if (CheckIndirectReadAvailable(read_data_list_.at(0).comm_id) != DxlError::OK) {
+      return BULK;
+    }
+  }
+
   for (size_t dxl_index = 1; dxl_index < read_data_list_.size(); dxl_index++) {
     // Check if Indirect Data Read address and size are different
     uint16_t indirect_addr[2];  // [i-1], [i]
@@ -919,6 +916,12 @@ bool Dynamixel::checkReadType()
 
 bool Dynamixel::checkWriteType()
 {
+  if (write_data_list_.size() == 1) {
+    if (CheckIndirectWriteAvailable(write_data_list_.at(0).comm_id) != DxlError::OK) {
+      return BULK;
+    }
+  }
+
   for (size_t dxl_index = 1; dxl_index < write_data_list_.size(); dxl_index++) {
     // Check if Indirect Data Write address and size are different
     uint16_t indirect_addr[2];  // [i-1], [i]
