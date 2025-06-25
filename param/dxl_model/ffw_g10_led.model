@@ -20,6 +20,7 @@ Address	Size	Data Name
 104	1	Neopixel_Head_Left_Mode
 105	2	Neopixel_Head_Left_Control_Time
 107	1	Neopixel_Head_Left_Led_Count
+108	2	Dummy_1
 110	1	Neopixel_Head_Right_Red
 111	1	Neopixel_Head_Right_Green
 112	1	Neopixel_Head_Right_Blue
