@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.9 (2025-06-24)
+------------------
+* Support ffw sensor model
+* Contributors: Woojin Wie
+
 1.4.8 (2025-06-23)
 ------------------
 * Added new model for OMY to use virtual_dxl
