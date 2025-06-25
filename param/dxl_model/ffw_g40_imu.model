@@ -9,7 +9,7 @@ Address	Size	Data Name
 8	1	Baud Rate (Bus)
 9	1	HW_REV
 10	1	Boot_Version_Major
-11	1	Boot_Version_MInor
+11	1	Boot_Version_Minor
 12	4	Error_Code
 20	4	Micros
 24	4	Millis
