@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.0 (2025-07-02)
+------------------
+* Changed log level from ERROR to DEBUG for read error
+* Contributors: Woojin Wie
+
 1.4.9 (2025-06-24)
 ------------------
 * Support ffw sensor model
