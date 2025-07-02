@@ -559,7 +559,7 @@ hardware_interface::return_type DynamixelHardware::read(
       }
       read_error_duration_ = read_error_duration_ + period;
 
-      RCLCPP_ERROR_STREAM(
+      RCLCPP_DEBUG_STREAM(
         logger_,
         "Dynamixel Read Fail (Duration: " << read_error_duration_.seconds() * 1000 << "ms/" <<
           err_timeout_ms_ << "ms)");
