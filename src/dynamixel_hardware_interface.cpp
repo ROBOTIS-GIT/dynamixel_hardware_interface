@@ -14,6 +14,8 @@
 //
 // Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie
 
+// github test
+
 #include "dynamixel_hardware_interface/dynamixel_hardware_interface.hpp"
 
 #include <chrono>
