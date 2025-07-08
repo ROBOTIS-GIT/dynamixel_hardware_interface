@@ -260,6 +260,7 @@ private:
   DxlError ProcessDirectReadData(
     uint8_t id,
     const std::vector<uint16_t> & item_addrs,
+    const std::vector<std::string> & item_names,
     const std::vector<uint8_t> & item_sizes,
     const std::vector<std::shared_ptr<double>> & data_ptrs,
     std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func);

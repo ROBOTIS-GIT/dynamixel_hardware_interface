@@ -1449,6 +1449,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
           ProcessDirectReadData(
             id,
             it_read_data.item_addr,
+            it_read_data.item_name,
             it_read_data.item_size,
             it_read_data.item_data_ptr_vec,
             [this](uint8_t id, uint16_t addr, uint8_t size) {
@@ -1514,6 +1515,7 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
       ProcessDirectReadData(
         id,
         it_read_data.item_addr,
+        it_read_data.item_name,
         it_read_data.item_size,
         it_read_data.item_data_ptr_vec,
         [this](uint8_t id, uint16_t addr, uint8_t size) {
@@ -1659,17 +1661,33 @@ DxlError Dynamixel::ProcessReadData(
 DxlError Dynamixel::ProcessDirectReadData(
   uint8_t comm_id,
   const std::vector<uint16_t> & item_addrs,
+  const std::vector<std::string> & item_names,
   const std::vector<uint8_t> & item_sizes,
   const std::vector<std::shared_ptr<double>> & data_ptrs,
   std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func)
 {
   for (size_t item_index = 0; item_index < item_addrs.size(); item_index++) {
+    uint8_t ID = comm_id;
     uint16_t current_addr = item_addrs[item_index];
     uint8_t size = item_sizes[item_index];
 
     uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
-    *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+    if (item_names[item_index] == "Present Position") {
+      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+        ID,
+        static_cast<int32_t>(dxl_getdata));
+    } else if (item_names[item_index] == "Present Velocity") {
+      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
+        ID,
+        static_cast<int32_t>(dxl_getdata));
+    } else if (item_names[item_index] == "Present Current") {
+      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
+        ID,
+        static_cast<int16_t>(dxl_getdata));
+    } else {
+      *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+    }
   }
   return DxlError::OK;
 }
@@ -2021,19 +2039,39 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
 
       for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
+        uint8_t ID = comm_id;
         uint8_t size = direct_info_write_[comm_id].item_size.at(item_index);
-        if (size == 4) {
-          int32_t value = static_cast<int32_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-        } else if (size == 2) {
-          int16_t value = static_cast<int16_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-        } else if (size == 1) {
-          param_write_value[added_byte] = static_cast<uint8_t>(data);
+
+        if (direct_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
+          int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
+          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
+          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
+          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
+        } else if (direct_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
+          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
+          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
+          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
+          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
+          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
+        } else if (direct_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
+          int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
+          param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
+          param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+        } else {
+          if (size == 4) {
+            int32_t value = static_cast<int32_t>(data);
+            param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
+            param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
+            param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
+            param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
+          } else if (size == 2) {
+            int16_t value = static_cast<int16_t>(data);
+            param_write_value[added_byte + 0] = DXL_LOBYTE(value);
+            param_write_value[added_byte + 1] = DXL_HIBYTE(value);
+          } else if (size == 1) {
+            param_write_value[added_byte] = static_cast<uint8_t>(data);
+          }
         }
         added_byte += size;
       }
