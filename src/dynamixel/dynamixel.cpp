@@ -124,7 +124,7 @@ DxlError Dynamixel::InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_t
               "'disable_torque_at_init' parameter to 'true' to disable torque at initialization "
               "or disable torque manually.\n",
               it_id);
-            return DxlError::DLX_HARDWARE_ERROR;
+            return DxlError::DXL_HARDWARE_ERROR;
           }
         }
 
@@ -182,7 +182,7 @@ DxlError Dynamixel::InitDxlComm(
       }
       fprintf(stderr, "[ID:%03d] Hardware Error detected, rebooting...\n", it_id);
       Reboot(it_id);
-      return DxlError::DLX_HARDWARE_ERROR;
+      return DxlError::DXL_HARDWARE_ERROR;
     } else {
       fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d\n", dxl_model_number);
     }
@@ -449,6 +449,9 @@ DxlError Dynamixel::SetMultiDxlWrite()
 DxlError Dynamixel::DynamixelEnable(std::vector<uint8_t> id_arr)
 {
   for (auto it_id : id_arr) {
+    if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable") == false) {
+      continue;
+    }
     if (torque_state_[it_id] == TORQUE_OFF) {
       if (WriteItem(it_id, "Torque Enable", TORQUE_ON) < 0) {
         fprintf(stderr, "[ID:%03d] Cannot write \"Torque On\" command!\n", it_id);
@@ -465,6 +468,9 @@ DxlError Dynamixel::DynamixelDisable(std::vector<uint8_t> id_arr)
 {
   DxlError result = DxlError::OK;
   for (auto it_id : id_arr) {
+    if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable") == false) {
+      continue;
+    }
     if (torque_state_[it_id] == TORQUE_ON) {
       if (WriteItem(it_id, "Torque Enable", TORQUE_OFF) < 0) {
         fprintf(stderr, "[ID:%03d] Cannot write \"Torque Off\" command!\n", it_id);
@@ -827,8 +833,8 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
       return "SET_READ_ITEM_FAIL";
     case SET_WRITE_ITEM_FAIL:
       return "SET_WRITE_ITEM_FAIL";
-    case DLX_HARDWARE_ERROR:
-      return "DLX_HARDWARE_ERROR";
+    case DXL_HARDWARE_ERROR:
+      return "DXL_HARDWARE_ERROR";
     case DXL_REBOOT_FAIL:
       return "DXL_REBOOT_FAIL";
     default:

@@ -67,7 +67,7 @@ enum DxlError
   SET_BULK_READ_FAIL = -13,        ///< Failed to configure bulk read.
   SET_READ_ITEM_FAIL = -14,        ///< Failed to set read item.
   SET_WRITE_ITEM_FAIL = -15,       ///< Failed to set write item.
-  DLX_HARDWARE_ERROR = -16,        ///< Hardware error detected.
+  DXL_HARDWARE_ERROR = -16,        ///< Hardware error detected.
   DXL_REBOOT_FAIL = -17            ///< Reboot failed.
 };
 
