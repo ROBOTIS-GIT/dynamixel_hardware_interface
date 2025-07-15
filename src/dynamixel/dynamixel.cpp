@@ -555,15 +555,11 @@ DxlError Dynamixel::WriteItem(uint8_t id, uint16_t addr, uint8_t size, uint32_t 
     } else if (dxl_error != 0) {
       fprintf(
         stderr,
-        "[WriteItem][ID:%03d][comm_id:%03d] RX_PACKET_ERROR : %s (retry %d/%d)\n",
+        "[WriteItem][ID:%03d][comm_id:%03d] RX_PACKET_ERROR : %s\n",
         id,
         comm_id,
-        packet_handler_->getRxPacketError(dxl_error),
-        i + 1,
-        MAX_COMM_RETRIES);
-      if (i == MAX_COMM_RETRIES - 1) {
-        return DxlError::ITEM_WRITE_FAIL;
-      }
+        packet_handler_->getRxPacketError(dxl_error));
+      return DxlError::ITEM_WRITE_FAIL;
     } else {
       return DxlError::OK;
     }

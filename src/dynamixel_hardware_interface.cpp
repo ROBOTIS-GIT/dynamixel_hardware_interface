@@ -1300,15 +1300,16 @@ void DynamixelHardware::ChangeDxlTorqueState()
   }
 
   if (dxl_torque_status_ == REQUESTED_TO_ENABLE) {
-    std::cout << "Requested to enable torque, Enabling torque for all Dynamixels" << std::endl;
+    RCLCPP_WARN_STREAM(logger_, "Requested to enable torque, Enabling torque for all Dynamixels");
     dxl_comm_->DynamixelEnable(torque_enabled_ids_);
     SyncJointCommandWithStates();
   } else if (dxl_torque_status_ == REQUESTED_TO_DISABLE) {
-    std::cout << "Requested to disable torque, Disabling torque for all Dynamixels" << std::endl;
+    RCLCPP_WARN_STREAM(logger_, "Requested to disable torque, Disabling torque for all Dynamixels");
     dxl_comm_->DynamixelDisable(torque_enabled_ids_);
     SyncJointCommandWithStates();
   }
 
+  dxl_torque_state_ = dxl_comm_->GetDxlTorqueState();
   for (auto single_torque_state : dxl_torque_state_) {
     if (single_torque_state.second == TORQUE_OFF) {
       dxl_torque_status_ = TORQUE_DISABLED;
@@ -1384,6 +1385,7 @@ void DynamixelHardware::set_dxl_torque_srv_callback(
     if (dxl_torque_status_ == TORQUE_ENABLED) {
       response->success = true;
       response->message = "Already enabled.";
+      RCLCPP_INFO_STREAM(logger_, "Requested to enable torque, but already enabled.");
       return;
     } else {
       dxl_torque_status_ = REQUESTED_TO_ENABLE;
@@ -1392,6 +1394,7 @@ void DynamixelHardware::set_dxl_torque_srv_callback(
     if (dxl_torque_status_ == TORQUE_DISABLED) {
       response->success = true;
       response->message = "Already disabled.";
+      RCLCPP_INFO_STREAM(logger_, "Requested to disable torque, but already disabled.");
       return;
     } else {
       dxl_torque_status_ = REQUESTED_TO_DISABLE;
