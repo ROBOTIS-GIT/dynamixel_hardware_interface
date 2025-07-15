@@ -610,7 +610,7 @@ DxlError Dynamixel::WriteItemBuf()
         if (WriteItem(it_write_item.id, "Torque Enable", TORQUE_OFF) < 0) {
           fprintf(
             stderr,
-            "[ID:%03d] Cannot write \"Torque Off\" command! Cannot wirte a Item.\n",
+            "[ID:%03d] Cannot write \"Torque Off\" command! Cannot write a Item.\n",
             it_write_item.id);
           return DxlError::ITEM_WRITE_FAIL;
         }
@@ -1639,20 +1639,22 @@ DxlError Dynamixel::ProcessReadData(
 
     uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
-    if (item_names[item_index] == "Present Position") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
-        ID,
-        static_cast<int32_t>(dxl_getdata));
-    } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
-        ID,
-        static_cast<int32_t>(dxl_getdata));
-    } else if (item_names[item_index] == "Present Current") {
-      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
-        ID,
-        static_cast<int16_t>(dxl_getdata));
+    // Check if there is unit info for this item
+    double unit_value;
+    bool is_signed;
+    if (dxl_info_.GetDxlUnitValue(ID, item_names[item_index], unit_value) &&
+        dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed)) {
+      // Use unit info and sign type to properly convert the value
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata, size, is_signed);
     } else {
-      *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      // Fallback to existing logic for compatibility
+      if (item_names[item_index] == "Present Position") {
+        *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+          ID,
+          static_cast<int32_t>(dxl_getdata));
+      } else {
+        *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      }
     }
   }
   return DxlError::OK;
@@ -1673,20 +1675,22 @@ DxlError Dynamixel::ProcessDirectReadData(
 
     uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
-    if (item_names[item_index] == "Present Position") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
-        ID,
-        static_cast<int32_t>(dxl_getdata));
-    } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
-        ID,
-        static_cast<int32_t>(dxl_getdata));
-    } else if (item_names[item_index] == "Present Current") {
-      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
-        ID,
-        static_cast<int16_t>(dxl_getdata));
+    // Check if there is unit info for this item
+    double unit_value;
+    bool is_signed;
+    if (dxl_info_.GetDxlUnitValue(ID, item_names[item_index], unit_value) &&
+        dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed)) {
+      // Use unit info and sign type to properly convert the value
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata, size, is_signed);
     } else {
-      *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      // Fallback to existing logic for compatibility
+      if (item_names[item_index] == "Present Position") {
+        *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+          ID,
+          static_cast<int32_t>(dxl_getdata));
+      } else {
+        *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      }
     }
   }
   return DxlError::OK;
@@ -1839,38 +1843,27 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
     for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
       double data = *it_write_data.item_data_ptr_vec.at(item_index);
       uint8_t ID = it_write_data.id_arr.at(item_index);
-      if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
-        int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
-        param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
-        param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
-        param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-      } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
-        param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
-        param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
-        param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-      } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
-        int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-        param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+      std::string item_name = indirect_info_write_[comm_id].item_name.at(item_index);
+      uint8_t size = indirect_info_write_[comm_id].item_size.at(item_index);
+
+      // Check if there is unit info for this item
+      double unit_value;
+      bool is_signed;
+      if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
+          dxl_info_.GetDxlSignType(ID, item_name, is_signed)) {
+        // Use unit info and sign type to properly convert the value
+        uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
+        WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
       } else {
-        if (indirect_info_write_[comm_id].item_size.at(item_index) == 4) {
-          int32_t value = static_cast<int32_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-        } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 2) {
-          int16_t value = static_cast<int16_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-        } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 1) {
-          param_write_value[added_byte] = static_cast<uint8_t>(data);
+        // Fallback to existing logic for compatibility
+        if (item_name == "Goal Position") {
+          int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+          WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position), 4);
+        } else {
+          WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
         }
       }
-      added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
+      added_byte += size;
     }
 
     if (group_sync_write_->addParam(comm_id, param_write_value) != true) {
@@ -2040,37 +2033,24 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
       for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
         uint8_t ID = comm_id;
+        std::string item_name = direct_info_write_[comm_id].item_name.at(item_index);
         uint8_t size = direct_info_write_[comm_id].item_size.at(item_index);
 
-        if (direct_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
-          int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-        } else if (direct_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-        } else if (direct_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
-          int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+        // Check if there is unit info for this item
+        double unit_value;
+        bool is_signed;
+        if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
+            dxl_info_.GetDxlSignType(ID, item_name, is_signed)) {
+          // Use unit info and sign type to properly convert the value
+          uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
+          WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
         } else {
-          if (size == 4) {
-            int32_t value = static_cast<int32_t>(data);
-            param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-            param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-            param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-            param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-          } else if (size == 2) {
-            int16_t value = static_cast<int16_t>(data);
-            param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-            param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-          } else if (size == 1) {
-            param_write_value[added_byte] = static_cast<uint8_t>(data);
+          // Fallback to existing logic for compatibility
+          if (item_name == "Goal Position") {
+            int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position), 4);
+          } else {
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
         }
         added_byte += size;
@@ -2092,38 +2072,27 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
       for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
         uint8_t ID = it_write_data.id_arr.at(item_index);
-        if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
-          int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
-          int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+        std::string item_name = indirect_info_write_[comm_id].item_name.at(item_index);
+        uint8_t size = indirect_info_write_[comm_id].item_size.at(item_index);
+
+        // Check if there is unit info for this item
+        double unit_value;
+        bool is_signed;
+        if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
+            dxl_info_.GetDxlSignType(ID, item_name, is_signed)) {
+          // Use unit info and sign type to properly convert the value
+          uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
+          WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
         } else {
-          if (indirect_info_write_[comm_id].item_size.at(item_index) == 4) {
-            int32_t value = static_cast<int32_t>(data);
-            param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-            param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-            param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-            param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-          } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 2) {
-            int16_t value = static_cast<int16_t>(data);
-            param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-            param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-          } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 1) {
-            param_write_value[added_byte] = static_cast<uint8_t>(data);
+          // Fallback to existing logic for compatibility
+          if (item_name == "Goal Position") {
+            int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position), 4);
+          } else {
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
         }
-        added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
+        added_byte += size;
       }
 
       if (group_bulk_write_->addParam(
@@ -2199,6 +2168,90 @@ void Dynamixel::ResetDirectWrite(std::vector<uint8_t> id_arr)
   temp.item_size.clear();
   for (auto it_id : id_arr) {
     direct_info_write_[it_id] = temp;
+  }
+}
+
+double Dynamixel::ConvertValueWithUnitInfo(uint8_t id, std::string item_name, uint32_t raw_value, uint8_t size, bool is_signed)
+{
+  if (size == 1) {
+    if (is_signed) {
+      int8_t signed_value = static_cast<int8_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<int8_t>(id, item_name, signed_value);
+    } else {
+      uint8_t unsigned_value = static_cast<uint8_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<uint8_t>(id, item_name, unsigned_value);
+    }
+  } else if (size == 2) {
+    if (is_signed) {
+      int16_t signed_value = static_cast<int16_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<int16_t>(id, item_name, signed_value);
+    } else {
+      uint16_t unsigned_value = static_cast<uint16_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<uint16_t>(id, item_name, unsigned_value);
+    }
+  } else if (size == 4) {
+    if (is_signed) {
+      int32_t signed_value = static_cast<int32_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<int32_t>(id, item_name, signed_value);
+    } else {
+      uint32_t unsigned_value = static_cast<uint32_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<uint32_t>(id, item_name, unsigned_value);
+    }
+  }
+
+  // Throw error for unknown sizes
+  std::string error_msg = "Unknown data size " + std::to_string(size) +
+                         " for item '" + item_name + "' in ID " + std::to_string(id);
+  throw std::runtime_error(error_msg);
+}
+
+uint32_t Dynamixel::ConvertUnitValueToRawValue(uint8_t id, std::string item_name, double unit_value, uint8_t size, bool is_signed)
+{
+  if (size == 1) {
+    if (is_signed) {
+      int8_t signed_value = dxl_info_.ConvertUnitToValue<int8_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(signed_value);
+    } else {
+      uint8_t unsigned_value = dxl_info_.ConvertUnitToValue<uint8_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(unsigned_value);
+    }
+  } else if (size == 2) {
+    if (is_signed) {
+      int16_t signed_value = dxl_info_.ConvertUnitToValue<int16_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(signed_value);
+    } else {
+      uint16_t unsigned_value = dxl_info_.ConvertUnitToValue<uint16_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(unsigned_value);
+    }
+  } else if (size == 4) {
+    if (is_signed) {
+      int32_t signed_value = dxl_info_.ConvertUnitToValue<int32_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(signed_value);
+    } else {
+      uint32_t unsigned_value = dxl_info_.ConvertUnitToValue<uint32_t>(id, item_name, unit_value);
+      return unsigned_value;
+    }
+  }
+
+  // Throw error for unknown sizes
+  std::string error_msg = "Unknown data size " + std::to_string(size) +
+                         " for item '" + item_name + "' in ID " + std::to_string(id);
+  throw std::runtime_error(error_msg);
+}
+
+void Dynamixel::WriteValueToBuffer(uint8_t* buffer, uint8_t offset, uint32_t value, uint8_t size)
+{
+  if (size == 1) {
+    buffer[offset] = static_cast<uint8_t>(value);
+  } else if (size == 2) {
+    uint16_t value_16 = static_cast<uint16_t>(value);
+    buffer[offset + 0] = DXL_LOBYTE(value_16);
+    buffer[offset + 1] = DXL_HIBYTE(value_16);
+  } else if (size == 4) {
+    buffer[offset + 0] = DXL_LOBYTE(DXL_LOWORD(value));
+    buffer[offset + 1] = DXL_HIBYTE(DXL_LOWORD(value));
+    buffer[offset + 2] = DXL_LOBYTE(DXL_HIWORD(value));
+    buffer[offset + 3] = DXL_HIBYTE(DXL_HIWORD(value));
   }
 }
 }  // namespace dynamixel_hardware_interface

@@ -943,12 +943,12 @@ bool DynamixelHardware::InitDxlWriteItems()
         temp_write.name = gpio.name;
 
         for (auto it : gpio.command_interfaces) {
-          if (it.name != "Goal Position" &&
-            it.name != "Goal Velocity" &&
-            it.name != "Goal Current")
-          {
-            continue;
-          }
+          // if (it.name != "Goal Position" &&
+          //   it.name != "Goal Velocity" &&
+          //   it.name != "Goal Current")
+          // {
+          //   continue;
+          // }
           temp_write.interface_name_vec.push_back(it.name);
           temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
@@ -974,12 +974,12 @@ bool DynamixelHardware::InitDxlWriteItems()
         temp_write.name = gpio.name;
 
         for (auto it : gpio.command_interfaces) {
-          if (it.name != "Goal Position" &&
-            it.name != "Goal Velocity" &&
-            it.name != "Goal Current")
-          {
-            continue;
-          }
+          // if (it.name != "Goal Position" &&
+          //   it.name != "Goal Velocity" &&
+          //   it.name != "Goal Current")
+          // {
+          //   continue;
+          // }
           temp_write.interface_name_vec.push_back(it.name);
           temp_write.value_ptr_vec.push_back(std::make_shared<double>(0.0));
         }
@@ -1111,7 +1111,7 @@ void DynamixelHardware::MapInterfaces(
           if (++key_count < iface_map.size()) {oss << ", ";}
         }
         oss << "]";
-        RCLCPP_WARN_STREAM(logger_, oss.str());
+        RCLCPP_DEBUG_STREAM(logger_, oss.str());
         continue;
       }
       const std::vector<std::string> & mapped_ifaces = map_it->second;

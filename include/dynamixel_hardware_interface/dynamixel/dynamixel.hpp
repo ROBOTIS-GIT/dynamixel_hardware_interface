@@ -293,6 +293,15 @@ private:
     std::string item_name,
     uint16_t item_addr,
     uint8_t item_size);
+
+  // Helper function for value conversion with unit info
+  double ConvertValueWithUnitInfo(uint8_t id, std::string item_name, uint32_t raw_value, uint8_t size, bool is_signed);
+
+  // Helper function for converting unit values to raw values
+  uint32_t ConvertUnitValueToRawValue(uint8_t id, std::string item_name, double unit_value, uint8_t size, bool is_signed);
+
+  // Helper function for writing values to buffer
+  void WriteValueToBuffer(uint8_t* buffer, uint8_t offset, uint32_t value, uint8_t size);
 };
 
 }  // namespace dynamixel_hardware_interface

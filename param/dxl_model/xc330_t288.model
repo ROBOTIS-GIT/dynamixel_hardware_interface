@@ -5,8 +5,14 @@ value_of_max_radian_position	4095
 value_of_min_radian_position	0
 min_radian	-3.14159265
 max_radian	3.14159265
-torque_constant	0.0009674796739867748
-velocity_unit	0.229
+
+[unit info]
+Data Name	value	unit	Sign Type
+Present Velocity	0.0239691227	rad/s	signed
+Goal Velocity	0.0239691227	rad/s	signed
+Profile Time	0.001	s	unsigned
+Present Current	0.0009674796739867748	N/m	signed
+Goal Current	0.0009674796739867748	N/m	signed
 
 [control table]
 Address	Size	Data Name
@@ -49,7 +55,9 @@ Address	Size	Data Name
 102	2	Goal Current
 104	4	Goal Velocity
 108	4	Profile Acceleration
+108	4	Profile Acceleration Time
 112	4	Profile Velocity
+112	4	Profile Time
 116	4	Goal Position
 120	2	Realtime Tick
 122	1	Moving
