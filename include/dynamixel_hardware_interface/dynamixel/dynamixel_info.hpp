@@ -47,7 +47,6 @@ typedef struct
 
 typedef  struct
 {
-  double torque_constant;
   double min_radian;
   double max_radian;
   int32_t value_of_zero_radian_position;

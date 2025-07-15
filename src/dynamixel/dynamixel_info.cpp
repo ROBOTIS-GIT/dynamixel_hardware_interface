@@ -73,7 +73,6 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
   std::string line;
 
   temp_dxl_info.model_num = model_num;
-  bool torque_constant_set = false;
 
   // Check if [type info] section exists
   bool type_info_found = false;
@@ -123,9 +122,6 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
           temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
         } else if (strs.at(0) == "max_radian") {
           temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
-        } else if (strs.at(0) == "torque_constant") {
-          temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
-          torque_constant_set = true;
         }
       } catch (const std::exception & e) {
         std::string error_msg = "Error processing line in model file: " + line +
@@ -164,13 +160,6 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
         throw std::runtime_error(error_msg);
       }
     }
-  }
-
-  if (type_info_found && !torque_constant_set) {
-    fprintf(
-      stderr, "[WARN] Model file '%s' doesn't contain torque_constant parameter. "
-      "Using default value: 1.0\n", path.c_str());
-    temp_dxl_info.torque_constant = 1.0;
   }
 
   if (!control_table_found) {
