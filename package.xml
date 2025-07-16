@@ -12,7 +12,11 @@
   <author email="wsh@robotis.com">Sungho Woo</author>
   <author email="wwj@robotis.com">Woojin Wie</author>
   <author email="ywh@robotis.com">Wonho Yun</author>
+
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <build_depend>ros2_control_cmake</build_depend>
+
   <depend>rclcpp</depend>
   <depend>hardware_interface</depend>
   <depend>pluginlib</depend>
@@ -20,9 +24,10 @@
   <depend>dynamixel_sdk</depend>
   <depend>std_srvs</depend>
   <depend>dynamixel_interfaces</depend>
-  <depend>ros2_control_cmake</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
