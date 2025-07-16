@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(dynamixel_hardware_interface LANGUAGES CXX)
+project(dynamixel_hardware_interface)
 
 find_package(ros2_control_cmake REQUIRED)
 set_compiler_options()
