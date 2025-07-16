@@ -687,7 +687,7 @@ DxlError DynamixelHardware::CheckError(DxlError dxl_comm_err)
   for (size_t i = 0; i < num_of_transmissions_; i++) {
     for (size_t j = 0; j < hdl_trans_states_.at(i).interface_name_vec.size(); j++) {
       if (hdl_trans_states_.at(i).interface_name_vec.at(j) == "Hardware Error Status") {
-        dxl_hw_err_[hdl_trans_states_.at(i).id] = *hdl_trans_states_.at(i).value_ptr_vec.at(j);
+        dxl_hw_err_[hdl_trans_states_.at(i).id] = static_cast<uint8_t>(*hdl_trans_states_.at(i).value_ptr_vec.at(j));
         uint8_t hw_error_status = static_cast<uint8_t>(dxl_hw_err_[hdl_trans_states_.at(i).id]);
         std::string error_string = "";
 
@@ -716,7 +716,7 @@ DxlError DynamixelHardware::CheckError(DxlError dxl_comm_err)
         }
       }
       if (hdl_trans_states_.at(i).interface_name_vec.at(j) == "Error Code") {
-        dxl_error_code_[hdl_trans_states_.at(i).id] = *hdl_trans_states_.at(i).value_ptr_vec.at(j);
+        dxl_error_code_[hdl_trans_states_.at(i).id] = static_cast<uint8_t>(*hdl_trans_states_.at(i).value_ptr_vec.at(j));
         uint8_t error_code = static_cast<uint8_t>(dxl_error_code_[hdl_trans_states_.at(i).id]);
 
         if (error_code != 0x00) {

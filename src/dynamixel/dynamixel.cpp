@@ -1141,8 +1141,8 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
           indirect_info_read_[id].item_name,
           indirect_info_read_[id].item_size,
           it_read_data.item_data_ptr_vec,
-          [this](uint8_t id, uint16_t addr, uint8_t size) {
-            return group_fast_sync_read_->getData(id, addr, size);
+          [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+            return group_fast_sync_read_->getData(lambda_id, addr, size);
           });
       }
       // Mark as permanently using fast sync read after first success
@@ -1187,8 +1187,8 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
       indirect_info_read_[id].item_name,
       indirect_info_read_[id].item_size,
       it_read_data.item_data_ptr_vec,
-      [this](uint8_t id, uint16_t addr, uint8_t size) {
-        return group_sync_read_->getData(id, addr, size);
+      [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+        return group_sync_read_->getData(lambda_id, addr, size);
       });
   }
   return DxlError::OK;
@@ -1237,7 +1237,7 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
       if (addr < min_addr) {min_addr = addr;}
       if (addr + size > max_end_addr) {max_end_addr = addr + size;}
     }
-    uint8_t total_size = max_end_addr - min_addr;
+    uint8_t total_size = static_cast<uint8_t>(max_end_addr - min_addr);
     // Concatenate all item names with '+'
     std::string group_item_names;
     for (size_t i = 0; i < it_read_data.item_name.size(); ++i) {
@@ -1454,8 +1454,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
             it_read_data.item_name,
             it_read_data.item_size,
             it_read_data.item_data_ptr_vec,
-            [this](uint8_t id, uint16_t addr, uint8_t size) {
-              return group_fast_bulk_read_->getData(id, addr, size);
+            [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+              return group_fast_bulk_read_->getData(lambda_id, addr, size);
             });
         } else {
           ProcessReadData(
@@ -1465,8 +1465,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
             indirect_info_read_[id].item_name,
             indirect_info_read_[id].item_size,
             it_read_data.item_data_ptr_vec,
-            [this](uint8_t id, uint16_t addr, uint8_t size) {
-              return group_fast_bulk_read_->getData(id, addr, size);
+            [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+              return group_fast_bulk_read_->getData(lambda_id, addr, size);
             });
         }
       }
@@ -1520,8 +1520,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
         it_read_data.item_name,
         it_read_data.item_size,
         it_read_data.item_data_ptr_vec,
-        [this](uint8_t id, uint16_t addr, uint8_t size) {
-          return group_bulk_read_->getData(id, addr, size);
+        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+          return group_bulk_read_->getData(lambda_id, addr, size);
         });
     } else {
       ProcessReadData(
@@ -1531,8 +1531,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
         indirect_info_read_[id].item_name,
         indirect_info_read_[id].item_size,
         it_read_data.item_data_ptr_vec,
-        [this](uint8_t id, uint16_t addr, uint8_t size) {
-          return group_bulk_read_->getData(id, addr, size);
+        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+          return group_bulk_read_->getData(lambda_id, addr, size);
         });
     }
   }
@@ -1741,7 +1741,7 @@ DxlError Dynamixel::AddIndirectRead(
 
     for (uint16_t i = 0; i < item_size; i++) {
       DxlError write_result = DxlError::INDIRECT_ADDR_FAIL;
-      uint16_t addr = INDIRECT_ADDR + (using_size * 2);
+      uint16_t addr = static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2));
       uint16_t item_addr_i = item_addr + i;
 
       write_result = WriteItem(id, addr, 2, item_addr_i);
@@ -1926,7 +1926,7 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
       if (addr < min_addr) {min_addr = addr;}
       if (addr + size > max_end_addr) {max_end_addr = addr + size;}
     }
-    uint8_t total_size = max_end_addr - min_addr;
+    uint8_t total_size = static_cast<uint8_t>(max_end_addr - min_addr);
 
     // Check for gaps between items
     std::vector<std::pair<uint16_t, uint16_t>> addr_ranges;
@@ -1951,7 +1951,7 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     // Store direct write info
     direct_info_write_[it_write_data.comm_id].indirect_data_addr = min_addr;
     direct_info_write_[it_write_data.comm_id].size = total_size;
-    direct_info_write_[it_write_data.comm_id].cnt = it_write_data.item_name.size();
+    direct_info_write_[it_write_data.comm_id].cnt = static_cast<uint16_t>(it_write_data.item_name.size());
     direct_info_write_[it_write_data.comm_id].item_name = it_write_data.item_name;
     direct_info_write_[it_write_data.comm_id].item_size = it_write_data.item_size;
 
@@ -2147,7 +2147,7 @@ DxlError Dynamixel::AddIndirectWrite(
   uint8_t using_size = indirect_info_write_[id].size;
 
   for (uint16_t i = 0; i < item_size; i++) {
-    if (WriteItem(id, INDIRECT_ADDR + (using_size * 2), 2, item_addr + i) != DxlError::OK) {
+    if (WriteItem(id, static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2)), 2, item_addr + i) != DxlError::OK) {
       return DxlError::SET_BULK_WRITE_FAIL;
     }
     using_size++;

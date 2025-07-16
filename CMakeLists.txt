@@ -1,30 +1,25 @@
-################################################################################
-# Set minimum required version of cmake, project name and compile options
-################################################################################
-cmake_minimum_required(VERSION 3.5)
-project(dynamixel_hardware_interface)
+cmake_minimum_required(VERSION 3.16)
+project(dynamixel_hardware_interface LANGUAGES CXX)
 
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
+find_package(ros2_control_cmake REQUIRED)
+set_compiler_options()
+export_windows_symbols()
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+set(THIS_PACKAGE_INCLUDE_DEPENDS
+  hardware_interface
+  rclcpp
+  rclcpp_lifecycle
+  pluginlib
+  realtime_tools
+  dynamixel_sdk
+  std_srvs
+  dynamixel_interfaces
+)
 
-################################################################################
-# Find and load build settings from external packages
-################################################################################
 find_package(ament_cmake REQUIRED)
-find_package(hardware_interface REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(pluginlib REQUIRED)
-find_package(realtime_tools REQUIRED)
-
-find_package(dynamixel_sdk REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(dynamixel_interfaces REQUIRED)
+foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
+  find_package(${Dependency} REQUIRED)
+endforeach()
 
 ################################################################################
 # Build
@@ -36,42 +31,35 @@ add_library(
   src/dynamixel/dynamixel_info.cpp
   src/dynamixel/dynamixel.cpp
 )
-
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
-  include
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/dynamixel_hardware_interface>
   ${dynamixel_sdk_INCLUDE_DIRS}
-  ${hardware_interface_INCLUDE_DIRS}
-  ${realtime_tools_INCLUDE_DIRS}
-  ${rclcpp_lifecycle_INCLUDE_DIRS}
 )
 
-target_link_libraries(${PROJECT_NAME}
-  PUBLIC
-  ${hardware_interface_TARGETS}
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  hardware_interface::hardware_interface
   pluginlib::pluginlib
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
+  realtime_tools::realtime_tools
   ${dynamixel_sdk_LIBRARIES}
   ${std_srvs_TARGETS}
   ${dynamixel_interfaces_TARGETS}
-  ${realtime_tools_TARGETS}
 )
 
 pluginlib_export_plugin_description_file(hardware_interface dynamixel_hardware_interface_plugin.xml)
 
-################################################################################
-# Install
-################################################################################
-install(TARGETS ${PROJECT_NAME}
-  DESTINATION lib
+install(
+  DIRECTORY include/
+  DESTINATION include/dynamixel_hardware_interface
 )
-
-install(DIRECTORY include/
-  DESTINATION include
+install(TARGETS ${PROJECT_NAME}
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
 install(PROGRAMS
@@ -93,18 +81,6 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-################################################################################
-# Macro for ament package
-################################################################################
-ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(
-  rclcpp
-  rclcpp_lifecycle
-  hardware_interface
-  pluginlib
-  dynamixel_sdk
-  dynamixel_interfaces
-)
-
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(${THIS_PACKAGE_INCLUDE_DEPENDS})
 ament_package()
