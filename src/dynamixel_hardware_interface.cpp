@@ -66,11 +66,15 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   }
 
   if (info_.hardware_parameters.find("number_of_joints") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_, "Required parameter 'number_of_joints' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(logger_,
+        "Required parameter 'number_of_joints' not found in hardware parameters");
     return hardware_interface::CallbackReturn::ERROR;
   }
-  if (info_.hardware_parameters.find("number_of_transmissions") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_, "Required parameter 'number_of_transmissions' not found in hardware parameters");
+  if (info_.hardware_parameters.find("number_of_transmissions") ==
+    info_.hardware_parameters.end())
+  {
+    RCLCPP_ERROR_STREAM(logger_,
+        "Required parameter 'number_of_transmissions' not found in hardware parameters");
     return hardware_interface::CallbackReturn::ERROR;
   }
 
@@ -127,7 +131,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     "port_name " << port_name_.c_str() << " / baudrate " << baud_rate_.c_str());
 
   if (info_.hardware_parameters.find("dynamixel_model_folder") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_, "Required parameter 'dynamixel_model_folder' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(logger_,
+        "Required parameter 'dynamixel_model_folder' not found in hardware parameters");
     return hardware_interface::CallbackReturn::ERROR;
   }
   std::string dxl_model_folder = info_.hardware_parameters["dynamixel_model_folder"];
@@ -331,7 +336,9 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   }
 
   std::string str_dxl_state_pub_name = "dynamixel_hardware_interface/dxl_state";
-  if (info_.hardware_parameters.find("dynamixel_state_pub_msg_name") != info_.hardware_parameters.end()) {
+  if (info_.hardware_parameters.find("dynamixel_state_pub_msg_name") !=
+    info_.hardware_parameters.end())
+  {
     str_dxl_state_pub_name = info_.hardware_parameters["dynamixel_state_pub_msg_name"];
   }
   dxl_state_pub_ = this->create_publisher<DynamixelStateMsg>(
@@ -349,7 +356,9 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   // Get Dynamixel data service
   std::string str_get_dxl_data_srv_name = "dynamixel_hardware_interface/get_dxl_data";
-  if (info_.hardware_parameters.find("get_dynamixel_data_srv_name") != info_.hardware_parameters.end()) {
+  if (info_.hardware_parameters.find("get_dynamixel_data_srv_name") !=
+    info_.hardware_parameters.end())
+  {
     str_get_dxl_data_srv_name = info_.hardware_parameters["get_dynamixel_data_srv_name"];
   }
   get_dxl_data_srv_ = create_service<dynamixel_interfaces::srv::GetDataFromDxl>(
@@ -358,7 +367,9 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   // Set Dynamixel data service
   std::string str_set_dxl_data_srv_name = "dynamixel_hardware_interface/set_dxl_data";
-  if (info_.hardware_parameters.find("set_dynamixel_data_srv_name") != info_.hardware_parameters.end()) {
+  if (info_.hardware_parameters.find("set_dynamixel_data_srv_name") !=
+    info_.hardware_parameters.end())
+  {
     str_set_dxl_data_srv_name = info_.hardware_parameters["set_dynamixel_data_srv_name"];
   }
   set_dxl_data_srv_ = create_service<dynamixel_interfaces::srv::SetDataToDxl>(
@@ -376,7 +387,9 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   // Set Dynamixel torque service
   std::string str_set_dxl_torque_srv_name = "dynamixel_hardware_interface/set_dxl_torque";
-  if (info_.hardware_parameters.find("set_dxl_torque_srv_name") != info_.hardware_parameters.end()) {
+  if (info_.hardware_parameters.find("set_dxl_torque_srv_name") !=
+    info_.hardware_parameters.end())
+  {
     str_set_dxl_torque_srv_name = info_.hardware_parameters["set_dxl_torque_srv_name"];
   }
   set_dxl_torque_srv_ = create_service<std_srvs::srv::SetBool>(
@@ -687,14 +700,15 @@ DxlError DynamixelHardware::CheckError(DxlError dxl_comm_err)
   for (size_t i = 0; i < num_of_transmissions_; i++) {
     for (size_t j = 0; j < hdl_trans_states_.at(i).interface_name_vec.size(); j++) {
       if (hdl_trans_states_.at(i).interface_name_vec.at(j) == "Hardware Error Status") {
-        dxl_hw_err_[hdl_trans_states_.at(i).id] = static_cast<uint8_t>(*hdl_trans_states_.at(i).value_ptr_vec.at(j));
+        dxl_hw_err_[hdl_trans_states_.at(i).id] =
+          static_cast<uint8_t>(*hdl_trans_states_.at(i).value_ptr_vec.at(j));
         uint8_t hw_error_status = static_cast<uint8_t>(dxl_hw_err_[hdl_trans_states_.at(i).id]);
         std::string error_string = "";
 
         // Check each bit in the hardware error status
         for (int bit = 0; bit < 8; ++bit) {
           if (hw_error_status & (1 << bit)) {
-            const HardwareErrorStatusBitInfo* bit_info = get_hardware_error_status_bit_info(bit);
+            const HardwareErrorStatusBitInfo * bit_info = get_hardware_error_status_bit_info(bit);
             if (bit_info) {
               error_string += bit_info->label;
               error_string += " (" + std::string(bit_info->description) + ")/ ";
@@ -716,11 +730,12 @@ DxlError DynamixelHardware::CheckError(DxlError dxl_comm_err)
         }
       }
       if (hdl_trans_states_.at(i).interface_name_vec.at(j) == "Error Code") {
-        dxl_error_code_[hdl_trans_states_.at(i).id] = static_cast<uint8_t>(*hdl_trans_states_.at(i).value_ptr_vec.at(j));
+        dxl_error_code_[hdl_trans_states_.at(i).id] =
+          static_cast<uint8_t>(*hdl_trans_states_.at(i).value_ptr_vec.at(j));
         uint8_t error_code = static_cast<uint8_t>(dxl_error_code_[hdl_trans_states_.at(i).id]);
 
         if (error_code != 0x00) {
-          const ErrorCodeInfo* error_info = get_error_code_info(error_code);
+          const ErrorCodeInfo * error_info = get_error_code_info(error_code);
           if (error_info) {
             RCLCPP_ERROR_STREAM_THROTTLE(
               logger_, clock_, 1000,
@@ -1100,8 +1115,11 @@ bool DynamixelHardware::SetMatrix()
   }
 
   d_vec.clear();
-  if (info_.hardware_parameters.find("transmission_to_joint_matrix") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_, "Required parameter 'transmission_to_joint_matrix' not found in hardware parameters");
+  if (info_.hardware_parameters.find("transmission_to_joint_matrix") ==
+    info_.hardware_parameters.end())
+  {
+    RCLCPP_ERROR_STREAM(logger_,
+        "Required parameter 'transmission_to_joint_matrix' not found in hardware parameters");
     return false;
   }
   std::stringstream ss_tj(info_.hardware_parameters["transmission_to_joint_matrix"]);
@@ -1128,8 +1146,11 @@ bool DynamixelHardware::SetMatrix()
   }
 
   d_vec.clear();
-  if (info_.hardware_parameters.find("joint_to_transmission_matrix") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_, "Required parameter 'joint_to_transmission_matrix' not found in hardware parameters");
+  if (info_.hardware_parameters.find("joint_to_transmission_matrix") ==
+    info_.hardware_parameters.end())
+  {
+    RCLCPP_ERROR_STREAM(logger_,
+        "Required parameter 'joint_to_transmission_matrix' not found in hardware parameters");
     return false;
   }
   std::stringstream ss_jt(info_.hardware_parameters["joint_to_transmission_matrix"]);
@@ -1488,7 +1509,7 @@ std::string DynamixelHardware::getErrorSummary(uint8_t id) const
 
     for (int bit = 0; bit < 8; ++bit) {
       if (hw_error_status & (1 << bit)) {
-        const HardwareErrorStatusBitInfo* bit_info = get_hardware_error_status_bit_info(bit);
+        const HardwareErrorStatusBitInfo * bit_info = get_hardware_error_status_bit_info(bit);
         if (bit_info) {
           summary << "    Bit " << bit << ": " << bit_info->label
                   << " - " << bit_info->description << "\n";
@@ -1506,7 +1527,7 @@ std::string DynamixelHardware::getErrorSummary(uint8_t id) const
     summary << "  Error Code: 0x" << std::hex << static_cast<int>(error_code)
             << std::dec << " (" << static_cast<int>(error_code) << ")\n";
 
-    const ErrorCodeInfo* error_info = get_error_code_info(error_code);
+    const ErrorCodeInfo * error_info = get_error_code_info(error_code);
     if (error_info) {
       summary << "    " << error_info->label << " - " << error_info->description << "\n";
     } else {
@@ -1516,7 +1537,8 @@ std::string DynamixelHardware::getErrorSummary(uint8_t id) const
 
   // Check if no errors
   if ((hw_err_it == dxl_hw_err_.end() || hw_err_it->second == 0) &&
-      (error_code_it == dxl_error_code_.end() || error_code_it->second == 0x00)) {
+    (error_code_it == dxl_error_code_.end() || error_code_it->second == 0x00))
+  {
     summary << "  No errors detected\n";
   }
 
@@ -1530,10 +1552,10 @@ std::string DynamixelHardware::getAllErrorSummaries() const
 
   // Get all unique IDs from both error maps
   std::set<uint8_t> all_ids;
-  for (const auto& pair : dxl_hw_err_) {
+  for (const auto & pair : dxl_hw_err_) {
     all_ids.insert(pair.first);
   }
-  for (const auto& pair : dxl_error_code_) {
+  for (const auto & pair : dxl_error_code_) {
     all_ids.insert(pair.first);
   }
 
