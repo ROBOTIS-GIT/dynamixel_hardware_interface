@@ -53,9 +53,7 @@ Address	Size	Data Name
 102	2	Goal Current
 104	4	Goal Velocity
 108	4	Profile Acceleration
-108	4	Profile Acceleration Time
 112	4	Profile Velocity
-112	4	Profile Time
 116	4	Goal Position
 120	2	Realtime Tick
 122	1	Moving
