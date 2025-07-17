@@ -132,7 +132,7 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
   }
 
   if (unit_info_found) {
-    getline(open_file, line);  // Skip header line "Data Name	value	unit	Sign Type"
+    getline(open_file, line);  // Skip header line "Data Name value unit Sign Type"
     while (!open_file.eof() ) {
       getline(open_file, line);
       if (strcmp(line.c_str(), "[control table]") == 0) {
@@ -271,7 +271,6 @@ bool DynamixelInfo::GetDxlUnitValue(uint8_t id, std::string data_name, double & 
     unit_value = it->second;
     return true;
   }
-  // fprintf(stderr, "[WARN] No unit mapping found for '%s' in ID %d\n", data_name.c_str(), id);
   return false;
 }
 
@@ -282,7 +281,6 @@ bool DynamixelInfo::GetDxlSignType(uint8_t id, std::string data_name, bool & is_
     is_signed = it->second;
     return true;
   }
-  // fprintf(stderr, "[WARN] No sign type mapping found for '%s' in ID %d\n", data_name.c_str(), id);
   return false;
 }
 
@@ -292,7 +290,6 @@ double DynamixelInfo::GetUnitMultiplier(uint8_t id, std::string data_name)
   if (it != dxl_info_[id].unit_map.end()) {
     return it->second;
   }
-  // fprintf(stderr, "[WARN] No unit mapping found for '%s' in ID %d, returning 1.0\n", data_name.c_str(), id);
   return 1.0;
 }
 

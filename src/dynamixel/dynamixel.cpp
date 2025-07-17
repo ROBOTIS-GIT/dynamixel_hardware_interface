@@ -1645,9 +1645,11 @@ DxlError Dynamixel::ProcessReadData(
     double unit_value;
     bool is_signed;
     if (dxl_info_.GetDxlUnitValue(ID, item_names[item_index], unit_value) &&
-        dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed)) {
+      dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed))
+    {
       // Use unit info and sign type to properly convert the value
-      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata, size, is_signed);
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata,
+          size, is_signed);
     } else {
       // Fallback to existing logic for compatibility
       if (item_names[item_index] == "Present Position") {
@@ -1681,9 +1683,11 @@ DxlError Dynamixel::ProcessDirectReadData(
     double unit_value;
     bool is_signed;
     if (dxl_info_.GetDxlUnitValue(ID, item_names[item_index], unit_value) &&
-        dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed)) {
+      dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed))
+    {
       // Use unit info and sign type to properly convert the value
-      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata, size, is_signed);
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata,
+          size, is_signed);
     } else {
       // Fallback to existing logic for compatibility
       if (item_names[item_index] == "Present Position") {
@@ -1852,7 +1856,8 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
       double unit_value;
       bool is_signed;
       if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
-          dxl_info_.GetDxlSignType(ID, item_name, is_signed)) {
+        dxl_info_.GetDxlSignType(ID, item_name, is_signed))
+      {
         // Use unit info and sign type to properly convert the value
         uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
         WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
@@ -1860,7 +1865,8 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         // Fallback to existing logic for compatibility
         if (item_name == "Goal Position") {
           int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-          WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position), 4);
+          WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+              4);
         } else {
           WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
         }
@@ -1951,7 +1957,8 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     // Store direct write info
     direct_info_write_[it_write_data.comm_id].indirect_data_addr = min_addr;
     direct_info_write_[it_write_data.comm_id].size = total_size;
-    direct_info_write_[it_write_data.comm_id].cnt = static_cast<uint16_t>(it_write_data.item_name.size());
+    direct_info_write_[it_write_data.comm_id].cnt =
+      static_cast<uint16_t>(it_write_data.item_name.size());
     direct_info_write_[it_write_data.comm_id].item_name = it_write_data.item_name;
     direct_info_write_[it_write_data.comm_id].item_size = it_write_data.item_size;
 
@@ -2042,7 +2049,8 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
         double unit_value;
         bool is_signed;
         if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
-            dxl_info_.GetDxlSignType(ID, item_name, is_signed)) {
+          dxl_info_.GetDxlSignType(ID, item_name, is_signed))
+        {
           // Use unit info and sign type to properly convert the value
           uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
           WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
@@ -2050,7 +2058,8 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           // Fallback to existing logic for compatibility
           if (item_name == "Goal Position") {
             int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position), 4);
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+                4);
           } else {
             WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
@@ -2081,7 +2090,8 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
         double unit_value;
         bool is_signed;
         if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
-            dxl_info_.GetDxlSignType(ID, item_name, is_signed)) {
+          dxl_info_.GetDxlSignType(ID, item_name, is_signed))
+        {
           // Use unit info and sign type to properly convert the value
           uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
           WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
@@ -2089,7 +2099,8 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           // Fallback to existing logic for compatibility
           if (item_name == "Goal Position") {
             int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position), 4);
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+                4);
           } else {
             WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
@@ -2147,7 +2158,9 @@ DxlError Dynamixel::AddIndirectWrite(
   uint8_t using_size = indirect_info_write_[id].size;
 
   for (uint16_t i = 0; i < item_size; i++) {
-    if (WriteItem(id, static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2)), 2, item_addr + i) != DxlError::OK) {
+    if (WriteItem(id, static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2)), 2,
+        item_addr + i) != DxlError::OK)
+    {
       return DxlError::SET_BULK_WRITE_FAIL;
     }
     using_size++;
@@ -2173,7 +2186,9 @@ void Dynamixel::ResetDirectWrite(std::vector<uint8_t> id_arr)
   }
 }
 
-double Dynamixel::ConvertValueWithUnitInfo(uint8_t id, std::string item_name, uint32_t raw_value, uint8_t size, bool is_signed)
+double Dynamixel::ConvertValueWithUnitInfo(
+  uint8_t id, std::string item_name, uint32_t raw_value,
+  uint8_t size, bool is_signed)
 {
   if (size == 1) {
     if (is_signed) {
@@ -2203,11 +2218,13 @@ double Dynamixel::ConvertValueWithUnitInfo(uint8_t id, std::string item_name, ui
 
   // Throw error for unknown sizes
   std::string error_msg = "Unknown data size " + std::to_string(size) +
-                         " for item '" + item_name + "' in ID " + std::to_string(id);
+    " for item '" + item_name + "' in ID " + std::to_string(id);
   throw std::runtime_error(error_msg);
 }
 
-uint32_t Dynamixel::ConvertUnitValueToRawValue(uint8_t id, std::string item_name, double unit_value, uint8_t size, bool is_signed)
+uint32_t Dynamixel::ConvertUnitValueToRawValue(
+  uint8_t id, std::string item_name, double unit_value,
+  uint8_t size, bool is_signed)
 {
   if (size == 1) {
     if (is_signed) {
@@ -2237,11 +2254,11 @@ uint32_t Dynamixel::ConvertUnitValueToRawValue(uint8_t id, std::string item_name
 
   // Throw error for unknown sizes
   std::string error_msg = "Unknown data size " + std::to_string(size) +
-                         " for item '" + item_name + "' in ID " + std::to_string(id);
+    " for item '" + item_name + "' in ID " + std::to_string(id);
   throw std::runtime_error(error_msg);
 }
 
-void Dynamixel::WriteValueToBuffer(uint8_t* buffer, uint8_t offset, uint32_t value, uint8_t size)
+void Dynamixel::WriteValueToBuffer(uint8_t * buffer, uint8_t offset, uint32_t value, uint8_t size)
 {
   if (size == 1) {
     buffer[offset] = static_cast<uint8_t>(value);

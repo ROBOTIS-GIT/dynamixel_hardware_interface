@@ -106,7 +106,6 @@ double DynamixelInfo::ConvertValueToUnit(uint8_t id, std::string data_name, T va
   if (it != dxl_info_[id].unit_map.end()) {
     return static_cast<double>(value) * it->second;
   }
-  // fprintf(stderr, "[WARN] No unit mapping found for '%s' in ID %d, returning raw value\n", data_name.c_str(), id);
   return static_cast<double>(value);
 }
 
@@ -117,7 +116,6 @@ T DynamixelInfo::ConvertUnitToValue(uint8_t id, std::string data_name, double un
   if (it != dxl_info_[id].unit_map.end()) {
     return static_cast<T>(unit_value / it->second);
   }
-  // fprintf(stderr, "[WARN] No unit mapping found for '%s' in ID %d, returning raw value\n", data_name.c_str(), id);
   return static_cast<T>(unit_value);
 }
 
