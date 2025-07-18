@@ -894,19 +894,15 @@ bool Dynamixel::checkReadType()
       return BULK;
     }
 
-    if (read_data_list_.at(dxl_index).item_name.size() !=
-      read_data_list_.at(dxl_index - 1).item_name.size())
+    if (read_data_list_.at(dxl_index).item_size.size() !=
+      read_data_list_.at(dxl_index - 1).item_size.size())
     {
       return BULK;
     }
-    for (size_t item_index = 0; item_index < read_data_list_.at(dxl_index).item_name.size();
+    for (size_t item_index = 0; item_index < read_data_list_.at(dxl_index).item_size.size();
       item_index++)
     {
-      if (read_data_list_.at(dxl_index).item_name.at(item_index) !=
-        read_data_list_.at(dxl_index - 1).item_name.at(item_index) ||
-        read_data_list_.at(dxl_index).item_addr.at(item_index) !=
-        read_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
-        read_data_list_.at(dxl_index).item_size.at(item_index) !=
+      if (read_data_list_.at(dxl_index).item_size.at(item_index) !=
         read_data_list_.at(dxl_index - 1).item_size.at(item_index))
       {
         return BULK;
@@ -946,19 +942,15 @@ bool Dynamixel::checkWriteType()
       return BULK;
     }
 
-    if (write_data_list_.at(dxl_index).item_name.size() !=
-      write_data_list_.at(dxl_index - 1).item_name.size())
+    if (write_data_list_.at(dxl_index).item_size.size() !=
+      write_data_list_.at(dxl_index - 1).item_size.size())
     {
       return BULK;
     }
-    for (size_t item_index = 0; item_index < write_data_list_.at(dxl_index).item_name.size();
+    for (size_t item_index = 0; item_index < write_data_list_.at(dxl_index).item_size.size();
       item_index++)
     {
-      if (write_data_list_.at(dxl_index).item_name.at(item_index) !=
-        write_data_list_.at(dxl_index - 1).item_name.at(item_index) ||
-        write_data_list_.at(dxl_index).item_addr.at(item_index) !=
-        write_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
-        write_data_list_.at(dxl_index).item_size.at(item_index) !=
+      if (write_data_list_.at(dxl_index).item_size.at(item_index) !=
         write_data_list_.at(dxl_index - 1).item_size.at(item_index))
       {
         return BULK;
