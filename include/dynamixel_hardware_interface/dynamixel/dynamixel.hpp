@@ -67,7 +67,7 @@ enum DxlError
   SET_BULK_READ_FAIL = -13,        ///< Failed to configure bulk read.
   SET_READ_ITEM_FAIL = -14,        ///< Failed to set read item.
   SET_WRITE_ITEM_FAIL = -15,       ///< Failed to set write item.
-  DLX_HARDWARE_ERROR = -16,        ///< Hardware error detected.
+  DXL_HARDWARE_ERROR = -16,        ///< Hardware error detected.
   DXL_REBOOT_FAIL = -17            ///< Reboot failed.
 };
 
@@ -260,6 +260,7 @@ private:
   DxlError ProcessDirectReadData(
     uint8_t id,
     const std::vector<uint16_t> & item_addrs,
+    const std::vector<std::string> & item_names,
     const std::vector<uint8_t> & item_sizes,
     const std::vector<std::shared_ptr<double>> & data_ptrs,
     std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func);
@@ -292,6 +293,25 @@ private:
     std::string item_name,
     uint16_t item_addr,
     uint8_t item_size);
+
+  // Helper function for value conversion with unit info
+  double ConvertValueWithUnitInfo(
+    uint8_t id,
+    std::string item_name,
+    uint32_t raw_value,
+    uint8_t size,
+    bool is_signed);
+
+  // Helper function for converting unit values to raw values
+  uint32_t ConvertUnitValueToRawValue(
+    uint8_t id,
+    std::string item_name,
+    double unit_value,
+    uint8_t size,
+    bool is_signed);
+
+  // Helper function for writing values to buffer
+  void WriteValueToBuffer(uint8_t * buffer, uint8_t offset, uint32_t value, uint8_t size);
 };
 
 }  // namespace dynamixel_hardware_interface

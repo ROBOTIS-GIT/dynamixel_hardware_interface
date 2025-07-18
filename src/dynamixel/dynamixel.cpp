@@ -124,7 +124,7 @@ DxlError Dynamixel::InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_t
               "'disable_torque_at_init' parameter to 'true' to disable torque at initialization "
               "or disable torque manually.\n",
               it_id);
-            return DxlError::DLX_HARDWARE_ERROR;
+            return DxlError::DXL_HARDWARE_ERROR;
           }
         }
 
@@ -182,7 +182,7 @@ DxlError Dynamixel::InitDxlComm(
       }
       fprintf(stderr, "[ID:%03d] Hardware Error detected, rebooting...\n", it_id);
       Reboot(it_id);
-      return DxlError::DLX_HARDWARE_ERROR;
+      return DxlError::DXL_HARDWARE_ERROR;
     } else {
       fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d\n", dxl_model_number);
     }
@@ -449,6 +449,9 @@ DxlError Dynamixel::SetMultiDxlWrite()
 DxlError Dynamixel::DynamixelEnable(std::vector<uint8_t> id_arr)
 {
   for (auto it_id : id_arr) {
+    if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable") == false) {
+      continue;
+    }
     if (torque_state_[it_id] == TORQUE_OFF) {
       if (WriteItem(it_id, "Torque Enable", TORQUE_ON) < 0) {
         fprintf(stderr, "[ID:%03d] Cannot write \"Torque On\" command!\n", it_id);
@@ -465,6 +468,9 @@ DxlError Dynamixel::DynamixelDisable(std::vector<uint8_t> id_arr)
 {
   DxlError result = DxlError::OK;
   for (auto it_id : id_arr) {
+    if (dxl_info_.CheckDxlControlItem(it_id, "Torque Enable") == false) {
+      continue;
+    }
     if (torque_state_[it_id] == TORQUE_ON) {
       if (WriteItem(it_id, "Torque Enable", TORQUE_OFF) < 0) {
         fprintf(stderr, "[ID:%03d] Cannot write \"Torque Off\" command!\n", it_id);
@@ -549,15 +555,11 @@ DxlError Dynamixel::WriteItem(uint8_t id, uint16_t addr, uint8_t size, uint32_t 
     } else if (dxl_error != 0) {
       fprintf(
         stderr,
-        "[WriteItem][ID:%03d][comm_id:%03d] RX_PACKET_ERROR : %s (retry %d/%d)\n",
+        "[WriteItem][ID:%03d][comm_id:%03d] RX_PACKET_ERROR : %s\n",
         id,
         comm_id,
-        packet_handler_->getRxPacketError(dxl_error),
-        i + 1,
-        MAX_COMM_RETRIES);
-      if (i == MAX_COMM_RETRIES - 1) {
-        return DxlError::ITEM_WRITE_FAIL;
-      }
+        packet_handler_->getRxPacketError(dxl_error));
+      return DxlError::ITEM_WRITE_FAIL;
     } else {
       return DxlError::OK;
     }
@@ -610,7 +612,7 @@ DxlError Dynamixel::WriteItemBuf()
         if (WriteItem(it_write_item.id, "Torque Enable", TORQUE_OFF) < 0) {
           fprintf(
             stderr,
-            "[ID:%03d] Cannot write \"Torque Off\" command! Cannot wirte a Item.\n",
+            "[ID:%03d] Cannot write \"Torque Off\" command! Cannot write a Item.\n",
             it_write_item.id);
           return DxlError::ITEM_WRITE_FAIL;
         }
@@ -827,8 +829,8 @@ std::string Dynamixel::DxlErrorToString(DxlError error_num)
       return "SET_READ_ITEM_FAIL";
     case SET_WRITE_ITEM_FAIL:
       return "SET_WRITE_ITEM_FAIL";
-    case DLX_HARDWARE_ERROR:
-      return "DLX_HARDWARE_ERROR";
+    case DXL_HARDWARE_ERROR:
+      return "DXL_HARDWARE_ERROR";
     case DXL_REBOOT_FAIL:
       return "DXL_REBOOT_FAIL";
     default:
@@ -892,19 +894,15 @@ bool Dynamixel::checkReadType()
       return BULK;
     }
 
-    if (read_data_list_.at(dxl_index).item_name.size() !=
-      read_data_list_.at(dxl_index - 1).item_name.size())
+    if (read_data_list_.at(dxl_index).item_size.size() !=
+      read_data_list_.at(dxl_index - 1).item_size.size())
     {
       return BULK;
     }
-    for (size_t item_index = 0; item_index < read_data_list_.at(dxl_index).item_name.size();
+    for (size_t item_index = 0; item_index < read_data_list_.at(dxl_index).item_size.size();
       item_index++)
     {
-      if (read_data_list_.at(dxl_index).item_name.at(item_index) !=
-        read_data_list_.at(dxl_index - 1).item_name.at(item_index) ||
-        read_data_list_.at(dxl_index).item_addr.at(item_index) !=
-        read_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
-        read_data_list_.at(dxl_index).item_size.at(item_index) !=
+      if (read_data_list_.at(dxl_index).item_size.at(item_index) !=
         read_data_list_.at(dxl_index - 1).item_size.at(item_index))
       {
         return BULK;
@@ -944,19 +942,15 @@ bool Dynamixel::checkWriteType()
       return BULK;
     }
 
-    if (write_data_list_.at(dxl_index).item_name.size() !=
-      write_data_list_.at(dxl_index - 1).item_name.size())
+    if (write_data_list_.at(dxl_index).item_size.size() !=
+      write_data_list_.at(dxl_index - 1).item_size.size())
     {
       return BULK;
     }
-    for (size_t item_index = 0; item_index < write_data_list_.at(dxl_index).item_name.size();
+    for (size_t item_index = 0; item_index < write_data_list_.at(dxl_index).item_size.size();
       item_index++)
     {
-      if (write_data_list_.at(dxl_index).item_name.at(item_index) !=
-        write_data_list_.at(dxl_index - 1).item_name.at(item_index) ||
-        write_data_list_.at(dxl_index).item_addr.at(item_index) !=
-        write_data_list_.at(dxl_index - 1).item_addr.at(item_index) ||
-        write_data_list_.at(dxl_index).item_size.at(item_index) !=
+      if (write_data_list_.at(dxl_index).item_size.at(item_index) !=
         write_data_list_.at(dxl_index - 1).item_size.at(item_index))
       {
         return BULK;
@@ -1139,8 +1133,8 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
           indirect_info_read_[id].item_name,
           indirect_info_read_[id].item_size,
           it_read_data.item_data_ptr_vec,
-          [this](uint8_t id, uint16_t addr, uint8_t size) {
-            return group_fast_sync_read_->getData(id, addr, size);
+          [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+            return group_fast_sync_read_->getData(lambda_id, addr, size);
           });
       }
       // Mark as permanently using fast sync read after first success
@@ -1185,8 +1179,8 @@ DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
       indirect_info_read_[id].item_name,
       indirect_info_read_[id].item_size,
       it_read_data.item_data_ptr_vec,
-      [this](uint8_t id, uint16_t addr, uint8_t size) {
-        return group_sync_read_->getData(id, addr, size);
+      [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+        return group_sync_read_->getData(lambda_id, addr, size);
       });
   }
   return DxlError::OK;
@@ -1235,7 +1229,7 @@ DxlError Dynamixel::SetBulkReadItemAndHandler()
       if (addr < min_addr) {min_addr = addr;}
       if (addr + size > max_end_addr) {max_end_addr = addr + size;}
     }
-    uint8_t total_size = max_end_addr - min_addr;
+    uint8_t total_size = static_cast<uint8_t>(max_end_addr - min_addr);
     // Concatenate all item names with '+'
     std::string group_item_names;
     for (size_t i = 0; i < it_read_data.item_name.size(); ++i) {
@@ -1449,10 +1443,11 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
           ProcessDirectReadData(
             id,
             it_read_data.item_addr,
+            it_read_data.item_name,
             it_read_data.item_size,
             it_read_data.item_data_ptr_vec,
-            [this](uint8_t id, uint16_t addr, uint8_t size) {
-              return group_fast_bulk_read_->getData(id, addr, size);
+            [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+              return group_fast_bulk_read_->getData(lambda_id, addr, size);
             });
         } else {
           ProcessReadData(
@@ -1462,8 +1457,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
             indirect_info_read_[id].item_name,
             indirect_info_read_[id].item_size,
             it_read_data.item_data_ptr_vec,
-            [this](uint8_t id, uint16_t addr, uint8_t size) {
-              return group_fast_bulk_read_->getData(id, addr, size);
+            [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+              return group_fast_bulk_read_->getData(lambda_id, addr, size);
             });
         }
       }
@@ -1514,10 +1509,11 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
       ProcessDirectReadData(
         id,
         it_read_data.item_addr,
+        it_read_data.item_name,
         it_read_data.item_size,
         it_read_data.item_data_ptr_vec,
-        [this](uint8_t id, uint16_t addr, uint8_t size) {
-          return group_bulk_read_->getData(id, addr, size);
+        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+          return group_bulk_read_->getData(lambda_id, addr, size);
         });
     } else {
       ProcessReadData(
@@ -1527,8 +1523,8 @@ DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
         indirect_info_read_[id].item_name,
         indirect_info_read_[id].item_size,
         it_read_data.item_data_ptr_vec,
-        [this](uint8_t id, uint16_t addr, uint8_t size) {
-          return group_bulk_read_->getData(id, addr, size);
+        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+          return group_bulk_read_->getData(lambda_id, addr, size);
         });
     }
   }
@@ -1637,20 +1633,25 @@ DxlError Dynamixel::ProcessReadData(
 
     uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
-    if (item_names[item_index] == "Present Position") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
-        ID,
-        static_cast<int32_t>(dxl_getdata));
-    } else if (item_names[item_index] == "Present Velocity") {
-      *data_ptrs[item_index] = dxl_info_.ConvertValueRPMToVelocityRPS(
-        ID,
-        static_cast<int32_t>(dxl_getdata));
-    } else if (item_names[item_index] == "Present Current") {
-      *data_ptrs[item_index] = dxl_info_.ConvertCurrentToEffort(
-        ID,
-        static_cast<int16_t>(dxl_getdata));
+    // Check if there is unit info for this item
+    double unit_value;
+    bool is_signed;
+    if (dxl_info_.GetDxlUnitValue(ID, item_names[item_index], unit_value) &&
+      dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed))
+    {
+      // Use unit info and sign type to properly convert the value
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(
+        ID, item_names[item_index], dxl_getdata,
+        size, is_signed);
     } else {
-      *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      // Fallback to existing logic for compatibility
+      if (item_names[item_index] == "Present Position") {
+        *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+          ID,
+          static_cast<int32_t>(dxl_getdata));
+      } else {
+        *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      }
     }
   }
   return DxlError::OK;
@@ -1659,17 +1660,38 @@ DxlError Dynamixel::ProcessReadData(
 DxlError Dynamixel::ProcessDirectReadData(
   uint8_t comm_id,
   const std::vector<uint16_t> & item_addrs,
+  const std::vector<std::string> & item_names,
   const std::vector<uint8_t> & item_sizes,
   const std::vector<std::shared_ptr<double>> & data_ptrs,
   std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func)
 {
   for (size_t item_index = 0; item_index < item_addrs.size(); item_index++) {
+    uint8_t ID = comm_id;
     uint16_t current_addr = item_addrs[item_index];
     uint8_t size = item_sizes[item_index];
 
     uint32_t dxl_getdata = get_data_func(comm_id, current_addr, size);
 
-    *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+    // Check if there is unit info for this item
+    double unit_value;
+    bool is_signed;
+    if (dxl_info_.GetDxlUnitValue(ID, item_names[item_index], unit_value) &&
+      dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed))
+    {
+      // Use unit info and sign type to properly convert the value
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(
+        ID, item_names[item_index], dxl_getdata,
+        size, is_signed);
+    } else {
+      // Fallback to existing logic for compatibility
+      if (item_names[item_index] == "Present Position") {
+        *data_ptrs[item_index] = dxl_info_.ConvertValueToRadian(
+          ID,
+          static_cast<int32_t>(dxl_getdata));
+      } else {
+        *data_ptrs[item_index] = static_cast<double>(dxl_getdata);
+      }
+    }
   }
   return DxlError::OK;
 }
@@ -1717,7 +1739,7 @@ DxlError Dynamixel::AddIndirectRead(
 
     for (uint16_t i = 0; i < item_size; i++) {
       DxlError write_result = DxlError::INDIRECT_ADDR_FAIL;
-      uint16_t addr = INDIRECT_ADDR + (using_size * 2);
+      uint16_t addr = static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2));
       uint16_t item_addr_i = item_addr + i;
 
       write_result = WriteItem(id, addr, 2, item_addr_i);
@@ -1821,38 +1843,30 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
     for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
       double data = *it_write_data.item_data_ptr_vec.at(item_index);
       uint8_t ID = it_write_data.id_arr.at(item_index);
-      if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
-        int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
-        param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
-        param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
-        param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-      } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-        int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
-        param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
-        param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
-        param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-      } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
-        int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-        param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-        param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+      std::string item_name = indirect_info_write_[comm_id].item_name.at(item_index);
+      uint8_t size = indirect_info_write_[comm_id].item_size.at(item_index);
+
+      // Check if there is unit info for this item
+      double unit_value;
+      bool is_signed;
+      if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
+        dxl_info_.GetDxlSignType(ID, item_name, is_signed))
+      {
+        // Use unit info and sign type to properly convert the value
+        uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
+        WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
       } else {
-        if (indirect_info_write_[comm_id].item_size.at(item_index) == 4) {
-          int32_t value = static_cast<int32_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-        } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 2) {
-          int16_t value = static_cast<int16_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-        } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 1) {
-          param_write_value[added_byte] = static_cast<uint8_t>(data);
+        // Fallback to existing logic for compatibility
+        if (item_name == "Goal Position") {
+          int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+          WriteValueToBuffer(
+            param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+            4);
+        } else {
+          WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
         }
       }
-      added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
+      added_byte += size;
     }
 
     if (group_sync_write_->addParam(comm_id, param_write_value) != true) {
@@ -1913,7 +1927,7 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
       if (addr < min_addr) {min_addr = addr;}
       if (addr + size > max_end_addr) {max_end_addr = addr + size;}
     }
-    uint8_t total_size = max_end_addr - min_addr;
+    uint8_t total_size = static_cast<uint8_t>(max_end_addr - min_addr);
 
     // Check for gaps between items
     std::vector<std::pair<uint16_t, uint16_t>> addr_ranges;
@@ -1938,7 +1952,8 @@ DxlError Dynamixel::SetBulkWriteItemAndHandler()
     // Store direct write info
     direct_info_write_[it_write_data.comm_id].indirect_data_addr = min_addr;
     direct_info_write_[it_write_data.comm_id].size = total_size;
-    direct_info_write_[it_write_data.comm_id].cnt = it_write_data.item_name.size();
+    direct_info_write_[it_write_data.comm_id].cnt =
+      static_cast<uint16_t>(it_write_data.item_name.size());
     direct_info_write_[it_write_data.comm_id].item_name = it_write_data.item_name;
     direct_info_write_[it_write_data.comm_id].item_size = it_write_data.item_size;
 
@@ -2021,19 +2036,29 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
 
       for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
+        uint8_t ID = comm_id;
+        std::string item_name = direct_info_write_[comm_id].item_name.at(item_index);
         uint8_t size = direct_info_write_[comm_id].item_size.at(item_index);
-        if (size == 4) {
-          int32_t value = static_cast<int32_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-        } else if (size == 2) {
-          int16_t value = static_cast<int16_t>(data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-        } else if (size == 1) {
-          param_write_value[added_byte] = static_cast<uint8_t>(data);
+
+        // Check if there is unit info for this item
+        double unit_value;
+        bool is_signed;
+        if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
+          dxl_info_.GetDxlSignType(ID, item_name, is_signed))
+        {
+          // Use unit info and sign type to properly convert the value
+          uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
+          WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
+        } else {
+          // Fallback to existing logic for compatibility
+          if (item_name == "Goal Position") {
+            int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+            WriteValueToBuffer(
+              param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+              4);
+          } else {
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
+          }
         }
         added_byte += size;
       }
@@ -2054,38 +2079,30 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
       for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
         uint8_t ID = it_write_data.id_arr.at(item_index);
-        if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Position") {
-          int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_position));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_position));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_position));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_position));
-        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Velocity") {
-          int32_t goal_velocity = dxl_info_.ConvertVelocityRPSToValueRPM(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(goal_velocity));
-          param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(goal_velocity));
-          param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(goal_velocity));
-          param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(goal_velocity));
-        } else if (indirect_info_write_[comm_id].item_name.at(item_index) == "Goal Current") {
-          int16_t goal_current = dxl_info_.ConvertEffortToCurrent(ID, data);
-          param_write_value[added_byte + 0] = DXL_LOBYTE(goal_current);
-          param_write_value[added_byte + 1] = DXL_HIBYTE(goal_current);
+        std::string item_name = indirect_info_write_[comm_id].item_name.at(item_index);
+        uint8_t size = indirect_info_write_[comm_id].item_size.at(item_index);
+
+        // Check if there is unit info for this item
+        double unit_value;
+        bool is_signed;
+        if (dxl_info_.GetDxlUnitValue(ID, item_name, unit_value) &&
+          dxl_info_.GetDxlSignType(ID, item_name, is_signed))
+        {
+          // Use unit info and sign type to properly convert the value
+          uint32_t raw_value = ConvertUnitValueToRawValue(ID, item_name, data, size, is_signed);
+          WriteValueToBuffer(param_write_value, added_byte, raw_value, size);
         } else {
-          if (indirect_info_write_[comm_id].item_size.at(item_index) == 4) {
-            int32_t value = static_cast<int32_t>(data);
-            param_write_value[added_byte + 0] = DXL_LOBYTE(DXL_LOWORD(value));
-            param_write_value[added_byte + 1] = DXL_HIBYTE(DXL_LOWORD(value));
-            param_write_value[added_byte + 2] = DXL_LOBYTE(DXL_HIWORD(value));
-            param_write_value[added_byte + 3] = DXL_HIBYTE(DXL_HIWORD(value));
-          } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 2) {
-            int16_t value = static_cast<int16_t>(data);
-            param_write_value[added_byte + 0] = DXL_LOBYTE(value);
-            param_write_value[added_byte + 1] = DXL_HIBYTE(value);
-          } else if (indirect_info_write_[comm_id].item_size.at(item_index) == 1) {
-            param_write_value[added_byte] = static_cast<uint8_t>(data);
+          // Fallback to existing logic for compatibility
+          if (item_name == "Goal Position") {
+            int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
+            WriteValueToBuffer(
+              param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+              4);
+          } else {
+            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
         }
-        added_byte += indirect_info_write_[comm_id].item_size.at(item_index);
+        added_byte += size;
       }
 
       if (group_bulk_write_->addParam(
@@ -2138,7 +2155,10 @@ DxlError Dynamixel::AddIndirectWrite(
   uint8_t using_size = indirect_info_write_[id].size;
 
   for (uint16_t i = 0; i < item_size; i++) {
-    if (WriteItem(id, INDIRECT_ADDR + (using_size * 2), 2, item_addr + i) != DxlError::OK) {
+    if (WriteItem(
+        id, static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2)), 2,
+        item_addr + i) != DxlError::OK)
+    {
       return DxlError::SET_BULK_WRITE_FAIL;
     }
     using_size++;
@@ -2161,6 +2181,94 @@ void Dynamixel::ResetDirectWrite(std::vector<uint8_t> id_arr)
   temp.item_size.clear();
   for (auto it_id : id_arr) {
     direct_info_write_[it_id] = temp;
+  }
+}
+
+double Dynamixel::ConvertValueWithUnitInfo(
+  uint8_t id, std::string item_name, uint32_t raw_value,
+  uint8_t size, bool is_signed)
+{
+  if (size == 1) {
+    if (is_signed) {
+      int8_t signed_value = static_cast<int8_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<int8_t>(id, item_name, signed_value);
+    } else {
+      uint8_t unsigned_value = static_cast<uint8_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<uint8_t>(id, item_name, unsigned_value);
+    }
+  } else if (size == 2) {
+    if (is_signed) {
+      int16_t signed_value = static_cast<int16_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<int16_t>(id, item_name, signed_value);
+    } else {
+      uint16_t unsigned_value = static_cast<uint16_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<uint16_t>(id, item_name, unsigned_value);
+    }
+  } else if (size == 4) {
+    if (is_signed) {
+      int32_t signed_value = static_cast<int32_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<int32_t>(id, item_name, signed_value);
+    } else {
+      uint32_t unsigned_value = static_cast<uint32_t>(raw_value);
+      return dxl_info_.ConvertValueToUnit<uint32_t>(id, item_name, unsigned_value);
+    }
+  }
+
+  // Throw error for unknown sizes
+  std::string error_msg = "Unknown data size " + std::to_string(size) +
+    " for item '" + item_name + "' in ID " + std::to_string(id);
+  throw std::runtime_error(error_msg);
+}
+
+uint32_t Dynamixel::ConvertUnitValueToRawValue(
+  uint8_t id, std::string item_name, double unit_value,
+  uint8_t size, bool is_signed)
+{
+  if (size == 1) {
+    if (is_signed) {
+      int8_t signed_value = dxl_info_.ConvertUnitToValue<int8_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(signed_value);
+    } else {
+      uint8_t unsigned_value = dxl_info_.ConvertUnitToValue<uint8_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(unsigned_value);
+    }
+  } else if (size == 2) {
+    if (is_signed) {
+      int16_t signed_value = dxl_info_.ConvertUnitToValue<int16_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(signed_value);
+    } else {
+      uint16_t unsigned_value = dxl_info_.ConvertUnitToValue<uint16_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(unsigned_value);
+    }
+  } else if (size == 4) {
+    if (is_signed) {
+      int32_t signed_value = dxl_info_.ConvertUnitToValue<int32_t>(id, item_name, unit_value);
+      return static_cast<uint32_t>(signed_value);
+    } else {
+      uint32_t unsigned_value = dxl_info_.ConvertUnitToValue<uint32_t>(id, item_name, unit_value);
+      return unsigned_value;
+    }
+  }
+
+  // Throw error for unknown sizes
+  std::string error_msg = "Unknown data size " + std::to_string(size) +
+    " for item '" + item_name + "' in ID " + std::to_string(id);
+  throw std::runtime_error(error_msg);
+}
+
+void Dynamixel::WriteValueToBuffer(uint8_t * buffer, uint8_t offset, uint32_t value, uint8_t size)
+{
+  if (size == 1) {
+    buffer[offset] = static_cast<uint8_t>(value);
+  } else if (size == 2) {
+    uint16_t value_16 = static_cast<uint16_t>(value);
+    buffer[offset + 0] = DXL_LOBYTE(value_16);
+    buffer[offset + 1] = DXL_HIBYTE(value_16);
+  } else if (size == 4) {
+    buffer[offset + 0] = DXL_LOBYTE(DXL_LOWORD(value));
+    buffer[offset + 1] = DXL_HIBYTE(DXL_LOWORD(value));
+    buffer[offset + 2] = DXL_LOBYTE(DXL_HIWORD(value));
+    buffer[offset + 3] = DXL_HIBYTE(DXL_HIWORD(value));
   }
 }
 }  // namespace dynamixel_hardware_interface
