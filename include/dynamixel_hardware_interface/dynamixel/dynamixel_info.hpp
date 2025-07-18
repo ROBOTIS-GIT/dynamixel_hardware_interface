@@ -38,13 +38,6 @@ typedef struct
   std::string item_name;
 } ControlItem;
 
-typedef struct
-{
-  std::string data_name;
-  double value;
-  bool is_signed;
-} UnitItem;
-
 typedef  struct
 {
   double min_radian;
