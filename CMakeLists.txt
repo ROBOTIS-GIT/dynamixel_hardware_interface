@@ -41,7 +41,7 @@ target_include_directories(
   ${PROJECT_NAME}
   PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/dynamixel_hardware_interface>
+  $<INSTALL_INTERFACE:include>
   ${dynamixel_sdk_INCLUDE_DIRS}
   ${hardware_interface_INCLUDE_DIRS}
   ${realtime_tools_INCLUDE_DIRS}
@@ -72,9 +72,8 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION bin
 )
 
-install(
-  DIRECTORY include/
-  DESTINATION include/dynamixel_hardware_interface
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 install(PROGRAMS
