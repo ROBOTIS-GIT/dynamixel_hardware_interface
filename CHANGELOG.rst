@@ -2,6 +2,12 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.10 (2025-07-18)
+------------------
+* Added unit system to model files
+* Added support for Dynamixel Y Error Code handling
+* Contributors: Woojin Wie
+
 1.4.9 (2025-06-24)
 ------------------
 * Support ffw sensor model

@@ -40,16 +40,16 @@ typedef struct
 
 typedef  struct
 {
-  double torque_constant;
   double min_radian;
   double max_radian;
   int32_t value_of_zero_radian_position;
   int32_t value_of_max_radian_position;
   int32_t value_of_min_radian_position;
   uint16_t model_num;
-  double velocity_unit;
 
   std::vector<ControlItem> item;
+  std::map<std::string, double> unit_map;
+  std::map<std::string, bool> sign_type_map;
 } DxlInfo;
 
 class DynamixelInfo
@@ -73,26 +73,44 @@ public:
   void ReadDxlModelFile(uint8_t id, uint16_t model_num);
   bool GetDxlControlItem(uint8_t id, std::string item_name, uint16_t & addr, uint8_t & size);
   bool CheckDxlControlItem(uint8_t id, std::string item_name);
-  // bool GetDxlTypeInfo(
-  //   uint8_t id,
-  //   int32_t & value_of_zero_radian_position,
-  //   int32_t & value_of_max_radian_position,
-  //   int32_t & value_of_min_radian_position,
-  //   double & min_radian,
-  //   double & max_radian,
-  //   double & torque_constant,
-  //   double & velocity_unit);
+
+  bool GetDxlUnitValue(uint8_t id, std::string data_name, double & unit_value);
+  bool GetDxlSignType(uint8_t id, std::string data_name, bool & is_signed);
+
+  // Template-based conversion methods
+  template<typename T>
+  double ConvertValueToUnit(uint8_t id, std::string data_name, T value);
+
+  template<typename T>
+  T ConvertUnitToValue(uint8_t id, std::string data_name, double unit_value);
+
+  // Helper method for internal use
+  double GetUnitMultiplier(uint8_t id, std::string data_name);
+
   int32_t ConvertRadianToValue(uint8_t id, double radian);
   double ConvertValueToRadian(uint8_t id, int32_t value);
-  inline int16_t ConvertEffortToCurrent(uint8_t id, double effort)
-  {return static_cast<int16_t>(effort / dxl_info_[id].torque_constant);}
-  inline double ConvertCurrentToEffort(uint8_t id, int16_t current)
-  {return static_cast<double>(current * dxl_info_[id].torque_constant);}
-  inline double ConvertValueRPMToVelocityRPS(uint8_t id, int32_t value_rpm)
-  {return static_cast<double>(value_rpm * dxl_info_[id].velocity_unit / 60.0 * 2.0 * M_PI);}
-  inline int32_t ConvertVelocityRPSToValueRPM(uint8_t id, double vel_rps)
-  {return static_cast<int32_t>(vel_rps / dxl_info_[id].velocity_unit * 60.0 / 2.0 / M_PI);}
 };
+
+// Template implementations
+template<typename T>
+double DynamixelInfo::ConvertValueToUnit(uint8_t id, std::string data_name, T value)
+{
+  auto it = dxl_info_[id].unit_map.find(data_name);
+  if (it != dxl_info_[id].unit_map.end()) {
+    return static_cast<double>(value) * it->second;
+  }
+  return static_cast<double>(value);
+}
+
+template<typename T>
+T DynamixelInfo::ConvertUnitToValue(uint8_t id, std::string data_name, double unit_value)
+{
+  auto it = dxl_info_[id].unit_map.find(data_name);
+  if (it != dxl_info_[id].unit_map.end()) {
+    return static_cast<T>(unit_value / it->second);
+  }
+  return static_cast<T>(unit_value);
+}
 
 }  // namespace dynamixel_hardware_interface
 

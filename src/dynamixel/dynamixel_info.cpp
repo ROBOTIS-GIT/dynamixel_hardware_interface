@@ -73,59 +73,99 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
   std::string line;
 
   temp_dxl_info.model_num = model_num;
-  bool torque_constant_set = false;
-  bool velocity_unit_set = false;
+
+  // Check if [type info] section exists
+  bool type_info_found = false;
+  bool unit_info_found = false;
+  bool control_table_found = false;
 
   while (!open_file.eof() ) {
     getline(open_file, line);
-    if (strcmp(line.c_str(), "[control table]") == 0) {
+    if (strcmp(line.c_str(), "[type info]") == 0) {
+      type_info_found = true;
+      break;
+    } else if (strcmp(line.c_str(), "[unit info]") == 0) {
+      unit_info_found = true;
+      break;
+    } else if (strcmp(line.c_str(), "[control table]") == 0) {
+      control_table_found = true;
       break;
     }
-
-    std::vector<std::string> strs;
-    boost::split(strs, line, boost::is_any_of("\t"));
-
-    if (strs.size() < 2) {
-      continue;
-    }
-
-    try {
-      if (strs.at(0) == "value_of_zero_radian_position") {
-        temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-      } else if (strs.at(0) == "value_of_max_radian_position") {
-        temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-      } else if (strs.at(0) == "value_of_min_radian_position") {
-        temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
-      } else if (strs.at(0) == "min_radian") {
-        temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
-      } else if (strs.at(0) == "max_radian") {
-        temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
-      } else if (strs.at(0) == "torque_constant") {
-        temp_dxl_info.torque_constant = static_cast<double>(stod(strs.at(1)));
-        torque_constant_set = true;
-      } else if (strs.at(0) == "velocity_unit") {
-        temp_dxl_info.velocity_unit = static_cast<double>(stod(strs.at(1)));
-        velocity_unit_set = true;
+  }
+  if (type_info_found) {
+    // Parse type info section
+    while (!open_file.eof() ) {
+      getline(open_file, line);
+      if (strcmp(line.c_str(), "[unit info]") == 0) {
+        unit_info_found = true;
+        break;
+      } else if (strcmp(line.c_str(), "[control table]") == 0) {
+        control_table_found = true;
+        break;
       }
-    } catch (const std::exception & e) {
-      std::string error_msg = "Error processing line in model file: " + line +
-        "\nError: " + e.what();
-      throw std::runtime_error(error_msg);
+
+      std::vector<std::string> strs;
+      boost::split(strs, line, boost::is_any_of("\t"));
+
+      if (strs.size() < 2) {
+        continue;
+      }
+
+      try {
+        if (strs.at(0) == "value_of_zero_radian_position") {
+          temp_dxl_info.value_of_zero_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+        } else if (strs.at(0) == "value_of_max_radian_position") {
+          temp_dxl_info.value_of_max_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+        } else if (strs.at(0) == "value_of_min_radian_position") {
+          temp_dxl_info.value_of_min_radian_position = static_cast<int32_t>(stoi(strs.at(1)));
+        } else if (strs.at(0) == "min_radian") {
+          temp_dxl_info.min_radian = static_cast<double>(stod(strs.at(1)));
+        } else if (strs.at(0) == "max_radian") {
+          temp_dxl_info.max_radian = static_cast<double>(stod(strs.at(1)));
+        }
+      } catch (const std::exception & e) {
+        std::string error_msg = "Error processing line in model file: " + line +
+          "\nError: " + e.what();
+        throw std::runtime_error(error_msg);
+      }
     }
   }
 
-  // Set default values and warn if parameters are missing
-  if (!torque_constant_set) {
-    fprintf(
-      stderr, "[WARN] Model file '%s' doesn't contain torque_constant parameter. "
-      "Using default value: 1.0\n", path.c_str());
-    temp_dxl_info.torque_constant = 1.0;
+  if (unit_info_found) {
+    getline(open_file, line);  // Skip header line "Data Name value unit Sign Type"
+    while (!open_file.eof() ) {
+      getline(open_file, line);
+      if (strcmp(line.c_str(), "[control table]") == 0) {
+        control_table_found = true;
+        break;
+      }
+
+      std::vector<std::string> strs;
+      boost::split(strs, line, boost::is_any_of("\t"));
+
+      if (strs.size() < 4) {
+        continue;
+      }
+
+      try {
+        std::string data_name = strs.at(0);
+        double unit_value = static_cast<double>(stod(strs.at(1)));
+        std::string sign_type_str = strs.at(3);
+        bool is_signed = (sign_type_str == "signed");
+        temp_dxl_info.unit_map[data_name] = unit_value;
+        temp_dxl_info.sign_type_map[data_name] = is_signed;
+      } catch (const std::exception & e) {
+        std::string error_msg = "Error processing unit info line: " + line +
+          "\nError: " + e.what();
+        throw std::runtime_error(error_msg);
+      }
+    }
   }
-  if (!velocity_unit_set) {
-    fprintf(
-      stderr, "[WARN] Model file '%s' doesn't contain velocity_unit parameter. "
-      "Using default value: 0.01\n", path.c_str());
-    temp_dxl_info.velocity_unit = 0.01;
+
+  if (!control_table_found) {
+    std::string error_msg = "No [control table] section found in model file for ID " +
+      std::to_string(id);
+    throw std::runtime_error(error_msg);
   }
 
   getline(open_file, line);
@@ -190,26 +230,6 @@ bool DynamixelInfo::CheckDxlControlItem(uint8_t id, std::string item_name)
   return false;
 }
 
-// bool DynamixelInfo::GetDxlTypeInfo(
-//   uint8_t id,
-//   int32_t & value_of_zero_radian_position,
-//   int32_t & value_of_max_radian_position,
-//   int32_t & value_of_min_radian_position,
-//   double & min_radian,
-//   double & max_radian,
-//   double & torque_constant,
-//   double & velocity_unit)
-// {
-//   value_of_zero_radian_position = dxl_info_[id].value_of_zero_radian_position;
-//   value_of_max_radian_position = dxl_info_[id].value_of_max_radian_position;
-//   value_of_min_radian_position = dxl_info_[id].value_of_min_radian_position;
-//   min_radian = dxl_info_[id].min_radian;
-//   max_radian = dxl_info_[id].max_radian;
-//   torque_constant = dxl_info_[id].torque_constant;
-//   velocity_unit = dxl_info_[id].velocity_unit;
-//   return true;
-// }
-
 int32_t DynamixelInfo::ConvertRadianToValue(uint8_t id, double radian)
 {
   if (radian > 0) {
@@ -243,4 +263,34 @@ double DynamixelInfo::ConvertValueToRadian(uint8_t id, int32_t value)
     return 0.0;
   }
 }
+
+bool DynamixelInfo::GetDxlUnitValue(uint8_t id, std::string data_name, double & unit_value)
+{
+  auto it = dxl_info_[id].unit_map.find(data_name);
+  if (it != dxl_info_[id].unit_map.end()) {
+    unit_value = it->second;
+    return true;
+  }
+  return false;
+}
+
+bool DynamixelInfo::GetDxlSignType(uint8_t id, std::string data_name, bool & is_signed)
+{
+  auto it = dxl_info_[id].sign_type_map.find(data_name);
+  if (it != dxl_info_[id].sign_type_map.end()) {
+    is_signed = it->second;
+    return true;
+  }
+  return false;
+}
+
+double DynamixelInfo::GetUnitMultiplier(uint8_t id, std::string data_name)
+{
+  auto it = dxl_info_[id].unit_map.find(data_name);
+  if (it != dxl_info_[id].unit_map.end()) {
+    return it->second;
+  }
+  return 1.0;
+}
+
 }  // namespace dynamixel_hardware_interface

@@ -39,9 +39,8 @@ add_library(
 
 target_include_directories(
   ${PROJECT_NAME}
-  PRIVATE
-  include
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${dynamixel_sdk_INCLUDE_DIRS}
   ${hardware_interface_INCLUDE_DIRS}
@@ -67,7 +66,10 @@ pluginlib_export_plugin_description_file(hardware_interface dynamixel_hardware_i
 # Install
 ################################################################################
 install(TARGETS ${PROJECT_NAME}
-  DESTINATION lib
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/
@@ -98,6 +100,7 @@ endif()
 ################################################################################
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
   rclcpp_lifecycle

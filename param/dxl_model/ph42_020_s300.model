@@ -5,7 +5,12 @@ value_of_max_radian_position	303750
 value_of_min_radian_position	-303750
 min_radian	-3.14159265
 max_radian	3.14159265
-velocity_unit	0.01
+
+[unit info]
+Data Name	value	unit	Sign Type
+Present Velocity	0.0010471976	rad/s	signed
+Goal Velocity	0.0010471976	rad/s	signed
+Velocity Limit	0.0010471976	rad/s	signed
 
 [control table]
 Address	Size	Data Name

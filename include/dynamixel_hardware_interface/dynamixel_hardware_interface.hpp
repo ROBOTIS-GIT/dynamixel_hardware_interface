@@ -50,6 +50,80 @@
 namespace dynamixel_hardware_interface
 {
 
+// Hardware Error Status bit definitions
+struct HardwareErrorStatusBitInfo
+{
+  int bit;
+  const char * label;
+  const char * description;
+};
+
+static constexpr HardwareErrorStatusBitInfo HardwareErrorStatusTable[] = {
+  {0, "Input Voltage Error", "Detects that input voltage exceeds the configured operating voltage"},
+  {1, "Motor Hall Sensor Error", "Detects that Motor hall sensor value exceeds normal range"},
+  {2, "Overheating Error",
+    "Detects that internal temperature exceeds the configured operating temperature"},
+  {3, "Motor Encoder Error", "Detects malfunction of the motor encoder"},
+  {4,
+    "Electrical Shock Error",
+    "Detects electric shock on the circuit or insufficient power to operate the motor"},
+  {5, "Overload Error", "Detects that persistent load exceeds maximum output"},
+  {6, "Not used", "Always 0"},
+  {7, "Not used", "Always 0"}
+};
+
+inline const HardwareErrorStatusBitInfo * get_hardware_error_status_bit_info(int bit)
+{
+  for (const auto & entry : HardwareErrorStatusTable) {
+    if (entry.bit == bit) {return &entry;}
+  }
+  return nullptr;
+}
+
+// Error Code (153) definitions
+struct ErrorCodeInfo
+{
+  int value;
+  const char * label;
+  const char * description;
+};
+
+static constexpr ErrorCodeInfo ErrorCodeTable[] = {
+  {0x00, "No Error", "No error"},
+  {0x01, "Over Voltage Error", "Device supply voltage exceeds the Max Voltage Limit(60)"},
+  {0x02, "Low Voltage Error", "Device supply voltage exceeds the Min Voltage Limit(62)"},
+  {0x03,
+    "Inverter Overheating Error",
+    "The inverter temperature has exceeded the Inverter Temperature Limit(56)"},
+  {0x04,
+    "Motor Overheating Error",
+    "The motor temperature has exceeded the Motor Temperature Limit(57)"},
+  {0x05, "Overload Error", "Operating current exceeding rated current for an extended duration"},
+  {0x07, "Inverter Error", "An issue has occurred with the inverter"},
+  {0x09, "Battery Warning", "Low Multi-turn battery voltage. Replacement recommended"},
+  {0x0A, "Battery Error", "Multi-turn battery voltage is too low, causing issues"},
+  {0x0B, "Magnet Error", "Multi-turn position lost. Multi-turn reset required"},
+  {0x0C, "Multi-turn Error", "An issue has occurred with the Multi-turn IC"},
+  {0x0D, "Encoder Error", "An issue has occurred with the Encoder IC"},
+  {0x0E, "Hall Sensor Error", "An issue has occurred with the Hall Sensor"},
+  {0x0F, "Calibration Error", "Cannot find calibration Data"},
+  {0x11, "Following Error", "Position control error exceeds the Following Error Threshold(44)"},
+  {0x12, "Bus Watchdog Error", "An issue has occurred with the Bus Watchdog"},
+  {0x13, "Over Speed Error", "Rotates at a speed of 120% or more than the Velocity Limit(72)"},
+  {0x14,
+    "Position Limit Reached Error",
+    "In position control mode, the current position has moved beyond the Max/Min Position Limit"
+    " + Position Limit Threshold(38) range."}
+};
+
+inline const ErrorCodeInfo * get_error_code_info(int value)
+{
+  for (const auto & entry : ErrorCodeTable) {
+    if (entry.value == value) {return &entry;}
+  }
+  return nullptr;
+}
+
 /**
  * @brief Constants for hardware state interface names.
  */
@@ -175,14 +249,16 @@ public:
 private:
   ///// ros
   rclcpp::Logger logger_;
+  rclcpp::Clock clock_;
 
   ///// dxl error
   DxlStatus dxl_status_;
   DxlError dxl_comm_err_;
   std::map<uint8_t /*id*/, uint8_t /*err*/> dxl_hw_err_;
+  std::map<uint8_t /*id*/, uint8_t /*error code*/> dxl_error_code_;
   DxlTorqueStatus dxl_torque_status_;
   std::map<uint8_t /*id*/, bool /*enable*/> dxl_torque_state_;
-  std::map<uint8_t /*id*/, bool /*enable*/> dxl_torque_enable_;
+  std::vector<uint8_t> torque_enabled_ids_;
   double err_timeout_ms_;
   rclcpp::Duration read_error_duration_{0, 0};
   rclcpp::Duration write_error_duration_{0, 0};
@@ -298,8 +374,9 @@ private:
   ///// function
   /**
    * @brief Sets up the joint-to-transmission and transmission-to-joint matrices.
+   * @return True if matrices were set up successfully, false otherwise.
    */
-  void SetMatrix();
+  bool SetMatrix();
 
   /**
    * @brief Calculates the joint states from transmission states.
@@ -346,11 +423,29 @@ private:
     const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
     std::shared_ptr<std_srvs::srv::SetBool::Response> response);
 
+  rclcpp::Service<dynamixel_interfaces::srv::GetDataFromDxl>::SharedPtr get_dxl_error_summary_srv_;
+  void get_dxl_error_summary_srv_callback(
+    const std::shared_ptr<dynamixel_interfaces::srv::GetDataFromDxl::Request> request,
+    std::shared_ptr<dynamixel_interfaces::srv::GetDataFromDxl::Response> response);
+
   void initRevoluteToPrismaticParam();
 
   double revoluteToPrismatic(double revolute_value);
 
   double prismaticToRevolute(double prismatic_value);
+
+  /**
+   * @brief Get a formatted error summary for a specific Dynamixel ID
+   * @param id The Dynamixel ID
+   * @return A string containing the error summary
+   */
+  std::string getErrorSummary(uint8_t id) const;
+
+  /**
+   * @brief Get error summaries for all Dynamixel IDs
+   * @return A string containing error summaries for all Dynamixels
+   */
+  std::string getAllErrorSummaries() const;
 
   void MapInterfaces(
     size_t outer_size,
