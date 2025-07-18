@@ -1648,8 +1648,9 @@ DxlError Dynamixel::ProcessReadData(
       dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed))
     {
       // Use unit info and sign type to properly convert the value
-      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata,
-          size, is_signed);
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(
+        ID, item_names[item_index], dxl_getdata,
+        size, is_signed);
     } else {
       // Fallback to existing logic for compatibility
       if (item_names[item_index] == "Present Position") {
@@ -1686,8 +1687,9 @@ DxlError Dynamixel::ProcessDirectReadData(
       dxl_info_.GetDxlSignType(ID, item_names[item_index], is_signed))
     {
       // Use unit info and sign type to properly convert the value
-      *data_ptrs[item_index] = ConvertValueWithUnitInfo(ID, item_names[item_index], dxl_getdata,
-          size, is_signed);
+      *data_ptrs[item_index] = ConvertValueWithUnitInfo(
+        ID, item_names[item_index], dxl_getdata,
+        size, is_signed);
     } else {
       // Fallback to existing logic for compatibility
       if (item_names[item_index] == "Present Position") {
@@ -1865,8 +1867,9 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
         // Fallback to existing logic for compatibility
         if (item_name == "Goal Position") {
           int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-          WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position),
-              4);
+          WriteValueToBuffer(
+            param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+            4);
         } else {
           WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
         }
@@ -2058,8 +2061,9 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           // Fallback to existing logic for compatibility
           if (item_name == "Goal Position") {
             int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position),
-                4);
+            WriteValueToBuffer(
+              param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+              4);
           } else {
             WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
@@ -2099,8 +2103,9 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
           // Fallback to existing logic for compatibility
           if (item_name == "Goal Position") {
             int32_t goal_position = dxl_info_.ConvertRadianToValue(ID, data);
-            WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(goal_position),
-                4);
+            WriteValueToBuffer(
+              param_write_value, added_byte, static_cast<uint32_t>(goal_position),
+              4);
           } else {
             WriteValueToBuffer(param_write_value, added_byte, static_cast<uint32_t>(data), size);
           }
@@ -2158,7 +2163,8 @@ DxlError Dynamixel::AddIndirectWrite(
   uint8_t using_size = indirect_info_write_[id].size;
 
   for (uint16_t i = 0; i < item_size; i++) {
-    if (WriteItem(id, static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2)), 2,
+    if (WriteItem(
+        id, static_cast<uint16_t>(INDIRECT_ADDR + (using_size * 2)), 2,
         item_addr + i) != DxlError::OK)
     {
       return DxlError::SET_BULK_WRITE_FAIL;

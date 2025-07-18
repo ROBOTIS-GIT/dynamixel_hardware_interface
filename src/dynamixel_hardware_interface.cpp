@@ -66,15 +66,17 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   }
 
   if (info_.hardware_parameters.find("number_of_joints") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_,
-        "Required parameter 'number_of_joints' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "Required parameter 'number_of_joints' not found in hardware parameters");
     return hardware_interface::CallbackReturn::ERROR;
   }
   if (info_.hardware_parameters.find("number_of_transmissions") ==
     info_.hardware_parameters.end())
   {
-    RCLCPP_ERROR_STREAM(logger_,
-        "Required parameter 'number_of_transmissions' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "Required parameter 'number_of_transmissions' not found in hardware parameters");
     return hardware_interface::CallbackReturn::ERROR;
   }
 
@@ -131,8 +133,9 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     "port_name " << port_name_.c_str() << " / baudrate " << baud_rate_.c_str());
 
   if (info_.hardware_parameters.find("dynamixel_model_folder") == info_.hardware_parameters.end()) {
-    RCLCPP_ERROR_STREAM(logger_,
-        "Required parameter 'dynamixel_model_folder' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "Required parameter 'dynamixel_model_folder' not found in hardware parameters");
     return hardware_interface::CallbackReturn::ERROR;
   }
   std::string dxl_model_folder = info_.hardware_parameters["dynamixel_model_folder"];
@@ -1118,8 +1121,9 @@ bool DynamixelHardware::SetMatrix()
   if (info_.hardware_parameters.find("transmission_to_joint_matrix") ==
     info_.hardware_parameters.end())
   {
-    RCLCPP_ERROR_STREAM(logger_,
-        "Required parameter 'transmission_to_joint_matrix' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "Required parameter 'transmission_to_joint_matrix' not found in hardware parameters");
     return false;
   }
   std::stringstream ss_tj(info_.hardware_parameters["transmission_to_joint_matrix"]);
@@ -1149,8 +1153,9 @@ bool DynamixelHardware::SetMatrix()
   if (info_.hardware_parameters.find("joint_to_transmission_matrix") ==
     info_.hardware_parameters.end())
   {
-    RCLCPP_ERROR_STREAM(logger_,
-        "Required parameter 'joint_to_transmission_matrix' not found in hardware parameters");
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "Required parameter 'joint_to_transmission_matrix' not found in hardware parameters");
     return false;
   }
   std::stringstream ss_jt(info_.hardware_parameters["joint_to_transmission_matrix"]);
