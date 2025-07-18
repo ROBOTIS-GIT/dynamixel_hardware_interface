@@ -1,5 +1,5 @@
 [control table]
-Address	Size    Data Name
+Address	Size	Data Name
 0	2	Model Number
 2	1	ROBOT_Generation
 3	1	Board_Number

@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>dynamixel_hardware_interface</name>
-  <version>1.4.9</version>
+  <version>1.4.10</version>
   <description>
     ROS 2 package providing a hardware interface for controlling Dynamixel motors via the ROS 2 control framework.
   </description>
@@ -12,7 +12,9 @@
   <author email="wsh@robotis.com">Sungho Woo</author>
   <author email="wwj@robotis.com">Woojin Wie</author>
   <author email="ywh@robotis.com">Wonho Yun</author>
+
   <buildtool_depend>ament_cmake</buildtool_depend>
+
   <depend>rclcpp</depend>
   <depend>hardware_interface</depend>
   <depend>pluginlib</depend>
@@ -20,8 +22,10 @@
   <depend>dynamixel_sdk</depend>
   <depend>std_srvs</depend>
   <depend>dynamixel_interfaces</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
