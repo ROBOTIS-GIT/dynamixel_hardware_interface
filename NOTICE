@@ -1,0 +1,4 @@
+Portions of this package are derived from ros2_control_cmake, which is licensed under the Apache License, Version 2.0.
+Copyright 2025 AIT - Austrian Institute of Technology GmbH
+
+See the CMakeLists.txt for details on which code is derived.
