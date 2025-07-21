@@ -102,13 +102,14 @@ DxlError Dynamixel::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t fir
   }
 }
 
-DxlError Dynamixel::ReadFirmwareVersion(uint8_t id, uint8_t& firmware_version)
+DxlError Dynamixel::ReadFirmwareVersion(uint8_t id, uint8_t & firmware_version)
 {
   uint32_t fw_version_data;
   DxlError result = ReadItem(id, "Firmware Version", fw_version_data);
   if (result == DxlError::OK) {
     firmware_version = static_cast<uint8_t>(fw_version_data);
-    // fprintf(stderr, "[ReadFirmwareVersion][ID:%03d] Firmware Version: %d\n", id, firmware_version);
+    // fprintf(stderr, "[ReadFirmwareVersion][ID:%03d] Firmware Version: %d\n",
+    //     id, firmware_version);
   } else {
     fprintf(stderr, "[ReadFirmwareVersion][ID:%03d] Failed to read firmware version\n", id);
   }
@@ -209,7 +210,8 @@ DxlError Dynamixel::InitDxlComm(
       return DxlError::DXL_HARDWARE_ERROR;
     } else {
       std::string model_name = dxl_info_.GetModelName(dxl_model_number);
-      fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d (%s)\n", dxl_model_number, model_name.c_str());
+      fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d (%s)\n", dxl_model_number,
+          model_name.c_str());
     }
 
     // First, read the model file to get the control table structure
@@ -224,11 +226,13 @@ DxlError Dynamixel::InitDxlComm(
     uint8_t firmware_version = 0;
     DxlError fw_result = ReadFirmwareVersion(it_id, firmware_version);
     if (fw_result == DxlError::OK && firmware_version > 0) {
-      // fprintf(stderr, "[InitDxlComm][ID:%03d] Reloading model file with firmware version %d\n", it_id, firmware_version);
+      // fprintf(stderr, "[InitDxlComm][ID:%03d] Reloading model file with firmware version %d\n",
+      // it_id, firmware_version);
       try {
         dxl_info_.ReadDxlModelFile(it_id, dxl_model_number, firmware_version);
       } catch (const std::exception & e) {
-        fprintf(stderr, "[InitDxlComm][ID:%03d] Error reading firmware-specific model file: %s\n", it_id, e.what());
+        fprintf(stderr, "[InitDxlComm][ID:%03d] Error reading firmware-specific model file: %s\n",
+            it_id, e.what());
         // Continue with the base model file if firmware-specific file fails
       }
     }

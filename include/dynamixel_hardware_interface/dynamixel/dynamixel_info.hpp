@@ -63,10 +63,14 @@ private:
   std::string dxl_model_file_dir;
 
   // Firmware version-aware model file selection
-  std::string SelectModelFileByFirmwareVersion(const std::string& base_model_name, uint8_t firmware_version);
-  bool IsFirmwareSpecificModelFile(const std::string& filename);
-  uint8_t ExtractFirmwareVersionFromFilename(const std::string& filename);
-  bool ShouldUseFirmwareSpecificModel(uint8_t device_firmware_version, uint8_t model_firmware_version);
+  std::string SelectModelFileByFirmwareVersion(
+    const std::string & base_model_name,
+    uint8_t firmware_version);
+  bool IsFirmwareSpecificModelFile(const std::string & filename);
+  uint8_t ExtractFirmwareVersionFromFilename(const std::string & filename);
+  bool ShouldUseFirmwareSpecificModel(
+    uint8_t device_firmware_version,
+    uint8_t model_firmware_version);
 
 public:
   // Id, Control table
