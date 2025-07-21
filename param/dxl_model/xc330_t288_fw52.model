@@ -10,6 +10,8 @@ max_radian	3.14159265
 Data Name	value	unit	Sign Type
 Present Velocity	0.0239691227	rad/s	signed
 Goal Velocity	0.0239691227	rad/s	signed
+Present Current	0.0009674796739867748	N/m	signed
+Goal Current	0.0009674796739867748	N/m	signed
 
 [control table]
 Address	Size	Data Name
@@ -66,8 +68,8 @@ Address	Size	Data Name
 144	2	Present Input Voltage
 146	1	Present Temperature
 168	2	Indirect Address 1
-224	1	Indirect Data 1
+208	1	Indirect Data 1
 168	2	Indirect Address Write
-224	1	Indirect Data Write
+208	1	Indirect Data Write
 180	2	Indirect Address Read
-230	1	Indirect Data Read
+214	1	Indirect Data Read
