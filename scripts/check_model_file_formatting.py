@@ -47,8 +47,10 @@ def check_file_formatting(file_path, fix=False, verbose=False):
         fix (bool): Whether to automatically fix issues
         verbose (bool): Whether to show detailed output
 
-    Returns:
+    Returns
+    -------
         dict: Dictionary with issues found and fixed
+
     """
     issues = {
         'trailing_spaces': [],

@@ -210,8 +210,9 @@ DxlError Dynamixel::InitDxlComm(
       return DxlError::DXL_HARDWARE_ERROR;
     } else {
       std::string model_name = dxl_info_.GetModelName(dxl_model_number);
-      fprintf(stderr, " - Ping succeeded. Dynamixel model number : %d (%s)\n", dxl_model_number,
-          model_name.c_str());
+      fprintf(
+        stderr, " - Ping succeeded. Dynamixel model number : %d (%s)\n", dxl_model_number,
+        model_name.c_str());
     }
 
     // First, read the model file to get the control table structure
@@ -231,8 +232,9 @@ DxlError Dynamixel::InitDxlComm(
       try {
         dxl_info_.ReadDxlModelFile(it_id, dxl_model_number, firmware_version);
       } catch (const std::exception & e) {
-        fprintf(stderr, "[InitDxlComm][ID:%03d] Error reading firmware-specific model file: %s\n",
-            it_id, e.what());
+        fprintf(
+          stderr, "[InitDxlComm][ID:%03d] Error reading firmware-specific model file: %s\n",
+          it_id, e.what());
         // Continue with the base model file if firmware-specific file fails
       }
     }

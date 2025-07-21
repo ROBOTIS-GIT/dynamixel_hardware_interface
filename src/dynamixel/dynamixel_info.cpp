@@ -292,11 +292,12 @@ std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
     return base_model_name;
   }
 
-  fprintf(stderr,
-      "[NOTICE] Your DYNAMIXEL is not using the latest firmware."
-      " For full performance, please download the latest DYNAMIXEL Wizard 2.0"
-      " and update your DYNAMIXEL firmware."
-      " See: https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/\n");
+  fprintf(
+    stderr,
+    "[NOTICE] Your DYNAMIXEL is not using the latest firmware."
+    " For full performance, please download the latest DYNAMIXEL Wizard 2.0"
+    " and update your DYNAMIXEL firmware."
+    " See: https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/\n");
 
   // Otherwise, use the highest firmware-specific file <= device FW
   fprintf(stderr, "[Firmware Version Selection] Device FW: %d, Selected Model: %s (FW: %d)\n",
