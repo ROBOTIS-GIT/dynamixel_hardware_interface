@@ -306,12 +306,6 @@ std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
   return selected_file;
 }
 
-bool DynamixelInfo::IsFirmwareSpecificModelFile(const std::string & filename)
-{
-  std::regex fw_pattern(R"(_fw\d+\.model$)");
-  return std::regex_search(filename, fw_pattern);
-}
-
 uint8_t DynamixelInfo::ExtractFirmwareVersionFromFilename(const std::string & filename)
 {
   std::regex fw_pattern(R"(_fw(\d+)\.model$)");
@@ -322,15 +316,6 @@ uint8_t DynamixelInfo::ExtractFirmwareVersionFromFilename(const std::string & fi
   }
 
   return 0;  // Return 0 if no firmware version found
-}
-
-bool DynamixelInfo::ShouldUseFirmwareSpecificModel(
-  uint8_t device_firmware_version,
-  uint8_t model_firmware_version)
-{
-  // Use firmware-specific model if device firmware version is <= model firmware version
-  // This ensures backward compatibility
-  return device_firmware_version <= model_firmware_version;
 }
 
 bool DynamixelInfo::GetDxlControlItem(
