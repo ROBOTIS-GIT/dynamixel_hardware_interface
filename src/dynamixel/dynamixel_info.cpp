@@ -65,8 +65,9 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t fir
   auto it = dxl_model_list_.find(model_num);
   if (it != dxl_model_list_.end()) {
     std::string base_model_name = it->second;
-    std::string selected_model_name = SelectModelFileByFirmwareVersion(base_model_name,
-        firmware_version);
+    std::string selected_model_name = SelectModelFileByFirmwareVersion(
+      base_model_name,
+      firmware_version);
     path += selected_model_name;
   } else {
     fprintf(stderr, "[ERROR] CANNOT FIND THE DXL MODEL FROM FILE LIST.\n");
@@ -300,9 +301,10 @@ std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
     " See: https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/\n");
 
   // Otherwise, use the highest firmware-specific file <= device FW
-  fprintf(stderr, "[Firmware Version Selection] Device FW: %d, Selected Model: %s (FW: %d)\n",
-          firmware_version, selected_file.c_str(),
-      ExtractFirmwareVersionFromFilename(selected_file));
+  fprintf(
+    stderr, "[Firmware Version Selection] Device FW: %d, Selected Model: %s (FW: %d)\n",
+    firmware_version, selected_file.c_str(),
+    ExtractFirmwareVersionFromFilename(selected_file));
   return selected_file;
 }
 
