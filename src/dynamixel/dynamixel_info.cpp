@@ -285,11 +285,11 @@ std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
 
   // If device FW is greater than the highest available firmware-specific file, use base model
   if (firmware_version > highest_fw_version) {
-    fprintf(
-      stderr,
-      "[Firmware Version Selection] Device FW: %d > "
-      "highest firmware-specific file FW: %d, using base model.\n",
-      firmware_version, highest_fw_version);
+    // fprintf(
+    //   stderr,
+    //   "[Firmware Version Selection] Device FW: %d > "
+    //   "highest firmware-specific file FW: %d, using base model.\n",
+    //   firmware_version, highest_fw_version);
     return base_model_name;
   }
 
