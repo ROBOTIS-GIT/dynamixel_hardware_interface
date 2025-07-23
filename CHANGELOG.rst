@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.11 (2025-07-21)
+------------------
+* Added support for firmware version-aware model file selection
+* Contributors: Woojin Wie
+
 1.4.10 (2025-07-18)
 ------------------
 * Added unit system to model files
