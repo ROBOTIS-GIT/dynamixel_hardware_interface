@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <regex>
 
 #include <boost/algorithm/string.hpp>
 
@@ -46,6 +47,7 @@ typedef  struct
   int32_t value_of_max_radian_position;
   int32_t value_of_min_radian_position;
   uint16_t model_num;
+  uint8_t firmware_version;
 
   std::vector<ControlItem> item;
   std::map<std::string, double> unit_map;
@@ -60,6 +62,12 @@ private:
 
   std::string dxl_model_file_dir;
 
+  // Firmware version-aware model file selection
+  std::string SelectModelFileByFirmwareVersion(
+    const std::string & base_model_name,
+    uint8_t firmware_version);
+  uint8_t ExtractFirmwareVersionFromFilename(const std::string & filename);
+
 public:
   // Id, Control table
   std::map<uint8_t, DxlInfo> dxl_info_;
@@ -71,6 +79,7 @@ public:
   void InitDxlModelInfo();
 
   void ReadDxlModelFile(uint8_t id, uint16_t model_num);
+  void ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t firmware_version);
   bool GetDxlControlItem(uint8_t id, std::string item_name, uint16_t & addr, uint8_t & size);
   bool CheckDxlControlItem(uint8_t id, std::string item_name);
 
@@ -89,6 +98,8 @@ public:
 
   int32_t ConvertRadianToValue(uint8_t id, double radian);
   double ConvertValueToRadian(uint8_t id, int32_t value);
+
+  std::string GetModelName(uint16_t model_number) const;
 };
 
 // Template implementations

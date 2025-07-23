@@ -15,9 +15,11 @@
 // Authors: Hye-Jong KIM, Sungho Woo, Woojin Wie
 
 #include "dynamixel_hardware_interface/dynamixel/dynamixel_info.hpp"
+#include <dirent.h>
 #include <string>
 #include <utility>
 #include <vector>
+#include <regex>
 
 namespace dynamixel_hardware_interface
 {
@@ -53,11 +55,20 @@ void DynamixelInfo::InitDxlModelInfo()
 
 void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
 {
+  ReadDxlModelFile(id, model_num, 0);  // Default to firmware version 0 (unknown)
+}
+
+void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t firmware_version)
+{
   std::string path = dxl_model_file_dir + "/";
 
   auto it = dxl_model_list_.find(model_num);
   if (it != dxl_model_list_.end()) {
-    path += it->second;
+    std::string base_model_name = it->second;
+    std::string selected_model_name = SelectModelFileByFirmwareVersion(
+      base_model_name,
+      firmware_version);
+    path += selected_model_name;
   } else {
     fprintf(stderr, "[ERROR] CANNOT FIND THE DXL MODEL FROM FILE LIST.\n");
     throw std::runtime_error("Cannot find the DXL model from file list");
@@ -73,6 +84,7 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
   std::string line;
 
   temp_dxl_info.model_num = model_num;
+  temp_dxl_info.firmware_version = firmware_version;
 
   // Check if [type info] section exists
   bool type_info_found = false;
@@ -206,6 +218,108 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
   open_file.close();
 }
 
+std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
+  const std::string & base_model_name,
+  uint8_t firmware_version)
+{
+  // If firmware version is 0 (unknown), use the base model file
+  if (firmware_version == 0) {
+    return base_model_name;
+  }
+
+  // Extract base name without extension
+  std::string base_name = base_model_name;
+  size_t dot_pos = base_name.find_last_of('.');
+  if (dot_pos != std::string::npos) {
+    base_name = base_name.substr(0, dot_pos);
+  }
+
+  // Scan directory for firmware-specific model files
+  std::vector<std::string> available_firmware_versions;
+  std::string search_path = dxl_model_file_dir + "/";
+
+  DIR * dir = opendir(search_path.c_str());
+  if (dir != nullptr) {
+    struct dirent * entry;
+    std::string prefix = base_name + "_fw";
+    std::string suffix = ".model";
+
+    while ((entry = readdir(dir)) != nullptr) {
+      std::string filename = entry->d_name;
+      if (filename.find(prefix) == 0 &&
+        filename.find(suffix) == filename.length() - suffix.length())
+      {
+        available_firmware_versions.push_back(filename);
+      }
+    }
+    closedir(dir);
+  }
+
+  if (available_firmware_versions.empty()) {
+    // fprintf(stderr,
+    //   "[Firmware Version Selection] No firmware-specific files found for %s, using base model\n",
+    //   base_model_name.c_str());
+    return base_model_name;
+  }
+
+  // fprintf(stderr, "[Firmware Version Selection] Found %zu firmware-specific files for %s\n",
+  //         available_firmware_versions.size(), base_model_name.c_str());
+
+  // Find the highest firmware version file that is <= device firmware version
+  std::string selected_file = base_model_name;  // Default to base model
+  int highest_fw_version = -1;
+  std::string highest_fw_file;
+
+  for (const auto & fw_file : available_firmware_versions) {
+    uint8_t fw_version = ExtractFirmwareVersionFromFilename(fw_file);
+    if (fw_version > highest_fw_version) {
+      highest_fw_version = fw_version;
+      highest_fw_file = fw_file;
+    }
+    if (fw_version <= firmware_version &&
+      fw_version > ExtractFirmwareVersionFromFilename(selected_file))
+    {
+      selected_file = fw_file;
+    }
+  }
+
+  // If device FW is greater than the highest available firmware-specific file, use base model
+  if (firmware_version > highest_fw_version) {
+    // fprintf(
+    //   stderr,
+    //   "[Firmware Version Selection] Device FW: %d > "
+    //   "highest firmware-specific file FW: %d, using base model.\n",
+    //   firmware_version, highest_fw_version);
+    return base_model_name;
+  }
+
+  fprintf(
+    stderr,
+    "[NOTICE] Your DYNAMIXEL is not using the latest firmware."
+    " For full performance, please download the latest DYNAMIXEL Wizard 2.0"
+    " and update your DYNAMIXEL firmware."
+    " See: https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/\n");
+
+  // Otherwise, use the highest firmware-specific file <= device FW
+  fprintf(
+    stderr, "[Firmware Version Selection] Device FW: %d, Selected Model: %s (FW: %d)\n",
+    firmware_version, selected_file.c_str(),
+    ExtractFirmwareVersionFromFilename(selected_file));
+  return selected_file;
+}
+
+uint8_t DynamixelInfo::ExtractFirmwareVersionFromFilename(const std::string & filename)
+{
+  std::regex fw_pattern(R"(_fw(\d+)\.model$)");
+  std::smatch match;
+
+  if (std::regex_search(filename, match, fw_pattern) && match.size() > 1) {
+    return static_cast<uint8_t>(std::stoi(match[1].str()));
+  }
+
+  return 0;  // Return 0 if no firmware version found
+}
+
 bool DynamixelInfo::GetDxlControlItem(
   uint8_t id, std::string item_name, uint16_t & addr,
   uint8_t & size)
@@ -291,6 +405,15 @@ double DynamixelInfo::GetUnitMultiplier(uint8_t id, std::string data_name)
     return it->second;
   }
   return 1.0;
+}
+
+std::string DynamixelInfo::GetModelName(uint16_t model_number) const
+{
+  auto it = dxl_model_list_.find(model_number);
+  if (it != dxl_model_list_.end()) {
+    return it->second;
+  }
+  return "unknown";
 }
 
 }  // namespace dynamixel_hardware_interface

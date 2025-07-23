@@ -212,6 +212,8 @@ public:
   static std::string DxlErrorToString(DxlError error_num);
 
   DxlError ReadDxlModelFile(uint8_t id, uint16_t model_num);
+  DxlError ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t firmware_version);
+  DxlError ReadFirmwareVersion(uint8_t id, uint8_t & firmware_version);
 
   void SetCommId(uint8_t id, uint8_t comm_id) {comm_id_[id] = comm_id;}
 
