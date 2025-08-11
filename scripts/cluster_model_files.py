@@ -16,9 +16,9 @@
 #
 # Author: Woojin Wie
 
-import os
-import hashlib
 from collections import defaultdict
+import hashlib
+import os
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'param', 'dxl_model')
 
@@ -27,6 +27,7 @@ files = [f for f in os.listdir(MODEL_DIR) if os.path.isfile(os.path.join(MODEL_D
 
 # Dictionary to map file content hash to list of files
 hash_to_files = defaultdict(list)
+
 
 def extract_control_table(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -45,8 +46,10 @@ def extract_control_table(filepath):
             control_table_lines.append(line.strip())
     return '\n'.join(control_table_lines)
 
+
 def control_table_hash(control_table_str):
     return hashlib.sha256(control_table_str.encode('utf-8')).hexdigest()
+
 
 for filename in files:
     path = os.path.join(MODEL_DIR, filename)
