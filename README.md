@@ -7,9 +7,7 @@ ROS 2 package providing a hardware interface for controlling [Dynamixel](https:/
 
 ## 2. **Prerequisites**
 
-![ROS 2 Humble](https://img.shields.io/badge/ROS2-Humble-blue)
-
-This package currently supports ROS 2 Humble only. Ensure that ROS 2 Humble is properly installed (ROS 2 Humble installation guide).
+This package currently supports ROS 2 Humble, Jazzy, Rolling. Ensure that ROS 2 is properly installed.
 
 - Hardware Requirements:
 
@@ -24,9 +22,9 @@ This package currently supports ROS 2 Humble only. Ensure that ROS 2 Humble is p
 
    ```bash
    cd ~/${WORKSPACE}/src
-   git clone -b humble https://github.com/ROBOTIS-GIT/DynamixelSDK.git
-   git clone -b humble https://github.com/ROBOTIS-GIT/dynamixel_hardware_interface.git
-   git clone -b humble https://github.com/ROBOTIS-GIT/dynamixel_interfaces.git
+   git clone -b ${ROS_DISTRO} https://github.com/ROBOTIS-GIT/DynamixelSDK.git
+   git clone -b ${ROS_DISTRO} https://github.com/ROBOTIS-GIT/dynamixel_hardware_interface.git
+   git clone -b ${ROS_DISTRO} https://github.com/ROBOTIS-GIT/dynamixel_interfaces.git
    ```
 
 2. Build the package:
@@ -47,12 +45,8 @@ This package currently supports ROS 2 Humble only. Ensure that ROS 2 Humble is p
 
 This project integrates with the following ROS 2 packages to provide extended functionality:
 
-- **[open_manipulator_x](https://github.com/ROBOTIS-GIT/open_manipulator)**
-  A ROS-based open-source software package designed for the **Open Manipulator-X**, a 4-DOF robotic arm. It provides essential features like motion planning, kinematics, and control utilities for seamless integration with ROS 2 environments.
-
-- **[open_manipulator_y](https://github.com/ROBOTIS-GIT/open_manipulator_y)**
-  A ROS-based package tailored for the **Open Manipulator-Y**, a 6-DOF robotic arm. This package offers enhanced compatibility and extended functionalities for advanced manipulator control and operations.
-
+- **[open_manipulator](https://github.com/ROBOTIS-GIT/open_manipulator)**
+  A ROS-based open-source software package designed for the **OpenManipulator-X and OMY**. It provides essential features like motion planning, kinematics, and control utilities for seamless integration with ROS 2 environments.
 
 ## 5. Configuration
 
@@ -244,4 +238,4 @@ We welcome contributions! Please follow the guidelines in [CONTRIBUTING.md](CONT
 
 ## **8. License**
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
