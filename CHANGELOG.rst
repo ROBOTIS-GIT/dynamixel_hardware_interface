@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.12 (2025-08-11)
+------------------
+* Added support for all dynamixel models that supports dynamixel protocol 2.0
+* Contributors: Woojin Wie
+
 1.4.11 (2025-07-21)
 ------------------
 * Added support for firmware version-aware model file selection
