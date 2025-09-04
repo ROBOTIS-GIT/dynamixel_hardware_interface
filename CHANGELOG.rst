@@ -2,23 +2,28 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.14 (2025-09-03)
+-------------------
+* Added Current units to YM070-210-*099 and YM080-230-*099 model files
+* Contributors: Woojin Wie
+
 1.4.13 (2025-08-13)
-------------------
+-------------------
 * Added default parameter for current units to model files
 * Contributors: Woojin Wie
 
 1.4.12 (2025-08-11)
-------------------
+-------------------
 * Added support for all dynamixel models that supports dynamixel protocol 2.0
 * Contributors: Woojin Wie
 
 1.4.11 (2025-07-21)
-------------------
+-------------------
 * Added support for firmware version-aware model file selection
 * Contributors: Woojin Wie
 
 1.4.10 (2025-07-18)
-------------------
+-------------------
 * Added unit system to model files
 * Added support for Dynamixel Y Error Code handling
 * Contributors: Woojin Wie
