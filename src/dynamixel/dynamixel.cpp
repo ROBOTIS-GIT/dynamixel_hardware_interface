@@ -201,10 +201,63 @@ DxlError Dynamixel::InitDxlComm(
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     } else if (dxl_error != 0) {
       fprintf(stderr, " - RX_PACKET_ERROR : %s\n", packet_handler_->getRxPacketError(dxl_error));
-      uint32_t err = 0;
-      if (ReadItem(it_id, "Hardware Error Status", err) == DxlError::OK) {
-        fprintf(stderr, "[ID:%03d] Read Hardware Error Status : %x\n", it_id, err);
+
+      // Check if Hardware Error Status control item exists
+      uint16_t hw_error_addr, error_code_addr;
+      uint8_t hw_error_size, error_code_size;
+      bool hw_error_exists = dxl_info_.GetDxlControlItem(it_id, "Hardware Error Status", hw_error_addr, hw_error_size);
+      bool error_code_exists = dxl_info_.GetDxlControlItem(it_id, "Error Code", error_code_addr, error_code_size);
+
+      if (hw_error_exists) {
+        uint32_t hw_error_status = 0;
+        DxlError hw_error_result = ReadItem(it_id, "Hardware Error Status", hw_error_status);
+
+        if (hw_error_result == DxlError::OK) {
+          fprintf(stderr, "[ID:%03d] Read Hardware Error Status : 0x%x\n", it_id, hw_error_status);
+
+          std::string error_string = "";
+          uint8_t hw_error_byte = static_cast<uint8_t>(hw_error_status);
+
+          for (int bit = 0; bit < 8; ++bit) {
+            if (hw_error_byte & (1 << bit)) {
+              const HardwareErrorStatusBitInfo * bit_info = get_hardware_error_status_bit_info(bit);
+              if (bit_info) {
+                error_string += bit_info->label;
+                error_string += " (" + std::string(bit_info->description) + ")/ ";
+              } else {
+                error_string += "Unknown Error Bit " + std::to_string(bit) + "/ ";
+              }
+            }
+          }
+
+          if (!error_string.empty()) {
+            fprintf(stderr, "[ID:%03d] Hardware Error Details: 0x%x (%d): %s\n",
+                    it_id, hw_error_byte, hw_error_byte, error_string.c_str());
+          }
+        }
+      } else if (error_code_exists) {
+        uint32_t error_code = 0;
+        DxlError error_code_result = ReadItem(it_id, "Error Code", error_code);
+
+        if (error_code_result == DxlError::OK) {
+          fprintf(stderr, "[ID:%03d] Read Error Code : 0x%x\n", it_id, error_code);
+
+          uint8_t error_code_byte = static_cast<uint8_t>(error_code);
+          if (error_code_byte != 0x00) {
+            const ErrorCodeInfo * error_info = get_error_code_info(error_code_byte);
+            if (error_info) {
+              fprintf(stderr, "[ID:%03d] Error Code Details: 0x%x (%s): %s\n",
+                      it_id, error_code_byte, error_info->label, error_info->description);
+            } else {
+              fprintf(stderr, "[ID:%03d] Error Code Details: 0x%x (Unknown Error Code)\n",
+                      it_id, error_code_byte);
+            }
+          }
+        }
+      } else {
+        fprintf(stderr, "[ID:%03d] Neither Hardware Error Status nor Error Code control items available.\n", it_id);
       }
+
       fprintf(stderr, "[ID:%03d] Hardware Error detected, rebooting...\n", it_id);
       Reboot(it_id);
       return DxlError::DXL_HARDWARE_ERROR;
