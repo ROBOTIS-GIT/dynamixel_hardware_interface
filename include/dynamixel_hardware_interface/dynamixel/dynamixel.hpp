@@ -143,6 +143,11 @@ private:
   bool fast_read_permanent_ = false;
   int fast_read_fail_count_ = 0;
 
+  // async read state
+  bool async_read_pending_ = false;
+  bool async_is_sync_ = true;
+  bool async_is_fast_ = false;
+
   // indirect inform for sync read
   std::map<uint8_t /*id*/, IndirectInfo> indirect_info_read_;
 
@@ -187,6 +192,10 @@ public:
   DxlError ReadMultiDxlData(double period_ms);
   // Write Item (sync or bulk)
   DxlError WriteMultiDxlData();
+
+  // Async read support: split TX and RX to overlap USB latency
+  DxlError PreReadRequest();
+  DxlError FinishReadResponse(double period_ms);
 
   // Set Dxl Option
   // DxlError SetOperatingMode(uint8_t id, uint8_t dynamixel_mode);

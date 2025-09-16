@@ -100,6 +100,14 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
 
   port_name_ = info_.hardware_parameters["port_name"];
   baud_rate_ = info_.hardware_parameters["baud_rate"];
+  enable_async_read_tx_ = false;
+  if (info_.hardware_parameters.find("enable_async_read_tx") != info_.hardware_parameters.end()) {
+    try {
+      enable_async_read_tx_ = std::stoi(info_.hardware_parameters["enable_async_read_tx"]) != 0;
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(logger_, "Failed to parse enable_async_read_tx, defaulting to 0 (disabled)");
+    }
+  }
   if (info_.hardware_parameters.find("error_timeout_ms") != info_.hardware_parameters.end()) {
     try {
       err_timeout_ms_ = stod(info_.hardware_parameters["error_timeout_ms"]);
@@ -606,7 +614,11 @@ hardware_interface::return_type DynamixelHardware::read(
     RCLCPP_ERROR_STREAM(logger_, "Dynamixel Read Fail : REBOOTING");
     return hardware_interface::return_type::ERROR;
   } else if (dxl_status_ == DXL_OK || dxl_status_ == COMM_ERROR || dxl_status_ == HW_ERROR) {
-    dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(period_ms));
+    if (enable_async_read_tx_) {
+      dxl_comm_err_ = CheckError(dxl_comm_->FinishReadResponse(period_ms));
+    } else {
+      dxl_comm_err_ = CheckError(dxl_comm_->ReadMultiDxlData(period_ms));
+    }
     if (dxl_comm_err_ != DxlError::OK && dxl_comm_err_ != DxlError::DXL_HARDWARE_ERROR) {
       if (!is_read_in_error_) {
         is_read_in_error_ = true;
@@ -665,6 +677,11 @@ hardware_interface::return_type DynamixelHardware::write(
     CalcJointToTransmission();
 
     dxl_comm_->WriteMultiDxlData();
+
+    if (enable_async_read_tx_) {
+      // Kick off the next read TX now to overlap the USB latency
+      dxl_comm_->PreReadRequest();
+    }
 
     is_write_in_error_ = false;
     write_error_duration_ = rclcpp::Duration(0, 0);

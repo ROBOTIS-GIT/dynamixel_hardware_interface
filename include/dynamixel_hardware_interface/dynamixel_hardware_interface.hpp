@@ -265,6 +265,9 @@ private:
   bool is_read_in_error_{false};
   bool is_write_in_error_{false};
 
+  // Async read transmit-at-write, receive-at-read feature flag
+  bool enable_async_read_tx_{false};
+
   bool use_revolute_to_prismatic_{false};
   std::string conversion_dxl_name_{""};
   std::string conversion_joint_name_{""};

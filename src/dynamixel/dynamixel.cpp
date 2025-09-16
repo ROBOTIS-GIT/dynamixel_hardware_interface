@@ -909,6 +909,158 @@ DxlError Dynamixel::WriteMultiDxlData()
   }
 }
 
+DxlError Dynamixel::PreReadRequest()
+{
+  if (read_data_list_.empty()) {
+    return DxlError::OK;
+  }
+  // Determine mode flags based on current handler setup
+  async_is_sync_ = (read_type_ == SYNC);
+  async_is_fast_ = use_fast_read_protocol_ && (async_is_sync_ ? (group_fast_sync_read_ != nullptr)
+                                                             : (group_fast_bulk_read_ != nullptr));
+
+  int dxl_comm_result;
+  if (async_is_sync_) {
+    if (async_is_fast_ && group_fast_sync_read_) {
+      dxl_comm_result = group_fast_sync_read_->txPacket();
+    } else if (group_sync_read_) {
+      dxl_comm_result = group_sync_read_->txPacket();
+    } else {
+      return DxlError::SYNC_READ_FAIL;
+    }
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(stderr, "%s Tx Fail [Dxl Size : %ld] [Error code : %d]\n",
+        async_is_fast_ ? "FastSyncRead" : "SyncRead",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::SYNC_READ_FAIL;
+    }
+  } else {
+    if (async_is_fast_ && group_fast_bulk_read_) {
+      dxl_comm_result = group_fast_bulk_read_->txPacket();
+    } else if (group_bulk_read_) {
+      dxl_comm_result = group_bulk_read_->txPacket();
+    } else {
+      return DxlError::BULK_READ_FAIL;
+    }
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(stderr, "%s Tx Fail [Dxl Size : %ld] [Error code : %d]\n",
+        async_is_fast_ ? "FastBulkRead" : "BulkRead",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::BULK_READ_FAIL;
+    }
+  }
+
+  async_read_pending_ = true;
+  return DxlError::OK;
+}
+
+DxlError Dynamixel::FinishReadResponse(double period_ms)
+{
+  if (!async_read_pending_) {
+    // Nothing pending; fallback to normal combined TxRx
+    return ReadMultiDxlData(period_ms);
+  }
+
+  // Configure timeout if requested
+  if (period_ms > 0) {
+    port_handler_->setPacketTimeout(period_ms);
+  }
+
+  int dxl_comm_result;
+  if (async_is_sync_) {
+    if (async_is_fast_ && group_fast_sync_read_) {
+      dxl_comm_result = group_fast_sync_read_->rxPacket();
+    } else if (group_sync_read_) {
+      dxl_comm_result = group_sync_read_->rxPacket();
+    } else {
+      async_read_pending_ = false;
+      return DxlError::SYNC_READ_FAIL;
+    }
+    if (dxl_comm_result != COMM_SUCCESS) {
+      async_read_pending_ = false;
+      fprintf(stderr, "%s Rx Fail [Dxl Size : %ld] [Error code : %d]\n",
+        async_is_fast_ ? "FastSyncRead" : "SyncRead",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::SYNC_READ_FAIL;
+    }
+
+    // Process data
+    for (auto it_read_data : read_data_list_) {
+      uint8_t id = it_read_data.comm_id;
+      uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
+      ProcessReadData(
+        id,
+        indirect_addr,
+        it_read_data.id_arr,
+        indirect_info_read_[id].item_name,
+        indirect_info_read_[id].item_size,
+        it_read_data.item_data_ptr_vec,
+        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+          if (async_is_fast_ && group_fast_sync_read_) {
+            return group_fast_sync_read_->getData(lambda_id, addr, size);
+          } else {
+            return group_sync_read_->getData(lambda_id, addr, size);
+          }
+        });
+    }
+  } else {
+    // Bulk
+    if (async_is_fast_ && group_fast_bulk_read_) {
+      dxl_comm_result = group_fast_bulk_read_->rxPacket();
+    } else if (group_bulk_read_) {
+      dxl_comm_result = group_bulk_read_->rxPacket();
+    } else {
+      async_read_pending_ = false;
+      return DxlError::BULK_READ_FAIL;
+    }
+    if (dxl_comm_result != COMM_SUCCESS) {
+      async_read_pending_ = false;
+      fprintf(stderr, "%s Rx Fail [Dxl Size : %ld] [Error code : %d]\n",
+        async_is_fast_ ? "FastBulkRead" : "BulkRead",
+        read_data_list_.size(), dxl_comm_result);
+      return DxlError::BULK_READ_FAIL;
+    }
+
+    for (auto it_read_data : read_data_list_) {
+      uint8_t id = it_read_data.comm_id;
+      uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
+      if (CheckIndirectReadAvailable(id) != DxlError::OK) {
+        ProcessDirectReadData(
+          id,
+          it_read_data.item_addr,
+          it_read_data.item_name,
+          it_read_data.item_size,
+          it_read_data.item_data_ptr_vec,
+          [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+            if (async_is_fast_ && group_fast_bulk_read_) {
+              return group_fast_bulk_read_->getData(lambda_id, addr, size);
+            } else {
+              return group_bulk_read_->getData(lambda_id, addr, size);
+            }
+          });
+      } else {
+        ProcessReadData(
+          id,
+          indirect_addr,
+          it_read_data.id_arr,
+          indirect_info_read_[id].item_name,
+          indirect_info_read_[id].item_size,
+          it_read_data.item_data_ptr_vec,
+          [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
+            if (async_is_fast_ && group_fast_bulk_read_) {
+              return group_fast_bulk_read_->getData(lambda_id, addr, size);
+            } else {
+              return group_bulk_read_->getData(lambda_id, addr, size);
+            }
+          });
+      }
+    }
+  }
+
+  async_read_pending_ = false;
+  return DxlError::OK;
+}
+
 bool Dynamixel::checkReadType()
 {
   if (read_data_list_.size() == 1) {
