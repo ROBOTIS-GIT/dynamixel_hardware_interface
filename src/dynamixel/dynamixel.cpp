@@ -889,11 +889,12 @@ DxlError Dynamixel::ReadMultiDxlData(double period_ms)
     return DxlError::OK;
   }
 
-  if (read_type_ == SYNC) {
-    return GetDxlValueFromSyncRead(period_ms);
-  } else {
-    return GetDxlValueFromBulkRead(period_ms);
+  DxlError tx_result = PreReadRequest();
+  if (tx_result != DxlError::OK) {
+    return tx_result;
   }
+  
+  return FinishReadResponse(period_ms);
 }
 
 DxlError Dynamixel::WriteMultiDxlData()
@@ -1309,79 +1310,6 @@ DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
   return DxlError::OK;
 }
 
-DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
-{
-  // Try fast sync read for the first 10 attempts after startup/handler setup.
-  // If any of the first 10 attempts succeeds, use fast sync read permanently.
-  // If all 10 attempts fail, permanently fallback to normal sync read.
-  if (use_fast_read_protocol_ && group_fast_sync_read_ &&
-    (fast_read_permanent_ || fast_read_fail_count_ < 10))
-  {
-    DxlError comm_result = ProcessReadCommunication(port_handler_, period_ms, true, true);
-    if (comm_result == DxlError::OK) {
-      // Success, process data, and use fast sync read permanently
-      for (auto it_read_data : read_data_list_) {
-        uint8_t id = it_read_data.comm_id;
-        uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
-        ProcessReadData(
-          id,
-          indirect_addr,
-          it_read_data.id_arr,
-          indirect_info_read_[id].item_name,
-          indirect_info_read_[id].item_size,
-          it_read_data.item_data_ptr_vec,
-          [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
-            return group_fast_sync_read_->getData(lambda_id, addr, size);
-          });
-      }
-      // Mark as permanently using fast sync read after first success
-      fast_read_permanent_ = true;
-      return DxlError::OK;
-    } else if (!fast_read_permanent_) {
-      // Only increment fail count and fallback if not yet permanent
-      ++fast_read_fail_count_;
-      fprintf(stderr, "FastSyncRead TxRx failed (attempt %d/10)\n", fast_read_fail_count_);
-      if (fast_read_fail_count_ >= 10) {
-        // Permanently switch to normal sync read
-        fprintf(
-          stderr, "FastSyncRead failed 10 times, switching to normal SyncRead "
-          "permanently.\n");
-        use_fast_read_protocol_ = false;
-        // Set up normal sync read handler
-        std::vector<uint8_t> id_arr;
-        for (auto it_read_data : read_data_list_) {
-          id_arr.push_back(it_read_data.comm_id);
-        }
-        SetSyncReadHandler(id_arr);
-      }
-      // Return error for this attempt
-      return DxlError::SYNC_READ_FAIL;
-    } else {
-      // If permanent, ignore failures and keep using fast sync read
-      return comm_result;
-    }
-  }
-  // Use normal sync read
-  DxlError comm_result = ProcessReadCommunication(port_handler_, period_ms, true, false);
-  if (comm_result != DxlError::OK) {
-    return comm_result;
-  }
-  for (auto it_read_data : read_data_list_) {
-    uint8_t id = it_read_data.comm_id;
-    uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
-    ProcessReadData(
-      id,
-      indirect_addr,
-      it_read_data.id_arr,
-      indirect_info_read_[id].item_name,
-      indirect_info_read_[id].item_size,
-      it_read_data.item_data_ptr_vec,
-      [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
-        return group_sync_read_->getData(lambda_id, addr, size);
-      });
-  }
-  return DxlError::OK;
-}
 
 DxlError Dynamixel::SetBulkReadItemAndHandler()
 {
@@ -1617,116 +1545,6 @@ DxlError Dynamixel::AddDirectRead(
   return DxlError::OK;
 }
 
-DxlError Dynamixel::GetDxlValueFromBulkRead(double period_ms)
-{
-  // Try fast bulk read for the first 10 attempts after startup/handler setup.
-  // If any of the first 10 attempts succeeds, use fast bulk read permanently.
-  // If all 10 attempts fail, permanently fallback to normal bulk read.
-  if (use_fast_read_protocol_ && group_fast_bulk_read_ &&
-    (fast_read_permanent_ || fast_read_fail_count_ < 10))
-  {
-    DxlError comm_result = ProcessReadCommunication(port_handler_, period_ms, false, true);
-    if (comm_result == DxlError::OK) {
-      // Success, process data, and use fast bulk read permanently
-      if (group_bulk_read_) {
-        delete group_bulk_read_;
-        group_bulk_read_ = nullptr;
-      }
-
-      for (auto it_read_data : read_data_list_) {
-        uint8_t id = it_read_data.comm_id;
-        uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
-        if (CheckIndirectReadAvailable(id) != DxlError::OK) {
-          ProcessDirectReadData(
-            id,
-            it_read_data.item_addr,
-            it_read_data.item_name,
-            it_read_data.item_size,
-            it_read_data.item_data_ptr_vec,
-            [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
-              return group_fast_bulk_read_->getData(lambda_id, addr, size);
-            });
-        } else {
-          ProcessReadData(
-            id,
-            indirect_addr,
-            it_read_data.id_arr,
-            indirect_info_read_[id].item_name,
-            indirect_info_read_[id].item_size,
-            it_read_data.item_data_ptr_vec,
-            [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
-              return group_fast_bulk_read_->getData(lambda_id, addr, size);
-            });
-        }
-      }
-      // Mark as permanently using fast bulk read after first success
-      fast_read_permanent_ = true;
-      return DxlError::OK;
-    } else if (!fast_read_permanent_) {
-      // Only increment fail count and fallback if not yet permanent
-      ++fast_read_fail_count_;
-      fprintf(stderr, "FastBulkRead TxRx failed (attempt %d/10)\n", fast_read_fail_count_);
-      if (fast_read_fail_count_ >= 10) {
-        if (group_fast_bulk_read_) {
-          delete group_fast_bulk_read_;
-          group_fast_bulk_read_ = nullptr;
-        }
-        // Permanently switch to normal bulk read
-        fprintf(
-          stderr,
-          "FastBulkRead failed 10 times, switching to normal BulkRead permanently.\n");
-        use_fast_read_protocol_ = false;
-        // Set up normal bulk read handler
-        std::vector<uint8_t> indirect_id_arr;
-
-        for (auto it_read_data : read_data_list_) {
-          if (CheckIndirectReadAvailable(it_read_data.comm_id) == DxlError::OK) {
-            indirect_id_arr.push_back(it_read_data.comm_id);
-          }
-        }
-
-        SetBulkReadHandler(indirect_id_arr);
-      }
-      // Return error for this attempt
-      return DxlError::BULK_READ_FAIL;
-    } else {
-      // If permanent, ignore failures and keep using fast bulk read
-      return comm_result;
-    }
-  }
-  DxlError comm_result = ProcessReadCommunication(port_handler_, period_ms, false, false);
-  if (comm_result != DxlError::OK) {
-    return comm_result;
-  }
-
-  for (auto it_read_data : read_data_list_) {
-    uint8_t id = it_read_data.comm_id;
-    uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
-    if (CheckIndirectReadAvailable(id) != DxlError::OK) {
-      ProcessDirectReadData(
-        id,
-        it_read_data.item_addr,
-        it_read_data.item_name,
-        it_read_data.item_size,
-        it_read_data.item_data_ptr_vec,
-        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
-          return group_bulk_read_->getData(lambda_id, addr, size);
-        });
-    } else {
-      ProcessReadData(
-        id,
-        indirect_addr,
-        it_read_data.id_arr,
-        indirect_info_read_[id].item_name,
-        indirect_info_read_[id].item_size,
-        it_read_data.item_data_ptr_vec,
-        [this](uint8_t lambda_id, uint16_t addr, uint8_t size) {
-          return group_bulk_read_->getData(lambda_id, addr, size);
-        });
-    }
-  }
-  return DxlError::OK;
-}
 
 DxlError Dynamixel::ProcessReadCommunication(
   dynamixel::PortHandler * port_handler,

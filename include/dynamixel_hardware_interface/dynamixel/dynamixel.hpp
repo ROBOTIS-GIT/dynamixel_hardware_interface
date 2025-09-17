@@ -235,13 +235,11 @@ private:
   // SyncRead
   DxlError SetSyncReadItemAndHandler();
   DxlError SetSyncReadHandler(std::vector<uint8_t> id_arr);
-  DxlError GetDxlValueFromSyncRead(double period_ms);
   DxlError SetFastSyncReadHandler(std::vector<uint8_t> id_arr);
 
   // BulkRead
   DxlError SetBulkReadItemAndHandler();
   DxlError SetBulkReadHandler(std::vector<uint8_t> id_arr);
-  DxlError GetDxlValueFromBulkRead(double period_ms);
   DxlError SetFastBulkReadHandler(std::vector<uint8_t> id_arr);
 
   // DirectRead for BulkRead
