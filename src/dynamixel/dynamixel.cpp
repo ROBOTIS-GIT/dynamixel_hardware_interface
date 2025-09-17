@@ -222,7 +222,7 @@ DxlError Dynamixel::InitDxlComm(
 
       if (hw_error_exists) {
         uint32_t hw_error_status = 0;
-        DxlError hw_error_result = ReadItem(it_id, "Hardware Error Status", hw_error_status);
+        ReadItem(it_id, "Hardware Error Status", hw_error_status);
 
         std::string error_string = "";
         uint8_t hw_error_byte = static_cast<uint8_t>(hw_error_status);
@@ -240,22 +240,25 @@ DxlError Dynamixel::InitDxlComm(
         }
 
         if (!error_string.empty()) {
-          fprintf(stderr, "[ID:%03d] Hardware Error Details: 0x%x (%d): %s\n",
-                  it_id, hw_error_byte, hw_error_byte, error_string.c_str());
+          fprintf(
+            stderr, "[ID:%03d] Hardware Error Details: 0x%x (%d): %s\n",
+            it_id, hw_error_byte, hw_error_byte, error_string.c_str());
         }
       } else if (error_code_exists) {
         uint32_t error_code = 0;
-        DxlError error_code_result = ReadItem(it_id, "Error Code", error_code);
+        ReadItem(it_id, "Error Code", error_code);
 
         uint8_t error_code_byte = static_cast<uint8_t>(error_code);
         if (error_code_byte != 0x00) {
           const ErrorCodeInfo * error_info = get_error_code_info(error_code_byte);
           if (error_info) {
-            fprintf(stderr, "[ID:%03d] Error Code Details: 0x%x (%s): %s\n",
-                    it_id, error_code_byte, error_info->label, error_info->description);
+            fprintf(
+              stderr, "[ID:%03d] Error Code Details: 0x%x (%s): %s\n",
+              it_id, error_code_byte, error_info->label, error_info->description);
           } else {
-            fprintf(stderr, "[ID:%03d] Error Code Details: 0x%x (Unknown Error Code)\n",
-                    it_id, error_code_byte);
+            fprintf(
+              stderr, "[ID:%03d] Error Code Details: 0x%x (Unknown Error Code)\n",
+              it_id, error_code_byte);
           }
         }
       } else {
