@@ -205,8 +205,10 @@ DxlError Dynamixel::InitDxlComm(
       // Check if Hardware Error Status control item exists
       uint16_t hw_error_addr, error_code_addr;
       uint8_t hw_error_size, error_code_size;
-      bool hw_error_exists = dxl_info_.GetDxlControlItem(it_id, "Hardware Error Status", hw_error_addr, hw_error_size);
-      bool error_code_exists = dxl_info_.GetDxlControlItem(it_id, "Error Code", error_code_addr, error_code_size);
+      bool hw_error_exists = dxl_info_.GetDxlControlItem(
+        it_id, "Hardware Error Status", hw_error_addr, hw_error_size);
+      bool error_code_exists = dxl_info_.GetDxlControlItem(
+        it_id, "Error Code", error_code_addr, error_code_size);
 
       if (hw_error_exists) {
         uint32_t hw_error_status = 0;
@@ -255,7 +257,11 @@ DxlError Dynamixel::InitDxlComm(
           }
         }
       } else {
-        fprintf(stderr, "[ID:%03d] Neither Hardware Error Status nor Error Code control items available.\n", it_id);
+        fprintf(
+          stderr,
+          "[ID:%03d] Neither Hardware Error Status nor Error Code control items available.\n",
+          it_id
+        );
       }
 
       fprintf(stderr, "[ID:%03d] Hardware Error detected, rebooting...\n", it_id);
