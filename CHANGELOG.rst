@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.15 (2025-09-17)
+-------------------
+* Added support for hardware error handling for Dynamixel Y series
+* Contributors: Woojin Wie
+
 1.4.14 (2025-09-03)
 -------------------
 * Added Current units to YM070-210-*099 and YM080-230-*099 model files
