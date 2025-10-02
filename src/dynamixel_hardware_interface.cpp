@@ -56,9 +56,9 @@ DynamixelHardware::~DynamixelHardware()
 }
 
 hardware_interface::CallbackReturn DynamixelHardware::on_init(
-  const hardware_interface::HardwareInfo & info)
+  const hardware_interface::HardwareComponentInterfaceParams & params)
 {
-  if (hardware_interface::SystemInterface::on_init(info) !=
+  if (hardware_interface::SystemInterface::on_init(params) !=
     hardware_interface::CallbackReturn::SUCCESS)
   {
     RCLCPP_ERROR_STREAM(logger_, "Failed to initialize DynamixelHardware");
