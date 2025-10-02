@@ -112,7 +112,7 @@ public:
 
   /**
    * @brief Initialization callback for hardware interface.
-   * @param info Hardware information for the system.
+   * @param params Parameters for the hardware component interface.
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
