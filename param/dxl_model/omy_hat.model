@@ -1,6 +1,6 @@
 [unit info]
 Data Name	value	unit	Sign Type
-Present Input Voltage	0.1	V	unsigned
+Present Input Voltage	0.01	V	unsigned
 
 [control table]
 Address	Size	Data Name
