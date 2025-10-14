@@ -1,3 +1,7 @@
+[unit info]
+Data Name	value	unit	Sign Type
+Present Input Voltage	0.1	V	unsigned
+
 [control table]
 Address	Size	Data Name
 0	2	Model Number

@@ -12,6 +12,7 @@ Present Velocity	0.0239691227	rad/s	signed
 Goal Velocity	0.0239691227	rad/s	signed
 Present Current	0.0006709470296015791	N/m	signed
 Goal Current	0.0006709470296015791	N/m	signed
+Present Input Voltage	0.1	V	unsigned
 
 [control table]
 Address	Size	Data Name
