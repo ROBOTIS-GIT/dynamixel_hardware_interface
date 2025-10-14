@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.16 (2025-10-14)
+-------------------
+* Added support for default unit information for Present Input Voltage to model files
+* Contributors: Woojin Wie
+
 1.4.15 (2025-09-17)
 -------------------
 * Added support for hardware error handling for Dynamixel Y series
