@@ -169,34 +169,34 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
 
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+    uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
+      static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
     const std::string & type = gpio.parameters.at("type");
 
     if (type == "dxl") {
-      dxl_id_.push_back(id);
+      dxl_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "sensor") {
-      sensor_id_.push_back(id);
+      sensor_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "controller") {
-      controller_id_.push_back(id);
+      controller_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "virtual_dxl") {
-      dxl_comm_->ReadDxlModelFile(id, static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
-      virtual_dxl_id_.push_back(id);
+      dxl_comm_->ReadDxlModelFile(comm_id, id, static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
+      virtual_dxl_comm_id_id_.emplace_back(comm_id, id);
+    } else if (type == "virtual_sensor") {
+      dxl_comm_->ReadDxlModelFile(comm_id, id, static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
     } else {
       RCLCPP_ERROR_STREAM(logger_, "Invalid DXL / Sensor type");
       exit(-1);
     }
-
-    uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
-      static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
-    dxl_comm_->SetCommId(id, comm_id);
   }
 
-  if (controller_id_.size() > 0) {
+  if (controller_comm_id_id_.size() > 0) {
     for (int i = 0; i < 10; i++) {
-      std::vector<uint8_t> id_arr;
-      for (auto controller : controller_id_) {
-        id_arr.push_back(controller);
+      std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr;
+      for (auto pr : controller_comm_id_id_) {
+        comm_id_id_arr.emplace_back(pr.first, pr.second);
       }
-      if (dxl_comm_->InitDxlComm(id_arr, port_name_, baud_rate_) == DxlError::OK) {
+      if (dxl_comm_->InitDxlComm(comm_id_id_arr, port_name_, baud_rate_) == DxlError::OK) {
         RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
         break;
       } else {
@@ -209,20 +209,20 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
   }
 
-  if (!InitControllerItems()) {
-    RCLCPP_ERROR_STREAM(logger_, "Error: InitControllerItems");
-    return hardware_interface::CallbackReturn::ERROR;
-  }
+  // if (!InitControllerItems()) {
+  //   RCLCPP_ERROR_STREAM(logger_, "Error: InitControllerItems");
+  //   return hardware_interface::CallbackReturn::ERROR;
+  // }
 
   for (int i = 0; i < 10; i++) {
-    std::vector<uint8_t> id_arr;
-    for (auto dxl : dxl_id_) {
-      id_arr.push_back(dxl);
+    std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr;
+    for (auto pr : dxl_comm_id_id_) {
+      comm_id_id_arr.emplace_back(pr.first, pr.second);
     }
-    for (auto sensor : sensor_id_) {
-      id_arr.push_back(sensor);
+    for (auto pr : sensor_comm_id_id_) {
+      comm_id_id_arr.emplace_back(pr.first, pr.second);
     }
-    if (dxl_comm_->InitDxlComm(id_arr, port_name_, baud_rate_) == DxlError::OK) {
+    if (dxl_comm_->InitDxlComm(comm_id_id_arr, port_name_, baud_rate_) == DxlError::OK) {
       RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
       break;
     } else {
@@ -234,21 +234,33 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
   }
 
-  std::vector<uint8_t> dxl_id_with_virtual_dxl;
-  dxl_id_with_virtual_dxl.insert(dxl_id_with_virtual_dxl.end(), dxl_id_.begin(), dxl_id_.end());
-  dxl_id_with_virtual_dxl.insert(
-    dxl_id_with_virtual_dxl.end(), virtual_dxl_id_.begin(),
-    virtual_dxl_id_.end());
+  std::vector<std::pair<uint8_t,uint8_t>> torque_init_pairs;
+  for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
+    if (gpio.parameters.find("ID") == gpio.parameters.end() ||
+      gpio.parameters.find("type") == gpio.parameters.end())
+    {
+      continue;
+    }
+    uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+    uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
+      static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
+    const std::string & type = gpio.parameters.at("type");
+
+    // Include both real and virtual_dxl in torque init (per user request)
+    if (type == "dxl" || type == "virtual_dxl") {
+      torque_init_pairs.emplace_back(comm_id, id);
+    }
+  }
   if (dxl_comm_->InitTorqueStates(
-      dxl_id_with_virtual_dxl,
+      torque_init_pairs,
       disable_torque_at_init) != DxlError::OK)
   {
     RCLCPP_ERROR_STREAM(logger_, "Error: InitTorqueStates");
     return hardware_interface::CallbackReturn::ERROR;
   }
 
-  if (!InitDxlItems()) {
-    RCLCPP_ERROR_STREAM(logger_, "Error: InitDxlItems");
+  if (!InitItems()) {
+    RCLCPP_ERROR_STREAM(logger_, "Error: InitItems");
     return hardware_interface::CallbackReturn::ERROR;
   }
 
@@ -566,10 +578,10 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 
   dxl_comm_->WriteMultiDxlData();
 
-  if (torque_enabled_ids_.size() > 0) {
+  if (torque_enabled_comm_id_id_.size() > 0) {
     RCLCPP_INFO_STREAM(logger_, "Enabling torque for Dynamixels");
     for (int i = 0; i < 10; i++) {
-      if (dxl_comm_->DynamixelEnable(torque_enabled_ids_) == DxlError::OK) {
+      if (dxl_comm_->DynamixelEnable(torque_enabled_comm_id_id_) == DxlError::OK) {
         break;
       }
       RCLCPP_ERROR_STREAM(logger_, "Failed to enable torque for Dynamixels, retry...");
@@ -585,8 +597,8 @@ hardware_interface::CallbackReturn DynamixelHardware::start()
 hardware_interface::CallbackReturn DynamixelHardware::stop()
 {
   if (dxl_comm_) {
-    dxl_comm_->DynamixelDisable(dxl_id_);
-    dxl_comm_->DynamixelDisable(virtual_dxl_id_);
+    dxl_comm_->DynamixelDisable(dxl_comm_id_id_);
+    dxl_comm_->DynamixelDisable(virtual_dxl_comm_id_id_);
   } else {
     RCLCPP_ERROR_STREAM(logger_, "Dynamixel Hardware Stop Fail : dxl_comm_ is nullptr");
     return hardware_interface::CallbackReturn::ERROR;
@@ -643,7 +655,9 @@ hardware_interface::return_type DynamixelHardware::read(
     for (auto it : hdl_trans_states_) {
       dxl_state_pub_uni_ptr_->msg_.id.at(index) = it.id;
       dxl_state_pub_uni_ptr_->msg_.dxl_hw_state.at(index) = dxl_hw_err_[it.id];
-      dxl_state_pub_uni_ptr_->msg_.torque_state.at(index) = dxl_torque_state_[it.id];
+      auto ts_it = dxl_torque_state_.find({it.comm_id, it.id});
+      bool ts = (ts_it != dxl_torque_state_.end()) ? ts_it->second : false;
+      dxl_state_pub_uni_ptr_->msg_.torque_state.at(index) = ts;
       index++;
     }
     dxl_state_pub_uni_ptr_->unlockAndPublish();
@@ -784,8 +798,8 @@ bool DynamixelHardware::CommReset()
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     RCLCPP_INFO_STREAM(logger_, "Reset Start");
     bool result = true;
-    for (auto id : dxl_id_) {
-      if (dxl_comm_->Reboot(id) != DxlError::OK) {
+    for (auto pr : dxl_comm_id_id_) {
+      if (dxl_comm_->Reboot(pr.first) != DxlError::OK) {
         RCLCPP_ERROR_STREAM(logger_, "Cannot reboot dynamixel! :(");
         result = false;
         break;
@@ -793,8 +807,8 @@ bool DynamixelHardware::CommReset()
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     if (!result) {continue;}
-    if (!InitControllerItems()) {continue;}
-    if (!InitDxlItems()) {continue;}
+    // if (!InitControllerItems()) {continue;}
+    // if (!InitDxlItems()) {continue;}
     if (!InitDxlReadItems()) {continue;}
     if (!InitDxlWriteItems()) {continue;}
 
@@ -810,22 +824,37 @@ bool DynamixelHardware::CommReset()
   return false;
 }
 
-bool DynamixelHardware::initItems(const std::string & type_filter)
+bool DynamixelHardware::InitItems()
 {
-  RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Items for type: " << type_filter);
+  std::vector<uint8_t> reboot_comm_id_id_;
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-    if (gpio.parameters.at("type") != type_filter) {
-      continue;
-    }
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+    bool reboot_enabled = (gpio.parameters.find("Reboot") != gpio.parameters.end() && std::stoi(gpio.parameters.at("Reboot")) != 0);
+    if (reboot_enabled) {
+      reboot_comm_id_id_.emplace_back(id);
+    }
+  }
+  for (auto id : reboot_comm_id_id_) {
+    for (int i = 0; i < 5; i++) {
+      if (dxl_comm_->Reboot(id) != DxlError::OK) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      } else {
+        break;
+      }
+    }
+  }
+  for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
+    uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+    uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
+      static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
 
     // Handle torque enable parameter
-    bool torque_enabled = type_filter == "dxl" || type_filter == "virtual_dxl";
+    bool torque_enabled = (gpio.parameters.find("type") != gpio.parameters.end() && (gpio.parameters.at("type") == "dxl" || gpio.parameters.at("type") == "virtual_dxl"));
     if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
       torque_enabled = std::stoi(gpio.parameters.at("Torque Enable")) != 0;
     }
     if (torque_enabled) {
-      torque_enabled_ids_.push_back(id);
+      torque_enabled_comm_id_id_.emplace_back(comm_id, id);
     }
 
     // 1. First pass: Write Operating Mode parameters
@@ -837,7 +866,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
           "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
             param.second);
         if (dxl_comm_->WriteItem(
-            id, param_name,
+            comm_id, id, param_name,
             static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
         {
           return false;
@@ -850,7 +879,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
       const std::string & param_name = param.first;
       if (param_name == "ID" || param_name == "type" ||
         param_name == "Torque Enable" || param_name == "Operating Mode" ||
-        param_name == "model_num" || param_name == "comm_id")
+        param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot")
       {
         continue;
       }
@@ -860,7 +889,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
           "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
             param.second);
         if (dxl_comm_->WriteItem(
-            id, param_name,
+            comm_id, id, param_name,
             static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
         {
           return false;
@@ -873,7 +902,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
       const std::string & param_name = param.first;
       if (param_name == "ID" || param_name == "type" ||
         param_name == "Torque Enable" || param_name == "Operating Mode" ||
-        param_name == "model_num" || param_name == "comm_id" ||
+        param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot" ||
         param_name.find("Limit") != std::string::npos)
       {
         continue;
@@ -883,7 +912,7 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
         "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
           param.second);
       if (dxl_comm_->WriteItem(
-          id, param_name,
+          comm_id, id, param_name,
           static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
       {
         return false;
@@ -891,16 +920,6 @@ bool DynamixelHardware::initItems(const std::string & type_filter)
     }
   }
   return true;
-}
-
-bool DynamixelHardware::InitControllerItems()
-{
-  return initItems("controller") && initItems("virtual_dxl");
-}
-
-bool DynamixelHardware::InitDxlItems()
-{
-  return initItems("dxl") && initItems("sensor");
 }
 
 bool DynamixelHardware::InitDxlReadItems()
@@ -970,13 +989,26 @@ bool DynamixelHardware::InitDxlReadItems()
           }
         }
         hdl_trans_states_.push_back(temp_read);
+      } else if (gpio.parameters.at("type") == "virtual_sensor") {
+        uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+        uint8_t comm_id = static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id")));
+        HandlerVarType temp_sensor;
+        temp_sensor.id = id;
+        temp_sensor.comm_id = comm_id;
+        temp_sensor.name = gpio.name;
+
+        for (auto it : gpio.state_interfaces) {
+          temp_sensor.interface_name_vec.push_back(it.name);
+          temp_sensor.value_ptr_vec.push_back(std::make_shared<double>(0.0));
+        }
+        hdl_gpio_sensor_states_.push_back(temp_sensor);
       }
     }
     is_set_hdl_ = true;
   }
   for (auto it : hdl_gpio_controller_states_) {
     if (dxl_comm_->SetDxlReadItems(
-        it.id, it.comm_id, it.interface_name_vec,
+        it.comm_id, it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
     {
       return false;
@@ -984,7 +1016,7 @@ bool DynamixelHardware::InitDxlReadItems()
   }
   for (auto it : hdl_trans_states_) {
     if (dxl_comm_->SetDxlReadItems(
-        it.id, it.comm_id, it.interface_name_vec,
+        it.comm_id, it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
     {
       return false;
@@ -992,7 +1024,7 @@ bool DynamixelHardware::InitDxlReadItems()
   }
   for (auto it : hdl_gpio_sensor_states_) {
     if (dxl_comm_->SetDxlReadItems(
-        it.id, it.comm_id, it.interface_name_vec,
+        it.comm_id, it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
     {
       return false;
@@ -1069,7 +1101,7 @@ bool DynamixelHardware::InitDxlWriteItems()
 
   for (auto it : hdl_trans_commands_) {
     if (dxl_comm_->SetDxlWriteItems(
-        it.id, it.comm_id, it.interface_name_vec,
+        it.comm_id, it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
     {
       return false;
@@ -1078,7 +1110,7 @@ bool DynamixelHardware::InitDxlWriteItems()
 
   for (auto it : hdl_gpio_controller_commands_) {
     if (dxl_comm_->SetDxlWriteItems(
-        it.id, it.comm_id, it.interface_name_vec,
+        it.comm_id, it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
     {
       return false;
@@ -1121,18 +1153,38 @@ bool DynamixelHardware::SetMatrix()
   if (info_.hardware_parameters.find("transmission_to_joint_matrix") ==
     info_.hardware_parameters.end())
   {
-    RCLCPP_ERROR_STREAM(
+    RCLCPP_WARN_STREAM(
       logger_,
-      "Required parameter 'transmission_to_joint_matrix' not found in hardware parameters");
-    return false;
-  }
-  std::stringstream ss_tj(info_.hardware_parameters["transmission_to_joint_matrix"]);
-  while (std::getline(ss_tj, str, ',')) {
-    d_vec.push_back(stod(str));
-  }
-  for (size_t i = 0; i < num_of_joints_; i++) {
-    for (size_t j = 0; j < num_of_transmissions_; j++) {
-      transmission_to_joint_matrix_[i][j] = d_vec.at(i * num_of_transmissions_ + j);
+      "Parameter 'transmission_to_joint_matrix' not provided. Using identity matrix by default.");
+    for (size_t i = 0; i < num_of_joints_; i++) {
+      for (size_t j = 0; j < num_of_transmissions_; j++) {
+        transmission_to_joint_matrix_[i][j] = (i == j) ? 1.0 : 0.0;
+      }
+    }
+  } else {
+    try {
+      std::stringstream ss_tj(info_.hardware_parameters["transmission_to_joint_matrix"]);
+      while (std::getline(ss_tj, str, ',')) {
+        d_vec.push_back(stod(str));
+      }
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "Failed to parse 'transmission_to_joint_matrix': " << e.what());
+      return false;
+    }
+    const size_t expected_tj = num_of_joints_ * num_of_transmissions_;
+    if (d_vec.size() != expected_tj) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "Parameter 'transmission_to_joint_matrix' has " << d_vec.size()
+        << " elements, expected " << expected_tj);
+      return false;
+    }
+    for (size_t i = 0; i < num_of_joints_; i++) {
+      for (size_t j = 0; j < num_of_transmissions_; j++) {
+        transmission_to_joint_matrix_[i][j] = d_vec.at(i * num_of_transmissions_ + j);
+      }
     }
   }
 
@@ -1153,18 +1205,38 @@ bool DynamixelHardware::SetMatrix()
   if (info_.hardware_parameters.find("joint_to_transmission_matrix") ==
     info_.hardware_parameters.end())
   {
-    RCLCPP_ERROR_STREAM(
+    RCLCPP_WARN_STREAM(
       logger_,
-      "Required parameter 'joint_to_transmission_matrix' not found in hardware parameters");
-    return false;
-  }
-  std::stringstream ss_jt(info_.hardware_parameters["joint_to_transmission_matrix"]);
-  while (std::getline(ss_jt, str, ',')) {
-    d_vec.push_back(stod(str));
-  }
-  for (size_t i = 0; i < num_of_transmissions_; i++) {
-    for (size_t j = 0; j < num_of_joints_; j++) {
-      joint_to_transmission_matrix_[i][j] = d_vec.at(i * num_of_joints_ + j);
+      "Parameter 'joint_to_transmission_matrix' not provided. Using identity matrix by default.");
+    for (size_t i = 0; i < num_of_transmissions_; i++) {
+      for (size_t j = 0; j < num_of_joints_; j++) {
+        joint_to_transmission_matrix_[i][j] = (i == j) ? 1.0 : 0.0;
+      }
+    }
+  } else {
+    try {
+      std::stringstream ss_jt(info_.hardware_parameters["joint_to_transmission_matrix"]);
+      while (std::getline(ss_jt, str, ',')) {
+        d_vec.push_back(stod(str));
+      }
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "Failed to parse 'joint_to_transmission_matrix': " << e.what());
+      return false;
+    }
+    const size_t expected_jt = num_of_transmissions_ * num_of_joints_;
+    if (d_vec.size() != expected_jt) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "Parameter 'joint_to_transmission_matrix' has " << d_vec.size()
+        << " elements, expected " << expected_jt);
+      return false;
+    }
+    for (size_t i = 0; i < num_of_transmissions_; i++) {
+      for (size_t j = 0; j < num_of_joints_; j++) {
+        joint_to_transmission_matrix_[i][j] = d_vec.at(i * num_of_joints_ + j);
+      }
     }
   }
 
@@ -1321,22 +1393,23 @@ void DynamixelHardware::SyncJointCommandWithStates()
 
 void DynamixelHardware::ChangeDxlTorqueState()
 {
-  if (torque_enabled_ids_.size() == 0) {
+  if (torque_enabled_comm_id_id_.size() == 0) {
     return;
   }
 
   if (dxl_torque_status_ == REQUESTED_TO_ENABLE) {
     RCLCPP_WARN_STREAM(logger_, "Requested to enable torque, Enabling torque for all Dynamixels");
-    dxl_comm_->DynamixelEnable(torque_enabled_ids_);
+    dxl_comm_->DynamixelEnable(torque_enabled_comm_id_id_);
     SyncJointCommandWithStates();
   } else if (dxl_torque_status_ == REQUESTED_TO_DISABLE) {
     RCLCPP_WARN_STREAM(logger_, "Requested to disable torque, Disabling torque for all Dynamixels");
-    dxl_comm_->DynamixelDisable(torque_enabled_ids_);
+    dxl_comm_->DynamixelDisable(torque_enabled_comm_id_id_);
     SyncJointCommandWithStates();
   }
 
-  dxl_torque_state_ = dxl_comm_->GetDxlTorqueState();
-  for (auto single_torque_state : dxl_torque_state_) {
+  // Aggregate across all devices; if any OFF, report DISABLED
+  auto torque_state_map = dxl_comm_->GetDxlTorqueState();
+  for (const auto & single_torque_state : torque_state_map) {
     if (single_torque_state.second == TORQUE_OFF) {
       dxl_torque_status_ = TORQUE_DISABLED;
       return;

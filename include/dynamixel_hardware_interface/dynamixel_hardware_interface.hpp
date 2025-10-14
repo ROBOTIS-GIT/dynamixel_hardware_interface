@@ -182,8 +182,8 @@ private:
   std::map<uint8_t /*id*/, uint8_t /*err*/> dxl_hw_err_;
   std::map<uint8_t /*id*/, uint8_t /*error code*/> dxl_error_code_;
   DxlTorqueStatus dxl_torque_status_;
-  std::map<uint8_t /*id*/, bool /*enable*/> dxl_torque_state_;
-  std::vector<uint8_t> torque_enabled_ids_;
+  std::map<std::pair<uint8_t /*comm_id*/, uint8_t /*id*/>, bool /*enable*/> dxl_torque_state_;
+  std::vector<std::pair<uint8_t,uint8_t>> torque_enabled_comm_id_id_;
   double err_timeout_ms_;
   rclcpp::Duration read_error_duration_{0, 0};
   rclcpp::Duration write_error_duration_{0, 0};
@@ -228,13 +228,13 @@ private:
   ///// dxl variable
   std::string port_name_;
   std::string baud_rate_;
-  std::vector<uint8_t> dxl_id_;
-  std::vector<uint8_t> virtual_dxl_id_;
+  std::vector<std::pair<uint8_t,uint8_t>> dxl_comm_id_id_;
+  std::vector<std::pair<uint8_t,uint8_t>> virtual_dxl_comm_id_id_;
 
-  std::vector<uint8_t> sensor_id_;
+  std::vector<std::pair<uint8_t,uint8_t>> sensor_comm_id_id_;
   std::map<uint8_t /*id*/, std::string /*interface_name*/> sensor_item_;
 
-  std::vector<uint8_t> controller_id_;
+  std::vector<std::pair<uint8_t,uint8_t>> controller_comm_id_id_;
   std::map<uint8_t /*id*/, std::string /*interface_name*/> controller_item_;
 
   ///// handler variable
@@ -260,23 +260,10 @@ private:
   double ** joint_to_transmission_matrix_;
 
   /**
-   * @brief Helper function to initialize items for a specific type.
-   * @param type_filter The type of items to initialize ("controller" or "dxl" or "sensor").
+   * @brief Helper function to initialize items
    * @return True if initialization was successful, false otherwise.
    */
-  bool initItems(const std::string & type_filter);
-
-  /**
-   * @brief Initializes Dynamixel items.
-   * @return True if initialization was successful, false otherwise.
-   */
-  bool InitDxlItems();
-
-  /**
-   * @brief Initializes the controller items.
-   * @return True if initialization was successful, false otherwise.
-   */
-  bool InitControllerItems();
+  bool InitItems();
 
   /**
    * @brief Initializes the read items for Dynamixel.
