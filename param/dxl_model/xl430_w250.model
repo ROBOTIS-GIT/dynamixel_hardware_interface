@@ -10,6 +10,7 @@ max_radian	3.14159265
 Data Name	value	unit	Sign Type
 Present Velocity	0.0239691227	rad/s	signed
 Goal Velocity	0.0239691227	rad/s	signed
+Present Input Voltage	0.1	V	unsigned
 
 [control table]
 Address	Size	Data Name
