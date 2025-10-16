@@ -8,8 +8,8 @@ Goal Position	0.0015339807878856412	rad	signed	-3.14159265359
 
 [control table]
 Address	Size	Data Name
-1837	2	Present Current
-1839	2	Present Velocity
-1841	2	Present Position
-1905	2	Goal Current
-1907	2	Goal Position
+1096	2	Present Current
+1098	2	Present Velocity
+1100	2	Present Position
+1162	2	Goal Current
+1164	2	Goal Position
