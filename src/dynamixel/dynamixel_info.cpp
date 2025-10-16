@@ -70,8 +70,11 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model
       firmware_version);
     path += selected_model_name;
   } else {
-    fprintf(stderr, "[ERROR] CANNOT FIND THE DXL MODEL FROM FILE LIST.\n");
-    throw std::runtime_error("Cannot find the DXL model from file list");
+    fprintf(stderr, "\n");
+    std::string error_msg =
+      std::string("Cannot find the DXL model from file list (model_num: ") +
+      std::to_string(model_num) + ", model_name: " + GetModelName(model_num) + ")";
+    throw std::runtime_error(error_msg);
   }
 
   std::ifstream open_file(path);
