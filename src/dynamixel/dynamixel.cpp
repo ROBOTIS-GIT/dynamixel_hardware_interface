@@ -167,6 +167,21 @@ DxlError Dynamixel::InitTorqueStates(std::vector<std::pair<uint8_t,uint8_t>> com
   return DxlError::OK;
 }
 
+void Dynamixel::OverrideUnitInfo(
+  uint8_t comm_id,
+  uint8_t id,
+  const std::string & data_name,
+  double unit_multiplier,
+  bool is_signed,
+  double offset_value)
+{
+  // Ensure entry exists
+  (void)dxl_info_.dxl_info_by_comm_[comm_id][id];
+  dxl_info_.dxl_info_by_comm_[comm_id][id].unit_map[data_name] = unit_multiplier;
+  dxl_info_.dxl_info_by_comm_[comm_id][id].sign_type_map[data_name] = is_signed;
+  dxl_info_.dxl_info_by_comm_[comm_id][id].offset_map[data_name] = offset_value;
+}
+
 DxlError Dynamixel::InitDxlComm(
   std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr,
   std::string port_name,

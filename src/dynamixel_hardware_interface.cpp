@@ -848,6 +848,47 @@ bool DynamixelHardware::InitItems()
     uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
       static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
 
+    // Handle [unit info] override before any device writes
+    auto unit_it = gpio.parameters.find("[unit info]");
+    if (unit_it != gpio.parameters.end()) {
+      std::string value = unit_it->second;
+      std::vector<std::string> entries;
+      {
+        std::stringstream ss(value);
+        std::string token;
+        while (std::getline(ss, token, ';')) {
+          if (!token.empty()) {entries.push_back(token);}
+        }
+        if (entries.empty()) {entries.push_back(value);}  // single entry
+      }
+      for (auto & entry : entries) {
+        std::stringstream ls(entry);
+        std::string line;
+        while (std::getline(ls, line)) {
+          if (line.empty()) {continue;}
+          std::vector<std::string> parts;
+          std::stringstream ps(line);
+          std::string p;
+          while (std::getline(ps, p, ',')) {parts.push_back(p);}
+          if (parts.size() < 4) {continue;}
+          std::string data_name = parts[0];
+          double unit_multiplier = 1.0;
+          try {unit_multiplier = std::stod(parts[1]);} catch (...) {unit_multiplier = 1.0;}
+          bool is_signed = (parts[3] == std::string("signed"));
+          double offset = 0.0;
+          if (parts.size() >= 5) {
+            try {offset = std::stod(parts[4]);} catch (...) {offset = 0.0;}
+          }
+          dxl_comm_->OverrideUnitInfo(comm_id, id, data_name, unit_multiplier, is_signed, offset);
+          RCLCPP_INFO_STREAM(
+            logger_,
+            "[ID:" << std::to_string(id) << "] override [unit info] for '" << data_name
+              << "' = multiplier:" << unit_multiplier << ", signed:" << (is_signed?"true":"false")
+              << ", offset:" << offset);
+        }
+      }
+    }
+
     // Handle torque enable parameter
     bool torque_enabled = (gpio.parameters.find("type") != gpio.parameters.end() && (gpio.parameters.at("type") == "dxl" || gpio.parameters.at("type") == "virtual_dxl"));
     if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
@@ -903,6 +944,7 @@ bool DynamixelHardware::InitItems()
       if (param_name == "ID" || param_name == "type" ||
         param_name == "Torque Enable" || param_name == "Operating Mode" ||
         param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot" ||
+        param_name == "[unit info]" ||
         param_name.find("Limit") != std::string::npos)
       {
         continue;

@@ -292,6 +292,14 @@ public:
   DxlError InitTorqueStates(std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr,
     bool disable_torque = false);
 
+  void OverrideUnitInfo(
+    uint8_t comm_id,
+    uint8_t id,
+    const std::string & data_name,
+    double unit_multiplier,
+    bool is_signed,
+    double offset_value);
+
 private:
   bool checkReadType();
   bool checkWriteType();
