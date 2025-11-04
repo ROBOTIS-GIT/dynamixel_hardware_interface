@@ -857,6 +857,14 @@ bool DynamixelHardware::InitItems()
         std::stringstream ss(value);
         std::string token;
         while (std::getline(ss, token, ';')) {
+          // Trim whitespace from token
+          size_t first = token.find_first_not_of(" \t\r\n");
+          if (first != std::string::npos) {
+            size_t last = token.find_last_not_of(" \t\r\n");
+            token = token.substr(first, last - first + 1);
+          } else {
+            token.clear();
+          }
           if (!token.empty()) {entries.push_back(token);}
         }
         if (entries.empty()) {entries.push_back(value);}  // single entry
@@ -865,11 +873,29 @@ bool DynamixelHardware::InitItems()
         std::stringstream ls(entry);
         std::string line;
         while (std::getline(ls, line)) {
+          // Trim whitespace from line
+          size_t first = line.find_first_not_of(" \t\r\n");
+          if (first != std::string::npos) {
+            size_t last = line.find_last_not_of(" \t\r\n");
+            line = line.substr(first, last - first + 1);
+          } else {
+            line.clear();
+          }
           if (line.empty()) {continue;}
           std::vector<std::string> parts;
           std::stringstream ps(line);
           std::string p;
-          while (std::getline(ps, p, ',')) {parts.push_back(p);}
+          while (std::getline(ps, p, ',')) {
+            // Trim whitespace from each part
+            size_t p_first = p.find_first_not_of(" \t\r\n");
+            if (p_first != std::string::npos) {
+              size_t p_last = p.find_last_not_of(" \t\r\n");
+              p = p.substr(p_first, p_last - p_first + 1);
+            } else {
+              p.clear();
+            }
+            parts.push_back(p);
+          }
           if (parts.size() < 4) {continue;}
           std::string data_name = parts[0];
           double unit_multiplier = 1.0;
