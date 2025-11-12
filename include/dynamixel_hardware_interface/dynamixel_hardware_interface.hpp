@@ -263,7 +263,7 @@ private:
    * @brief Helper function to initialize items
    * @return True if initialization was successful, false otherwise.
    */
-  bool InitItems();
+  bool InitItem(const hardware_interface::ComponentInfo & gpio);
 
   /**
    * @brief Initializes the read items for Dynamixel.

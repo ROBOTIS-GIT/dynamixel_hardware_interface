@@ -240,8 +240,8 @@ public:
   ~Dynamixel();
 
   // DXL Communication Setting
-  DxlError InitDxlComm(std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr,
-    std::string port_name, std::string baudrate);
+  DxlError SetupPort(const std::string & port_name, const std::string & baudrate);
+  DxlError InitDxlComm(uint8_t comm_id, uint8_t id);
   DxlError Reboot(uint8_t id);
   void RWDataReset();
 
