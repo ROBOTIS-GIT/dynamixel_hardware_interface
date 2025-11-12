@@ -203,9 +203,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   }
   for (uint8_t id : reboot_dxl) {
     for (int attempt = 0; attempt < 5; ++attempt) {
-    if (dxl_comm_->Reboot(id) != DxlError::OK) {
-        RCLCPP_ERROR_STREAM(logger_, "Failed to reboot DXL: " << static_cast<int>(id));
-        return hardware_interface::CallbackReturn::ERROR;
+      if (dxl_comm_->Reboot(id) == DxlError::OK) {
+        break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
