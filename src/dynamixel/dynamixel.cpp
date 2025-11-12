@@ -182,18 +182,38 @@ void Dynamixel::OverrideUnitInfo(
   dxl_info_.dxl_info_by_comm_[comm_id][id].offset_map[data_name] = offset_value;
 }
 
-DxlError Dynamixel::InitDxlComm(
-  std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr,
-  std::string port_name,
-  std::string baudrate)
+DxlError Dynamixel::SetupPort(const std::string & port_name, const std::string & baudrate)
 {
   port_handler_ = dynamixel::PortHandler::getPortHandler(port_name.c_str());
   packet_handler_ = dynamixel::PacketHandler::getPacketHandler();
 
-  if (port_handler_->openPort()) {
-    fprintf(stderr, "Succeeded to open the port [%s]!\n", port_name.c_str());
-  } else {
-    fprintf(stderr, "Failed to open the port [%s]!\n", port_name.c_str());
+  bool port_opened = false;
+  for (int attempt = 0; attempt < MAX_COMM_RETRIES; ++attempt) {
+    if (port_handler_->openPort()) {
+      fprintf(
+        stderr,
+        "Succeeded to open the port [%s]! (attempt %d/%d)\n",
+        port_name.c_str(),
+        attempt + 1,
+        MAX_COMM_RETRIES);
+      port_opened = true;
+      break;
+    }
+
+    fprintf(
+      stderr,
+      "Failed to open the port [%s]! (attempt %d/%d)\n",
+      port_name.c_str(),
+      attempt + 1,
+      MAX_COMM_RETRIES);
+
+    if (attempt + 1 == MAX_COMM_RETRIES) {
+      return DxlError::OPEN_PORT_FAIL;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+  }
+
+  if (!port_opened) {
     return DxlError::OPEN_PORT_FAIL;
   }
 
@@ -204,114 +224,117 @@ DxlError Dynamixel::InitDxlComm(
     return DxlError::OPEN_PORT_FAIL;
   }
 
+  read_data_list_.clear();
+  write_data_list_.clear();
+  return DxlError::OK;
+}
+
+DxlError Dynamixel::InitDxlComm(uint8_t comm_id, uint8_t id)
+{
   uint16_t dxl_model_number;
   uint8_t dxl_error = 0;
 
-  for (auto pr : comm_id_id_arr) {
-    uint8_t comm_id = pr.first;
-    uint8_t id = pr.second;
-    fprintf(stderr, "[comm_id:%03d][ID:%03d] Request ping\t", comm_id, id);
-    int dxl_comm_result = packet_handler_->ping(
-      port_handler_, comm_id, &dxl_model_number, &dxl_error);
-    if (dxl_comm_result != COMM_SUCCESS) {
-      fprintf(stderr, " - COMM_ERROR : %s\n", packet_handler_->getTxRxResult(dxl_comm_result));
-      return DxlError::CANNOT_FIND_CONTROL_ITEM;
-    }
+  fprintf(stderr, "[comm_id:%03d][ID:%03d] Request ping\t", comm_id, id);
+  int dxl_comm_result = packet_handler_->ping(
+    port_handler_, comm_id, &dxl_model_number, &dxl_error);
+  if (dxl_comm_result != COMM_SUCCESS) {
+    fprintf(stderr, " - COMM_ERROR : %s\n", packet_handler_->getTxRxResult(dxl_comm_result));
+    return DxlError::CANNOT_FIND_CONTROL_ITEM;
+  }
 
-    // First, read the model file to get the control table structure
-    try {
-      dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number);
-    } catch (const std::exception & e) {
-      fprintf(stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id, id, e.what());
-      return DxlError::CANNOT_FIND_CONTROL_ITEM;
-    }
+  // First, read the model file to get the control table structure
+  try {
+    dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number);
+  } catch (const std::exception & e) {
+    fprintf(stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id, id, e.what());
+    return DxlError::CANNOT_FIND_CONTROL_ITEM;
+  }
 
-    if (dxl_error != 0) {
-      fprintf(stderr, " - RX_PACKET_ERROR : %s\n", packet_handler_->getRxPacketError(dxl_error));
+  if (dxl_error != 0) {
+    fprintf(stderr, " - RX_PACKET_ERROR : %s\n", packet_handler_->getRxPacketError(dxl_error));
 
-      // Check if Hardware Error Status control item exists
-      uint16_t hw_error_addr, error_code_addr;
-      uint8_t hw_error_size, error_code_size;
-      bool hw_error_exists = dxl_info_.GetDxlControlItem(
-        comm_id, id, "Hardware Error Status", hw_error_addr, hw_error_size);
-      bool error_code_exists = dxl_info_.GetDxlControlItem(
-        comm_id, id, "Error Code", error_code_addr, error_code_size);
+    // Check if Hardware Error Status control item exists
+    uint16_t hw_error_addr, error_code_addr;
+    uint8_t hw_error_size, error_code_size;
+    bool hw_error_exists = dxl_info_.GetDxlControlItem(
+      comm_id, id, "Hardware Error Status", hw_error_addr, hw_error_size);
+    bool error_code_exists = dxl_info_.GetDxlControlItem(
+      comm_id, id, "Error Code", error_code_addr, error_code_size);
 
-      if (hw_error_exists) {
-        uint32_t hw_error_status = 0;
-        ReadItem(comm_id, id, "Hardware Error Status", hw_error_status);
+    if (hw_error_exists) {
+      uint32_t hw_error_status = 0;
+      ReadItem(comm_id, id, "Hardware Error Status", hw_error_status);
 
-        std::string error_string = "";
-        uint8_t hw_error_byte = static_cast<uint8_t>(hw_error_status);
+      std::string error_string = "";
+      uint8_t hw_error_byte = static_cast<uint8_t>(hw_error_status);
 
-        for (int bit = 0; bit < 8; ++bit) {
-          if (hw_error_byte & (1 << bit)) {
-            const HardwareErrorStatusBitInfo * bit_info = get_hardware_error_status_bit_info(bit);
-            if (bit_info) {
-              error_string += bit_info->label;
-              error_string += " (" + std::string(bit_info->description) + ")/ ";
-            } else {
-              error_string += "Unknown Error Bit " + std::to_string(bit) + "/ ";
-            }
-          }
-        }
-
-        if (!error_string.empty()) {
-          fprintf(
-            stderr, "[comm_id:%03d][ID:%03d] Hardware Error Details: 0x%x (%d): %s\n",
-            comm_id, id, hw_error_byte, hw_error_byte, error_string.c_str());
-        }
-      } else if (error_code_exists) {
-        uint32_t error_code = 0;
-        ReadItem(comm_id, id, "Error Code", error_code);
-
-        uint8_t error_code_byte = static_cast<uint8_t>(error_code);
-        if (error_code_byte != 0x00) {
-          const ErrorCodeInfo * error_info = get_error_code_info(error_code_byte);
-          if (error_info) {
-            fprintf(
-              stderr, "[comm_id:%03d][ID:%03d] Error Code Details: 0x%x (%s): %s\n",
-              comm_id, id, error_code_byte, error_info->label, error_info->description);
+      for (int bit = 0; bit < 8; ++bit) {
+        if (hw_error_byte & (1 << bit)) {
+          const HardwareErrorStatusBitInfo * bit_info = get_hardware_error_status_bit_info(bit);
+          if (bit_info) {
+            error_string += bit_info->label;
+            error_string += " (" + std::string(bit_info->description) + ")/ ";
           } else {
-            fprintf(
-              stderr, "[comm_id:%03d][ID:%03d] Error Code Details: 0x%x (Unknown Error Code)\n",
-              comm_id, id, error_code_byte);
+            error_string += "Unknown Error Bit " + std::to_string(bit) + "/ ";
           }
         }
-      } else {
-        fprintf(
-          stderr,
-          "[comm_id:%03d][ID:%03d] Neither Hardware Error Status nor Error Code control items available.\n",
-          comm_id, id
-        );
       }
 
-      Reboot(id);
-      return DxlError::DXL_HARDWARE_ERROR;
+      if (!error_string.empty()) {
+        fprintf(
+          stderr, "[comm_id:%03d][ID:%03d] Hardware Error Details: 0x%x (%d): %s\n",
+          comm_id, id, hw_error_byte, hw_error_byte, error_string.c_str());
+      }
+    } else if (error_code_exists) {
+      uint32_t error_code = 0;
+      ReadItem(comm_id, id, "Error Code", error_code);
+
+      uint8_t error_code_byte = static_cast<uint8_t>(error_code);
+      if (error_code_byte != 0x00) {
+        const ErrorCodeInfo * error_info = get_error_code_info(error_code_byte);
+        if (error_info) {
+          fprintf(
+            stderr, "[comm_id:%03d][ID:%03d] Error Code Details: 0x%x (%s): %s\n",
+            comm_id, id, error_code_byte, error_info->label, error_info->description);
+        } else {
+          fprintf(
+            stderr, "[comm_id:%03d][ID:%03d] Error Code Details: 0x%x (Unknown Error Code)\n",
+            comm_id, id, error_code_byte);
+        }
+      }
     } else {
-      std::string model_name = dxl_info_.GetModelName(dxl_model_number);
       fprintf(
-        stderr, " - Ping succeeded. Dynamixel model number : %d (%s)\n", dxl_model_number,
-        model_name.c_str());
+        stderr,
+        "[comm_id:%03d][ID:%03d] Neither Hardware Error Status nor Error Code control items available.\n",
+        comm_id, id
+      );
     }
 
+    Reboot(id);
+    return DxlError::DXL_HARDWARE_ERROR;
+  } else {
+    std::string model_name = dxl_info_.GetModelName(dxl_model_number);
+    fprintf(
+      stderr, " - Ping succeeded. Dynamixel model number : %d (%s)\n", dxl_model_number,
+      model_name.c_str());
+  }
+
+  try {
+    dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number);
+  } catch (const std::exception & e) {
+    fprintf(stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id, id, e.what());
+    return DxlError::CANNOT_FIND_CONTROL_ITEM;
+  }
+
+  uint8_t firmware_version = 0;
+  DxlError fw_result = ReadFirmwareVersion(comm_id, id, firmware_version);
+  if (fw_result == DxlError::OK && firmware_version > 0) {
     try {
-      dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number);
+      dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number, firmware_version);
     } catch (const std::exception & e) {
-      fprintf(stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id, id, e.what());
-      return DxlError::CANNOT_FIND_CONTROL_ITEM;
-    }
-
-    uint8_t firmware_version = 0;
-    DxlError fw_result = ReadFirmwareVersion(comm_id, id, firmware_version);
-    if (fw_result == DxlError::OK && firmware_version > 0) {
-      try {
-        dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number, firmware_version);
-      } catch (const std::exception & e) {
-        fprintf(
-          stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading firmware-specific model file: %s\n",
-          comm_id, id, e.what());
-      }
+      fprintf(
+        stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading firmware-specific model file: %s\n",
+        comm_id, id, e.what());
     }
   }
 

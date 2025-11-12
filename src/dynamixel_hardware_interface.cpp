@@ -190,78 +190,55 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
   }
 
-  if (controller_comm_id_id_.size() > 0) {
-    for (int i = 0; i < 10; i++) {
-      std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr;
-      for (auto pr : controller_comm_id_id_) {
-        comm_id_id_arr.emplace_back(pr.first, pr.second);
-      }
-      if (dxl_comm_->InitDxlComm(comm_id_id_arr, port_name_, baud_rate_) == DxlError::OK) {
-        RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
-        break;
-      } else {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        if (i == 9) {
-          RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
-          return hardware_interface::CallbackReturn::ERROR;
-        }
-      }
-    }
+  if (dxl_comm_->SetupPort(port_name_, baud_rate_) != DxlError::OK) {
+    return hardware_interface::CallbackReturn::ERROR;
   }
 
-  // if (!InitControllerItems()) {
-  //   RCLCPP_ERROR_STREAM(logger_, "Error: InitControllerItems");
-  //   return hardware_interface::CallbackReturn::ERROR;
-  // }
-
-  for (int i = 0; i < 10; i++) {
-    std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr;
-    for (auto pr : dxl_comm_id_id_) {
-      comm_id_id_arr.emplace_back(pr.first, pr.second);
-    }
-    for (auto pr : sensor_comm_id_id_) {
-      comm_id_id_arr.emplace_back(pr.first, pr.second);
-    }
-    if (dxl_comm_->InitDxlComm(comm_id_id_arr, port_name_, baud_rate_) == DxlError::OK) {
-      RCLCPP_INFO_STREAM(logger_, "Trying to connect to the communication port...");
-      break;
-    } else {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-      if (i == 9) {
-        RCLCPP_ERROR_STREAM(logger_, "Cannot connect communication port! :(");
-        return hardware_interface::CallbackReturn::ERROR;
-      }
-    }
-  }
-
-  std::vector<std::pair<uint8_t,uint8_t>> torque_init_pairs;
+  torque_enabled_comm_id_id_.clear();
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-    if (gpio.parameters.find("ID") == gpio.parameters.end() ||
-      gpio.parameters.find("type") == gpio.parameters.end())
-    {
-      continue;
-    }
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
     uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
       static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
     const std::string & type = gpio.parameters.at("type");
 
-    // Include both real and virtual_dxl in torque init (per user request)
-    if (type == "dxl" || type == "virtual_dxl") {
-      torque_init_pairs.emplace_back(comm_id, id);
+    bool requires_ping = (type == "controller" || type == "dxl" || type == "sensor");
+    if (requires_ping) {
+      bool success = false;
+      for (int attempt = 0; attempt < 10; ++attempt) {
+        if (dxl_comm_->InitDxlComm(comm_id, id) == DxlError::OK) {
+          success = true;
+          break;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+      if (!success) {
+        RCLCPP_ERROR_STREAM(
+          logger_,
+          "[comm_id:" << static_cast<int>(comm_id) <<
+            "][ID:" << static_cast<int>(id) <<
+            "] Cannot connect communication port! :(");
+        return hardware_interface::CallbackReturn::ERROR;
+      }
     }
-  }
-  if (dxl_comm_->InitTorqueStates(
-      torque_init_pairs,
-      disable_torque_at_init) != DxlError::OK)
-  {
-    RCLCPP_ERROR_STREAM(logger_, "Error: InitTorqueStates");
-    return hardware_interface::CallbackReturn::ERROR;
-  }
 
-  if (!InitItems()) {
-    RCLCPP_ERROR_STREAM(logger_, "Error: InitItems");
-    return hardware_interface::CallbackReturn::ERROR;
+    if (type == "dxl" || type == "virtual_dxl") {
+      std::vector<std::pair<uint8_t, uint8_t>> single_pair = {{comm_id, id}};
+      if (dxl_comm_->InitTorqueStates(single_pair, disable_torque_at_init) != DxlError::OK) {
+        RCLCPP_ERROR_STREAM(
+          logger_,
+          "[comm_id:" << static_cast<int>(comm_id) <<
+            "][ID:" << static_cast<int>(id) << "] Error: InitTorqueStates");
+        return hardware_interface::CallbackReturn::ERROR;
+      }
+    }
+
+    if (!InitItem(gpio)) {
+      RCLCPP_ERROR_STREAM(
+        logger_,
+        "[comm_id:" << static_cast<int>(comm_id) <<
+          "][ID:" << static_cast<int>(id) << "] Error: InitItem");
+      return hardware_interface::CallbackReturn::ERROR;
+    }
   }
 
   if (!InitDxlReadItems()) {
@@ -824,160 +801,103 @@ bool DynamixelHardware::CommReset()
   return false;
 }
 
-bool DynamixelHardware::InitItems()
+bool DynamixelHardware::InitItem(const hardware_interface::ComponentInfo & gpio)
 {
-  std::vector<uint8_t> reboot_comm_id_id_;
-  for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-    uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-    bool reboot_enabled = (gpio.parameters.find("Reboot") != gpio.parameters.end() && std::stoi(gpio.parameters.at("Reboot")) != 0);
-    if (reboot_enabled) {
-      reboot_comm_id_id_.emplace_back(id);
-    }
-  }
-  for (auto id : reboot_comm_id_id_) {
-    for (int i = 0; i < 5; i++) {
-      if (dxl_comm_->Reboot(id) != DxlError::OK) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-      } else {
+  uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
+  uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
+    static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
+
+  bool reboot_enabled =
+    (gpio.parameters.find("Reboot") != gpio.parameters.end() &&
+    std::stoi(gpio.parameters.at("Reboot")) != 0);
+  if (reboot_enabled) {
+    for (int attempt = 0; attempt < 5; ++attempt) {
+      if (dxl_comm_->Reboot(id) == DxlError::OK) {
         break;
       }
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
   }
-  for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
-    uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
-    uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
-      static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
 
-    // Handle [unit info] override before any device writes
-    auto unit_it = gpio.parameters.find("[unit info]");
-    if (unit_it != gpio.parameters.end()) {
-      std::string value = unit_it->second;
-      std::vector<std::string> entries;
-      {
-        std::stringstream ss(value);
-        std::string token;
-        while (std::getline(ss, token, ';')) {
-          // Trim whitespace from token
-          size_t first = token.find_first_not_of(" \t\r\n");
-          if (first != std::string::npos) {
-            size_t last = token.find_last_not_of(" \t\r\n");
-            token = token.substr(first, last - first + 1);
-          } else {
-            token.clear();
-          }
-          if (!token.empty()) {entries.push_back(token);}
+  auto unit_it = gpio.parameters.find("[unit info]");
+  if (unit_it != gpio.parameters.end()) {
+    std::string value = unit_it->second;
+    std::vector<std::string> entries;
+    {
+      std::stringstream ss(value);
+      std::string token;
+      while (std::getline(ss, token, ';')) {
+        size_t first = token.find_first_not_of(" \t\r\n");
+        if (first != std::string::npos) {
+          size_t last = token.find_last_not_of(" \t\r\n");
+          token = token.substr(first, last - first + 1);
+        } else {
+          token.clear();
         }
-        if (entries.empty()) {entries.push_back(value);}  // single entry
+        if (!token.empty()) {entries.push_back(token);}
       }
-      for (auto & entry : entries) {
-        std::stringstream ls(entry);
-        std::string line;
-        while (std::getline(ls, line)) {
-          // Trim whitespace from line
-          size_t first = line.find_first_not_of(" \t\r\n");
-          if (first != std::string::npos) {
-            size_t last = line.find_last_not_of(" \t\r\n");
-            line = line.substr(first, last - first + 1);
-          } else {
-            line.clear();
-          }
-          if (line.empty()) {continue;}
-          std::vector<std::string> parts;
-          std::stringstream ps(line);
-          std::string p;
-          while (std::getline(ps, p, ',')) {
-            // Trim whitespace from each part
-            size_t p_first = p.find_first_not_of(" \t\r\n");
-            if (p_first != std::string::npos) {
-              size_t p_last = p.find_last_not_of(" \t\r\n");
-              p = p.substr(p_first, p_last - p_first + 1);
-            } else {
-              p.clear();
-            }
-            parts.push_back(p);
-          }
-          if (parts.size() < 4) {continue;}
-          std::string data_name = parts[0];
-          double unit_multiplier = 1.0;
-          try {unit_multiplier = std::stod(parts[1]);} catch (...) {unit_multiplier = 1.0;}
-          bool is_signed = (parts[3] == std::string("signed"));
-          double offset = 0.0;
-          if (parts.size() >= 5) {
-            try {offset = std::stod(parts[4]);} catch (...) {offset = 0.0;}
-          }
-          dxl_comm_->OverrideUnitInfo(comm_id, id, data_name, unit_multiplier, is_signed, offset);
-          RCLCPP_INFO_STREAM(
-            logger_,
-            "[ID:" << std::to_string(id) << "] override [unit info] for '" << data_name
-              << "' = multiplier:" << unit_multiplier << ", signed:" << (is_signed?"true":"false")
-              << ", offset:" << offset);
+      if (entries.empty()) {entries.push_back(value);}
+    }
+    for (auto & entry : entries) {
+      std::stringstream ls(entry);
+      std::string line;
+      while (std::getline(ls, line)) {
+        size_t first = line.find_first_not_of(" \t\r\n");
+        if (first != std::string::npos) {
+          size_t last = line.find_last_not_of(" \t\r\n");
+          line = line.substr(first, last - first + 1);
+        } else {
+          line.clear();
         }
-      }
-    }
-
-    // Handle torque enable parameter
-    bool torque_enabled = (gpio.parameters.find("type") != gpio.parameters.end() && (gpio.parameters.at("type") == "dxl" || gpio.parameters.at("type") == "virtual_dxl"));
-    if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
-      torque_enabled = std::stoi(gpio.parameters.at("Torque Enable")) != 0;
-    }
-    if (torque_enabled) {
-      torque_enabled_comm_id_id_.emplace_back(comm_id, id);
-    }
-
-    // 1. First pass: Write Operating Mode parameters
-    for (const auto & param : gpio.parameters) {
-      const std::string & param_name = param.first;
-      if (param_name == "Operating Mode") {
+        if (line.empty()) {continue;}
+        std::vector<std::string> parts;
+        std::stringstream ps(line);
+        std::string p;
+        while (std::getline(ps, p, ',')) {
+          size_t p_first = p.find_first_not_of(" \t\r\n");
+          if (p_first != std::string::npos) {
+            size_t p_last = p.find_last_not_of(" \t\r\n");
+            p = p.substr(p_first, p_last - p_first + 1);
+          } else {
+            p.clear();
+          }
+          parts.push_back(p);
+        }
+        if (parts.size() < 4) {continue;}
+        std::string data_name = parts[0];
+        double unit_multiplier = 1.0;
+        try {unit_multiplier = std::stod(parts[1]);} catch (...) {unit_multiplier = 1.0;}
+        bool is_signed = (parts[3] == std::string("signed"));
+        double offset = 0.0;
+        if (parts.size() >= 5) {
+          try {offset = std::stod(parts[4]);} catch (...) {offset = 0.0;}
+        }
+        dxl_comm_->OverrideUnitInfo(comm_id, id, data_name, unit_multiplier, is_signed, offset);
         RCLCPP_INFO_STREAM(
           logger_,
-          "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
-            param.second);
-        if (dxl_comm_->WriteItem(
-            comm_id, id, param_name,
-            static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
-        {
-          return false;
-        }
+          "[ID:" << std::to_string(id) << "] override [unit info] for '" << data_name
+            << "' = multiplier:" << unit_multiplier << ", signed:" << (is_signed?"true":"false")
+            << ", offset:" << offset);
       }
     }
+  }
 
-    // 2. Second pass: Write all Limit parameters
-    for (const auto & param : gpio.parameters) {
-      const std::string & param_name = param.first;
-      if (param_name == "ID" || param_name == "type" ||
-        param_name == "Torque Enable" || param_name == "Operating Mode" ||
-        param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot")
-      {
-        continue;
-      }
-      if (param_name.find("Limit") != std::string::npos) {
-        RCLCPP_INFO_STREAM(
-          logger_,
-          "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
-            param.second);
-        if (dxl_comm_->WriteItem(
-            comm_id, id, param_name,
-            static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
-        {
-          return false;
-        }
-      }
-    }
+  bool torque_enabled =
+    (gpio.parameters.find("type") != gpio.parameters.end() &&
+    (gpio.parameters.at("type") == "dxl" || gpio.parameters.at("type") == "virtual_dxl"));
+  if (gpio.parameters.find("Torque Enable") != gpio.parameters.end()) {
+    torque_enabled = std::stoi(gpio.parameters.at("Torque Enable")) != 0;
+  }
+  if (torque_enabled) {
+    torque_enabled_comm_id_id_.emplace_back(comm_id, id);
+  }
 
-    // 3. Third pass: Write all other parameters (excluding already written ones)
-    for (const auto & param : gpio.parameters) {
-      const std::string & param_name = param.first;
-      if (param_name == "ID" || param_name == "type" ||
-        param_name == "Torque Enable" || param_name == "Operating Mode" ||
-        param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot" ||
-        param_name == "[unit info]" ||
-        param_name.find("Limit") != std::string::npos)
-      {
-        continue;
-      }
+  for (const auto & param : gpio.parameters) {
+    const std::string & param_name = param.first;
+    if (param_name == "Operating Mode") {
       RCLCPP_INFO_STREAM(
         logger_,
-        "[ID:" << std::to_string(id) << "] item_name:" << param_name.c_str() << "\tdata:" <<
+        "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) << "] item_name: " << param_name.c_str() << "\tdata: " <<
           param.second);
       if (dxl_comm_->WriteItem(
           comm_id, id, param_name,
@@ -985,6 +905,50 @@ bool DynamixelHardware::InitItems()
       {
         return false;
       }
+    }
+  }
+
+  for (const auto & param : gpio.parameters) {
+    const std::string & param_name = param.first;
+    if (param_name == "ID" || param_name == "type" ||
+      param_name == "Torque Enable" || param_name == "Operating Mode" ||
+      param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot")
+    {
+      continue;
+    }
+    if (param_name.find("Limit") != std::string::npos) {
+      RCLCPP_INFO_STREAM(
+        logger_,
+        "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) << "] item_name: " << param_name.c_str() << "\tdata: " <<
+          param.second);
+      if (dxl_comm_->WriteItem(
+          comm_id, id, param_name,
+          static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
+      {
+        return false;
+      }
+    }
+  }
+
+  for (const auto & param : gpio.parameters) {
+    const std::string & param_name = param.first;
+    if (param_name == "ID" || param_name == "type" ||
+      param_name == "Torque Enable" || param_name == "Operating Mode" ||
+      param_name == "model_num" || param_name == "comm_id" || param_name == "Reboot" ||
+      param_name == "[unit info]" ||
+      param_name.find("Limit") != std::string::npos)
+    {
+      continue;
+    }
+    RCLCPP_INFO_STREAM(
+      logger_,
+      "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) << "] item_name: " << param_name.c_str() << "\tdata: " <<
+        param.second);
+    if (dxl_comm_->WriteItem(
+        comm_id, id, param_name,
+        static_cast<uint32_t>(stoi(param.second))) != DxlError::OK)
+    {
+      return false;
     }
   }
   return true;
