@@ -194,6 +194,23 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     return hardware_interface::CallbackReturn::ERROR;
   }
 
+  std::vector<uint8_t> reboot_dxl;
+  for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
+    if (gpio.parameters.find("Reboot") != gpio.parameters.end() &&
+      std::stoi(gpio.parameters.at("Reboot")) != 0) {
+      reboot_dxl.push_back(static_cast<uint8_t>(stoi(gpio.parameters.at("ID"))));
+    }
+  }
+  for (uint8_t id : reboot_dxl) {
+    for (int attempt = 0; attempt < 5; ++attempt) {
+    if (dxl_comm_->Reboot(id) != DxlError::OK) {
+        RCLCPP_ERROR_STREAM(logger_, "Failed to reboot DXL: " << static_cast<int>(id));
+        return hardware_interface::CallbackReturn::ERROR;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+  }
+
   torque_enabled_comm_id_id_.clear();
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
     uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
@@ -806,18 +823,6 @@ bool DynamixelHardware::InitItem(const hardware_interface::ComponentInfo & gpio)
   uint8_t id = static_cast<uint8_t>(stoi(gpio.parameters.at("ID")));
   uint8_t comm_id = (gpio.parameters.find("comm_id") != gpio.parameters.end()) ?
     static_cast<uint8_t>(stoi(gpio.parameters.at("comm_id"))) : id;
-
-  bool reboot_enabled =
-    (gpio.parameters.find("Reboot") != gpio.parameters.end() &&
-    std::stoi(gpio.parameters.at("Reboot")) != 0);
-  if (reboot_enabled) {
-    for (int attempt = 0; attempt < 5; ++attempt) {
-      if (dxl_comm_->Reboot(id) == DxlError::OK) {
-        break;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-  }
 
   auto unit_it = gpio.parameters.find("[unit info]");
   if (unit_it != gpio.parameters.end()) {
