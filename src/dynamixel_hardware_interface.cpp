@@ -206,7 +206,7 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       if (dxl_comm_->Reboot(id) == DxlError::OK) {
         break;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
   }
 
