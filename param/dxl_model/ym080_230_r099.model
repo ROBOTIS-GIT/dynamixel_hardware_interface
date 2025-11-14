@@ -2,8 +2,8 @@
 Data Name	value	unit	Sign Type	Offset
 Present Velocity	0.0010471976	rad/s	signed	0.0
 Goal Velocity	0.0010471976	rad/s	signed	0.0
-Present Current	0.07692307692	N/m	signed	0.0
-Goal Current	0.07692307692	N/m	signed	0.0
+Present Current	0.07692307692	N m	signed	0.0
+Goal Current	0.07692307692	N m	signed	0.0
 Present Position	0.000011984224905356572	rad	signed	0.0
 Goal Position	0.000011984224905356572	rad	signed	0.0
 Present Input Voltage	0.1	V	unsigned
