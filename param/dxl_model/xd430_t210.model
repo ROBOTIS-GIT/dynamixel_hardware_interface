@@ -6,7 +6,7 @@ Present Current	1.0	raw	signed	0.0
 Goal Current	1.0	raw	signed	0.0
 Present Position	0.0015339807878856412	rad	signed	-3.14159265359
 Goal Position	0.0015339807878856412	rad	signed	-3.14159265359
-Present Input Voltage	0.1	V	unsigned
+Present Input Voltage	0.1	V	unsigned	0.0
 
 [control table]
 Address	Size	Data Name
