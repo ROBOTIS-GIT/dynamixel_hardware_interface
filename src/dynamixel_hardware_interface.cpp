@@ -1179,11 +1179,9 @@ bool DynamixelHardware::SetMatrix()
   std::string str;
   std::vector<double> d_vec;
 
-  // dynamic allocation (number_of_transmissions x number_of_joint)
-  transmission_to_joint_matrix_ = new double *[num_of_joints_];
-  for (size_t i = 0; i < num_of_joints_; i++) {
-    transmission_to_joint_matrix_[i] = new double[num_of_transmissions_];
-  }
+  // resize storage (number_of_transmissions x number_of_joint)
+  transmission_to_joint_matrix_.assign(
+    num_of_joints_, std::vector<double>(num_of_transmissions_, 0.0));
 
   d_vec.clear();
   if (info_.hardware_parameters.find("transmission_to_joint_matrix") ==
@@ -1232,10 +1230,8 @@ bool DynamixelHardware::SetMatrix()
     fprintf(stderr, "\n");
   }
 
-  joint_to_transmission_matrix_ = new double *[num_of_transmissions_];
-  for (size_t i = 0; i < num_of_transmissions_; i++) {
-    joint_to_transmission_matrix_[i] = new double[num_of_joints_];
-  }
+  joint_to_transmission_matrix_.assign(
+    num_of_transmissions_, std::vector<double>(num_of_joints_, 0.0));
 
   d_vec.clear();
   if (info_.hardware_parameters.find("joint_to_transmission_matrix") ==
@@ -1293,7 +1289,7 @@ void DynamixelHardware::MapInterfaces(
   size_t inner_size,
   std::vector<HandlerVarType> & outer_handlers,
   std::vector<HandlerVarType> & inner_handlers,
-  double ** matrix,
+  const std::vector<std::vector<double>> & matrix,
   const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
   const std::string & conversion_iface,
   const std::string & conversion_name,

@@ -256,8 +256,8 @@ private:
   // joint <-> transmission matrix
   size_t num_of_joints_;
   size_t num_of_transmissions_;
-  double ** transmission_to_joint_matrix_;
-  double ** joint_to_transmission_matrix_;
+  std::vector<std::vector<double>> transmission_to_joint_matrix_;
+  std::vector<std::vector<double>> joint_to_transmission_matrix_;
 
   /**
    * @brief Helper function to initialize items
@@ -364,7 +364,7 @@ private:
     size_t inner_size,
     std::vector<HandlerVarType> & outer_handlers,
     std::vector<HandlerVarType> & inner_handlers,
-    double ** matrix,
+    const std::vector<std::vector<double>> & matrix,
     const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
     const std::string & conversion_iface = "",
     const std::string & conversion_name = "",
