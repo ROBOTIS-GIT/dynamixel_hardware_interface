@@ -58,7 +58,9 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model
   ReadDxlModelFile(comm_id, id, model_num, 0);
 }
 
-void DynamixelInfo::ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num, uint8_t firmware_version)
+void DynamixelInfo::ReadDxlModelFile(
+  uint8_t comm_id, uint8_t id, uint16_t model_num,
+  uint8_t firmware_version)
 {
   std::string path = dxl_model_file_dir + "/";
 
@@ -401,7 +403,9 @@ double DynamixelInfo::ConvertValueToRadian(uint8_t comm_id, uint8_t id, int32_t 
   }
 }
 
-bool DynamixelInfo::GetDxlUnitValue(uint8_t comm_id, uint8_t id, std::string data_name, double & unit_value)
+bool DynamixelInfo::GetDxlUnitValue(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  double & unit_value)
 {
   auto cit = dxl_info_by_comm_.find(comm_id);
   if (cit != dxl_info_by_comm_.end()) {
@@ -417,7 +421,9 @@ bool DynamixelInfo::GetDxlUnitValue(uint8_t comm_id, uint8_t id, std::string dat
   return false;
 }
 
-bool DynamixelInfo::GetDxlSignType(uint8_t comm_id, uint8_t id, std::string data_name, bool & is_signed)
+bool DynamixelInfo::GetDxlSignType(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  bool & is_signed)
 {
   auto cit = dxl_info_by_comm_.find(comm_id);
   if (cit != dxl_info_by_comm_.end()) {
@@ -433,7 +439,9 @@ bool DynamixelInfo::GetDxlSignType(uint8_t comm_id, uint8_t id, std::string data
   return false;
 }
 
-bool DynamixelInfo::GetDxlOffsetValue(uint8_t comm_id, uint8_t id, std::string data_name, double & offset_value)
+bool DynamixelInfo::GetDxlOffsetValue(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  double & offset_value)
 {
   auto cit = dxl_info_by_comm_.find(comm_id);
   if (cit != dxl_info_by_comm_.end()) {

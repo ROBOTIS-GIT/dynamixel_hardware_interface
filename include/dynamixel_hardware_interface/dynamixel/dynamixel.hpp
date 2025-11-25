@@ -264,8 +264,8 @@ public:
 
   // Set Dxl Option
   // DxlError SetOperatingMode(uint8_t id, uint8_t dynamixel_mode);
-  DxlError DynamixelEnable(const std::vector<std::pair<uint8_t,uint8_t>> & comm_id_id_arr);
-  DxlError DynamixelDisable(const std::vector<std::pair<uint8_t,uint8_t>> & comm_id_id_arr);
+  DxlError DynamixelEnable(const std::vector<std::pair<uint8_t, uint8_t>> & comm_id_id_arr);
+  DxlError DynamixelDisable(const std::vector<std::pair<uint8_t, uint8_t>> & comm_id_id_arr);
 
   // DXL Item Write
   DxlError WriteItem(uint8_t comm_id, uint8_t id, std::string item_name, uint32_t data);
@@ -281,15 +281,18 @@ public:
   uint32_t GetReadItemDataBuf(uint8_t id, std::string item_name);
 
   DynamixelInfo GetDxlInfo() {return dxl_info_;}
-  std::map<std::pair<uint8_t,uint8_t>, bool> GetDxlTorqueState() {return torque_state_;}
+  std::map<std::pair<uint8_t, uint8_t>, bool> GetDxlTorqueState() {return torque_state_;}
 
   static std::string DxlErrorToString(DxlError error_num);
 
   DxlError ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num);
-  DxlError ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num, uint8_t firmware_version);
+  DxlError ReadDxlModelFile(
+    uint8_t comm_id, uint8_t id, uint16_t model_num,
+    uint8_t firmware_version);
   DxlError ReadFirmwareVersion(uint8_t comm_id, uint8_t id, uint8_t & firmware_version);
 
-  DxlError InitTorqueStates(std::vector<std::pair<uint8_t,uint8_t>> comm_id_id_arr,
+  DxlError InitTorqueStates(
+    std::vector<std::pair<uint8_t, uint8_t>> comm_id_id_arr,
     bool disable_torque = false);
 
   void OverrideUnitInfo(

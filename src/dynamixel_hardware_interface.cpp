@@ -180,10 +180,12 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     } else if (type == "controller") {
       controller_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "virtual_dxl") {
-      dxl_comm_->ReadDxlModelFile(comm_id, id, static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
+      dxl_comm_->ReadDxlModelFile(comm_id, id,
+          static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
       virtual_dxl_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "virtual_sensor") {
-      dxl_comm_->ReadDxlModelFile(comm_id, id, static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
+      dxl_comm_->ReadDxlModelFile(comm_id, id,
+          static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
     } else {
       RCLCPP_ERROR_STREAM(logger_, "Invalid DXL / Sensor type");
       exit(-1);
@@ -197,7 +199,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   std::vector<uint8_t> reboot_dxl;
   for (const hardware_interface::ComponentInfo & gpio : info_.gpios) {
     if (gpio.parameters.find("Reboot") != gpio.parameters.end() &&
-      std::stoi(gpio.parameters.at("Reboot")) != 0) {
+      std::stoi(gpio.parameters.at("Reboot")) != 0)
+    {
       reboot_dxl.push_back(static_cast<uint8_t>(stoi(gpio.parameters.at("ID"))));
     }
   }
@@ -870,18 +873,27 @@ bool DynamixelHardware::InitItem(const hardware_interface::ComponentInfo & gpio)
         if (parts.size() < 4) {continue;}
         std::string data_name = parts[0];
         double unit_multiplier = 1.0;
-        try {unit_multiplier = std::stod(parts[1]);} catch (...) {unit_multiplier = 1.0;}
+        try {
+          unit_multiplier = std::stod(parts[1]);
+        } catch (...) {
+          unit_multiplier = 1.0;
+        }
         bool is_signed = (parts[3] == std::string("signed"));
         double offset = 0.0;
         if (parts.size() >= 5) {
-          try {offset = std::stod(parts[4]);} catch (...) {offset = 0.0;}
+          try {
+            offset = std::stod(parts[4]);
+          } catch (...) {
+            offset = 0.0;
+          }
         }
         dxl_comm_->OverrideUnitInfo(comm_id, id, data_name, unit_multiplier, is_signed, offset);
         RCLCPP_INFO_STREAM(
           logger_,
           "[ID:" << std::to_string(id) << "] override [unit info] for '" << data_name
-            << "' = multiplier:" << unit_multiplier << ", signed:" << (is_signed?"true":"false")
-            << ", offset:" << offset);
+                 << "' = multiplier:" << unit_multiplier << ", signed:" <<
+            (is_signed ? "true" : "false")
+                 << ", offset:" << offset);
       }
     }
   }
@@ -901,7 +913,8 @@ bool DynamixelHardware::InitItem(const hardware_interface::ComponentInfo & gpio)
     if (param_name == "Operating Mode") {
       RCLCPP_INFO_STREAM(
         logger_,
-        "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) << "] item_name: " << param_name.c_str() << "\tdata: " <<
+        "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) <<
+          "] item_name: " << param_name.c_str() << "\tdata: " <<
           param.second);
       if (dxl_comm_->WriteItem(
           comm_id, id, param_name,
@@ -923,7 +936,8 @@ bool DynamixelHardware::InitItem(const hardware_interface::ComponentInfo & gpio)
     if (param_name.find("Limit") != std::string::npos) {
       RCLCPP_INFO_STREAM(
         logger_,
-        "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) << "] item_name: " << param_name.c_str() << "\tdata: " <<
+        "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) <<
+          "] item_name: " << param_name.c_str() << "\tdata: " <<
           param.second);
       if (dxl_comm_->WriteItem(
           comm_id, id, param_name,
@@ -946,7 +960,8 @@ bool DynamixelHardware::InitItem(const hardware_interface::ComponentInfo & gpio)
     }
     RCLCPP_INFO_STREAM(
       logger_,
-      "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) << "] item_name: " << param_name.c_str() << "\tdata: " <<
+      "[InitItem][comm_id:" << std::to_string(comm_id) << "][ID:" << std::to_string(id) <<
+        "] item_name: " << param_name.c_str() << "\tdata: " <<
         param.second);
     if (dxl_comm_->WriteItem(
         comm_id, id, param_name,
@@ -1212,7 +1227,7 @@ bool DynamixelHardware::SetMatrix()
       RCLCPP_ERROR_STREAM(
         logger_,
         "Parameter 'transmission_to_joint_matrix' has " << d_vec.size()
-        << " elements, expected " << expected_tj);
+                                                        << " elements, expected " << expected_tj);
       return false;
     }
     for (size_t i = 0; i < num_of_joints_; i++) {
@@ -1262,7 +1277,7 @@ bool DynamixelHardware::SetMatrix()
       RCLCPP_ERROR_STREAM(
         logger_,
         "Parameter 'joint_to_transmission_matrix' has " << d_vec.size()
-        << " elements, expected " << expected_jt);
+                                                        << " elements, expected " << expected_jt);
       return false;
     }
     for (size_t i = 0; i < num_of_transmissions_; i++) {

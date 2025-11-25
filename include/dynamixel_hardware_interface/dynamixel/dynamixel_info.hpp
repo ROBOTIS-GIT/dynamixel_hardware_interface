@@ -81,7 +81,9 @@ public:
 
   void ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num);
   void ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num, uint8_t firmware_version);
-  bool GetDxlControlItem(uint8_t comm_id, uint8_t id, std::string item_name, uint16_t & addr, uint8_t & size);
+  bool GetDxlControlItem(
+    uint8_t comm_id, uint8_t id, std::string item_name, uint16_t & addr,
+    uint8_t & size);
   bool CheckDxlControlItem(uint8_t comm_id, uint8_t id, std::string item_name);
 
   bool GetDxlUnitValue(uint8_t comm_id, uint8_t id, std::string data_name, double & unit_value);
@@ -105,7 +107,9 @@ public:
 
 // Template implementations
 template<typename T>
-double DynamixelInfo::ConvertValueToUnit(uint8_t comm_id, uint8_t id, std::string data_name, T value)
+double DynamixelInfo::ConvertValueToUnit(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  T value)
 {
   auto & info = dxl_info_by_comm_[comm_id][id];
   auto it = info.unit_map.find(data_name);
@@ -121,7 +125,9 @@ double DynamixelInfo::ConvertValueToUnit(uint8_t comm_id, uint8_t id, std::strin
 }
 
 template<typename T>
-T DynamixelInfo::ConvertUnitToValue(uint8_t comm_id, uint8_t id, std::string data_name, double unit_value)
+T DynamixelInfo::ConvertUnitToValue(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  double unit_value)
 {
   auto & info = dxl_info_by_comm_[comm_id][id];
   auto it = info.unit_map.find(data_name);
