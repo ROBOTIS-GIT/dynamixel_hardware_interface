@@ -142,13 +142,20 @@ class SyncTableModelGenerator:
         """
         Calculate addresses for SyncTable read and write data areas.
 
-        Args:
-            synctable_num: SyncTable number (1, 2, 3, etc.)
-            finger_joints: List of finger joint numbers in this SyncTable
-            pressure_sensors: List of pressure sensor numbers in this SyncTable
+        Parameters
+        ----------
+        synctable_num : int
+            SyncTable number (1, 2, 3, etc.).
+        finger_joints : list[int]
+            Finger joint numbers included in this SyncTable.
+        pressure_sensors : list[int]
+            Pressure sensor numbers included in this SyncTable.
 
-        Returns:
+        Returns
+        -------
+        tuple[list[int], list[int]]
             Tuple of (read_addresses, write_addresses)
+
         """
         # Get base addresses from parsed hx model file
         if synctable_num not in self.synctable_base_addresses:
@@ -197,13 +204,20 @@ class SyncTableModelGenerator:
         """
         Generate a hand finger joint model file.
 
-        Args:
-            joint_number: The joint number (1, 2, 3, etc.)
-            read_addresses: List of read addresses for this joint
-            write_addresses: List of write addresses for this joint
+        Parameters
+        ----------
+        joint_number : int
+            Joint number (1, 2, 3, etc.).
+        read_addresses : list[int]
+            Read addresses allocated to this joint.
+        write_addresses : list[int]
+            Write addresses allocated to this joint.
 
-        Returns:
+        Returns
+        -------
+        str
             The model file content as a string
+
         """
         # Generate unit info section
         unit_info_lines = ['[unit info]', 'Data Name	value	unit	Sign Type	Offset']
@@ -243,12 +257,18 @@ class SyncTableModelGenerator:
         """
         Generate a hand pressure sensor model file.
 
-        Args:
-            sensor_number: The sensor number (5, 10, 15, 20, 25)
-            read_addresses: List of read addresses for this sensor
+        Parameters
+        ----------
+        sensor_number : int
+            Sensor number (5, 10, 15, 20, 25).
+        read_addresses : list[int]
+            Read addresses allocated to this sensor.
 
-        Returns:
+        Returns
+        -------
+        str
             The model file content as a string
+
         """
         # Generate unit info section
         unit_info_lines = ['[unit info]', 'Data Name	value	unit	Sign Type	Offset']
@@ -270,13 +290,15 @@ class SyncTableModelGenerator:
         """
         Generate models based on SyncTable group configuration.
 
-        Args:
-            synctable_groups: Dictionary mapping SyncTable numbers to their configurations
-                Example: {
-                    1: {'finger_joints': [1, 2, 3, 4], 'pressure_sensors': [1]},
-                    2: {'finger_joints': [5, 6, 7, 8], 'pressure_sensors': [2]},
-                    ...
-                }
+        Parameters
+        ----------
+        synctable_groups : dict[int, dict]
+            Mapping of SyncTable numbers to their configurations. Example:
+            {
+                1: {'finger_joints': [1, 2, 3, 4], 'pressure_sensors': [1]},
+                2: {'finger_joints': [5, 6, 7, 8], 'pressure_sensors': [2]},
+            }
+
         """
         for synctable_num, config in synctable_groups.items():
             finger_joints = config.get('finger_joints', [])
@@ -342,18 +364,21 @@ class SyncTableModelGenerator:
         """
         Generate custom hand models based on provided configuration.
 
-        Args:
-            custom_config: Custom configuration dictionary
-                Example: {
-                    'synctable_groups': {
-                        1: {'finger_joints': [1, 2, 3, 4], 'pressure_sensors': [5]},
-                        2: {'finger_joints': [5, 6, 7, 8], 'pressure_sensors': [10]},
-                    },
-                    'finger_read_size': 6,
-                    'finger_write_size': 4,
-                    'pressure_read_size': 9,
-                    'pressure_write_size': 0
-                }
+        Parameters
+        ----------
+        custom_config : dict
+            Custom configuration dictionary. Example:
+            {
+                'synctable_groups': {
+                    1: {'finger_joints': [1, 2, 3, 4], 'pressure_sensors': [5]},
+                    2: {'finger_joints': [5, 6, 7, 8], 'pressure_sensors': [10]},
+                },
+                'finger_read_size': 6,
+                'finger_write_size': 4,
+                'pressure_read_size': 9,
+                'pressure_write_size': 0
+            }
+
         """
         # Update configuration if provided
         if 'finger_read_size' in custom_config:
@@ -381,9 +406,13 @@ class SyncTableModelGenerator:
         """
         Generate hand models with a simple, sequential configuration.
 
-        Args:
-            num_synctables: Number of SyncTables to generate
-            joints_per_synctable: Number of finger joints per SyncTable
+        Parameters
+        ----------
+        num_synctables : int
+            Number of SyncTables to generate.
+        joints_per_synctable : int
+            Number of finger joints per SyncTable.
+
         """
         synctable_groups = {}
 
@@ -412,11 +441,16 @@ class SyncTableModelGenerator:
         """
         Analyze existing hand models to extract SyncTable configuration.
 
-        Args:
-            model_dir: Directory containing existing model files
+        Parameters
+        ----------
+        model_dir : str
+            Directory containing existing model files.
 
-        Returns:
+        Returns
+        -------
+        dict
             Dictionary containing extracted configuration
+
         """
         # This would analyze existing files to extract the SyncTable mapping
         # For now, return a placeholder

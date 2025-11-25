@@ -15,9 +15,13 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
     """
     Parse XML file and generate model file using a generic approach.
 
-    Args:
-        xml_file_path: Path to input XML file
-        output_file_path: Path to output model file
+    Parameters
+    ----------
+    xml_file_path : str
+        Path to the XML file that will be parsed.
+    output_file_path : str
+        Path where the generated model file will be saved.
+
     """
     try:
         # Parse XML file
