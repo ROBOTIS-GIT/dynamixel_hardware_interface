@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-XML to Dynamixel Model File Parser (Generic Version)
+Parse a Dynamixel XML configuration and generate a generic model file.
 
-This script parses a Dynamixel XML configuration file and generates
-a corresponding model file using a generic approach without hardcoded categories.
+This script reads a Dynamixel XML configuration file and outputs
+a corresponding model file, using a generic approach (no hardcoded categories).
 """
 
-import xml.etree.ElementTree as ET
-import sys
 import os
-from typing import List, Dict, Tuple
+import sys
+import xml.etree.ElementTree as ET
+
 
 def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
     """
@@ -28,7 +28,7 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
         device_name = root.get('Name', 'Unknown')
         model_number = root.get('ModelNumber', '0')
 
-        print(f"Processing device: {device_name} (Model: {model_number})")
+        print(f'Processing device: {device_name} (Model: {model_number})')
 
         # Collect all items
         items = []
@@ -51,7 +51,7 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
                     addr_int = int(address)
                     items.append((addr_int, int(length), name))
                 except ValueError:
-                    print(f"Warning: Invalid address '{address}' for item '{name}'")
+                    print(f'Warning: Invalid address "{address}" for item "{name}"')
                     continue
 
             # Process Category elements
@@ -73,15 +73,17 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
                         try:
                             start, end = map(int, continue_range.split('~'))
 
-                            # Special handling for Indirect Address and Data (only include first entry)
-                            if category_name in ["Indirect Address", "Indirect Data"]:
+                            # Special handling for Indirect Address and Data
+                            # (only include first entry)
+                            if category_name in ['Indirect Address', 'Indirect Data']:
                                 if start == 1:
                                     try:
                                         addr_int = int(address)
-                                        item_name = f"{category_name} {start}"
+                                        item_name = f'{category_name} {start}'
                                         items.append((addr_int, int(length), item_name))
                                     except ValueError:
-                                        print(f"Warning: Invalid address '{address}' for item '{item_name}'")
+                                        print(f'Warning: Invalid address "{address}" '
+                                              f'for item "{item_name}"')
                                         continue
                             else:
                                 # Generic handling for all other categories
@@ -95,19 +97,24 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
                                         else:
                                             addr_int = base_addr
 
-                                        # Generate item name using category name + template replacement
-                                        if name_template == "{0}":
+                                        # Generate item name using
+                                        # category name + template replacement
+                                        if name_template == '{0}':
                                             # If template is just {0}, use category name + number
-                                            item_name = f"{category_name} {i}"
+                                            item_name = f'{category_name} {i}'
                                         else:
                                             # Otherwise use template replacement
                                             item_name = name_template.replace('{0}', str(i))
                                         items.append((addr_int, int(length), item_name))
                                     except ValueError:
-                                        print(f"Warning: Invalid address '{address}' for item '{item_name}'")
+                                        print(f'Warning: Invalid address "{address}" '
+                                              f'for item "{item_name}"')
                                         continue
                         except (ValueError, IndexError):
-                            print(f"Warning: Invalid continue range '{continue_range}' for category '{category_name}'")
+                            print(
+                                f'Warning: Invalid continue range "{continue_range}" '
+                                f'for category "{category_name}"'
+                            )
                             continue
                     else:
                         # Single item
@@ -115,15 +122,17 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
                             addr_int = int(address)
                             items.append((addr_int, int(length), name_template))
                         except ValueError:
-                            print(f"Warning: Invalid address '{address}' for item '{name_template}'")
+                            print(
+                                f'Warning: Invalid address "{address}" for item "{name_template}"'
+                            )
                             continue
 
         # Add special entries that are in the reference but not in XML
         special_entries = [
-            (122, 2, "Indirect Address Read"),
-            (634, 1, "Indirect Data Read"),
-            (452, 2, "Indirect Address Write"),
-            (799, 1, "Indirect Data Write")
+            (122, 2, 'Indirect Address Read'),
+            (634, 1, 'Indirect Data Read'),
+            (452, 2, 'Indirect Address Write'),
+            (799, 1, 'Indirect Data Write')
         ]
 
         for addr, size, name in special_entries:
@@ -144,31 +153,32 @@ def parse_xml_to_model(xml_file_path: str, output_file_path: str) -> None:
 
         # Write to output file
         with open(output_file_path, 'w') as f:
-            f.write("[control table]\n")
-            f.write("Address\tSize\tData Name\n")
+            f.write('[control table]\n')
+            f.write('Address\tSize\tData Name\n')
             for address, size, name in unique_items:
-                f.write(f"{address}\t{size}\t{name}\n")
+                f.write(f'{address}\t{size}\t{name}\n')
 
-        print(f"Successfully generated model file: {output_file_path}")
-        print(f"Total items processed: {len(unique_items)}")
+        print(f'Successfully generated model file: {output_file_path}')
+        print(f'Total items processed: {len(unique_items)}')
 
     except ET.ParseError as e:
-        print(f"Error parsing XML file: {e}")
+        print(f'Error parsing XML file: {e}')
         sys.exit(1)
     except FileNotFoundError:
-        print(f"Error: XML file not found: {xml_file_path}")
+        print(f'Error: XML file not found: {xml_file_path}')
         sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}")
+        print(f'Error: {e}')
         sys.exit(1)
 
-def main():
-    """Main function to handle command line arguments and execute parsing."""
+
+def main() -> None:
+    """Handle command-line arguments and run the XML-to-model parsing."""
     # Default paths
-    default_xml_file = "HX5-D20-RL.xml"
+    default_xml_file = 'HX5-D20-RL.xml'
     default_model_files = [
-        "../param/dxl_model/hx5_d20_rl.model",
-        "../param/dxl_model/hx5_d20_rr.model"
+        '../param/dxl_model/hx5_d20_rl.model',
+        '../param/dxl_model/hx5_d20_rr.model'
     ]
 
     # Use command line arguments if provided, otherwise use defaults
@@ -177,8 +187,8 @@ def main():
         model_file = sys.argv[2]
     elif len(sys.argv) == 1:
         xml_file = default_xml_file
-        print(f"Using default input: {xml_file}")
-        print(f"Using default outputs: {default_model_files}")
+        print(f'Using default input: {xml_file}')
+        print(f'Using default outputs: {default_model_files}')
 
         # Process each default model file
         for model_file in default_model_files:
@@ -191,15 +201,15 @@ def main():
             parse_xml_to_model(xml_file, model_file)
         return
     else:
-        print("Usage: python xml_to_model_parser_generic.py [input_xml_file] [output_model_file]")
-        print("If no arguments provided, uses defaults:")
-        print(f"  Input: {default_xml_file}")
-        print(f"  Outputs: {default_model_files}")
+        print('Usage: python xml_to_model_parser_generic.py [input_xml_file] [output_model_file]')
+        print('If no arguments provided, uses defaults:')
+        print(f'  Input: {default_xml_file}')
+        print(f'  Outputs: {default_model_files}')
         sys.exit(1)
 
     # Check if input file exists
     if not os.path.exists(xml_file):
-        print(f"Error: Input file '{xml_file}' does not exist")
+        print(f'Error: Input file "{xml_file}" does not exist')
         sys.exit(1)
 
     # Create output directory if it doesn't exist
@@ -210,5 +220,6 @@ def main():
     # Parse XML and generate model file
     parse_xml_to_model(xml_file, model_file)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
