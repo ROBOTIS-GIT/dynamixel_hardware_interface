@@ -180,12 +180,14 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     } else if (type == "controller") {
       controller_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "virtual_dxl") {
-      dxl_comm_->ReadDxlModelFile(comm_id, id,
-          static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
+      dxl_comm_->ReadDxlModelFile(
+        comm_id, id,
+        static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
       virtual_dxl_comm_id_id_.emplace_back(comm_id, id);
     } else if (type == "virtual_sensor") {
-      dxl_comm_->ReadDxlModelFile(comm_id, id,
-          static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
+      dxl_comm_->ReadDxlModelFile(
+        comm_id, id,
+        static_cast<uint16_t>(stoi(gpio.parameters.at("model_num"))));
     } else {
       RCLCPP_ERROR_STREAM(logger_, "Invalid DXL / Sensor type");
       exit(-1);
