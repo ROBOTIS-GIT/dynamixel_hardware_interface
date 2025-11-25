@@ -319,7 +319,8 @@ DxlError Dynamixel::InitDxlComm(uint8_t comm_id, uint8_t id)
     } else {
       fprintf(
         stderr,
-        "[comm_id:%03d][ID:%03d] Neither Hardware Error Status nor Error Code control items available.\n",
+        "[comm_id:%03d][ID:%03d] Neither Hardware Error Status"
+        " nor Error Code control items available.\n",
         comm_id, id
       );
     }

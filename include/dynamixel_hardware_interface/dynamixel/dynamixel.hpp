@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <memory>
 #include <functional>
+#include <utility>
 
 namespace dynamixel_hardware_interface
 {
