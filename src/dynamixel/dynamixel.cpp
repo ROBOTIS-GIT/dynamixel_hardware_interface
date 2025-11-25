@@ -147,12 +147,13 @@ DxlError Dynamixel::InitTorqueStates(
           if (disable_torque) {
             fprintf(
               stderr,
-                "[InitTorqueStates][comm_id:%03d][ID:%03d] Torque is enabled, disabling torque\n",
-                it_comm, it_id);
+              "[InitTorqueStates][comm_id:%03d][ID:%03d] Torque is enabled, disabling torque\n",
+              it_comm, it_id);
             result = WriteItem(it_comm, it_id, "Torque Enable", TORQUE_OFF);
             if (result != DxlError::OK) {
-              fprintf(stderr, "[InitTorqueStates][comm_id:%03d][ID:%03d] Error disabling torque\n",
-                  it_comm, it_id);
+              fprintf(
+                stderr, "[InitTorqueStates][comm_id:%03d][ID:%03d] Error disabling torque\n",
+                it_comm, it_id);
               return result;
             }
             torque_state_[{it_comm, it_id}] = TORQUE_OFF;
@@ -170,13 +171,13 @@ DxlError Dynamixel::InitTorqueStates(
 
         fprintf(
           stderr, "[InitTorqueStates][comm_id:%03d][ID:%03d] Current torque state: %s\n", it_comm,
-            it_id,
+          it_id,
           torque_state_[{it_comm, it_id}] ? "ON" : "OFF");
       }
     } catch (const std::exception & e) {
       fprintf(
         stderr, "[InitTorqueStates][comm_id:%03d][ID:%03d] Error checking control item: %s\n",
-          it_comm, it_id,
+        it_comm, it_id,
         e.what());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
@@ -263,8 +264,9 @@ DxlError Dynamixel::InitDxlComm(uint8_t comm_id, uint8_t id)
   try {
     dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number);
   } catch (const std::exception & e) {
-    fprintf(stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id,
-        id, e.what());
+    fprintf(
+      stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id,
+      id, e.what());
     return DxlError::CANNOT_FIND_CONTROL_ITEM;
   }
 
@@ -341,8 +343,9 @@ DxlError Dynamixel::InitDxlComm(uint8_t comm_id, uint8_t id)
   try {
     dxl_info_.ReadDxlModelFile(comm_id, id, dxl_model_number);
   } catch (const std::exception & e) {
-    fprintf(stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id,
-        id, e.what());
+    fprintf(
+      stderr, "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading model file: %s\n", comm_id,
+      id, e.what());
     return DxlError::CANNOT_FIND_CONTROL_ITEM;
   }
 
@@ -354,7 +357,7 @@ DxlError Dynamixel::InitDxlComm(uint8_t comm_id, uint8_t id)
     } catch (const std::exception & e) {
       fprintf(
         stderr,
-          "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading firmware-specific model file: %s\n",
+        "[InitDxlComm][comm_id:%03d][ID:%03d] Error reading firmware-specific model file: %s\n",
         comm_id, id, e.what());
     }
   }
@@ -422,7 +425,7 @@ DxlError Dynamixel::SetDxlReadItems(
     if (dxl_info_.GetDxlControlItem(comm_id, id, it_name, ITEM_ADDR, ITEM_SIZE) == false) {
       fprintf(
         stderr, "[comm_id:%03d][ID:%03d] Cannot find control item in model file : %s\n", comm_id,
-          id,
+        id,
         it_name.c_str());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
@@ -531,7 +534,7 @@ DxlError Dynamixel::SetDxlWriteItems(
     if (dxl_info_.GetDxlControlItem(comm_id, id, it_name, ITEM_ADDR, ITEM_SIZE) == false) {
       fprintf(
         stderr, "[comm_id:%03d][ID:%03d] Cannot find control item in model file : %s\n", comm_id,
-          id,
+        id,
         it_name.c_str());
       return DxlError::CANNOT_FIND_CONTROL_ITEM;
     }
@@ -621,8 +624,9 @@ DxlError Dynamixel::DynamixelEnable(const std::vector<std::pair<uint8_t, uint8_t
     }
     if (torque_state_[{comm_id, id}] == TORQUE_OFF) {
       if (WriteItem(comm_id, id, "Torque Enable", TORQUE_ON) < 0) {
-        fprintf(stderr, "[comm_id:%03d][ID:%03d] Cannot write \"Torque On\" command!\n", comm_id,
-            id);
+        fprintf(
+          stderr, "[comm_id:%03d][ID:%03d] Cannot write \"Torque On\" command!\n", comm_id,
+          id);
         return DxlError::ITEM_WRITE_FAIL;
       }
       torque_state_[{comm_id, id}] = TORQUE_ON;
@@ -645,8 +649,9 @@ DxlError Dynamixel::DynamixelDisable(
     }
     if (torque_state_[{comm_id, id}] == TORQUE_ON) {
       if (WriteItem(comm_id, id, "Torque Enable", TORQUE_OFF) < 0) {
-        fprintf(stderr, "[comm_id:%03d][ID:%03d] Cannot write \"Torque Off\" command!\n", comm_id,
-            id);
+        fprintf(
+          stderr, "[comm_id:%03d][ID:%03d] Cannot write \"Torque Off\" command!\n", comm_id,
+          id);
         result = DxlError::ITEM_WRITE_FAIL;
       } else {
         torque_state_[{comm_id, id}] = TORQUE_OFF;
