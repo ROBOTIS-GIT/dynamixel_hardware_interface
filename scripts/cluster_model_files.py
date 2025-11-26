@@ -59,12 +59,15 @@ for filename in files:
 
 # Print clusters of files with identical [control table] sections
 print('Clusters of files with identical [control table] sections:')
-for file_list in hash_to_files.values():
-    if len(file_list) > 1:
-        print(', '.join(file_list))
+clusters = [file_list for file_list in hash_to_files.values() if len(file_list) > 1]
+clusters.sort(key=lambda x: x[0])  # Sort by first filename in each cluster
+for file_list in clusters:
+    file_list.sort()  # Sort files within each cluster
+    print(', '.join(file_list))
 
 # Print files with unique [control table] sections
 print('\nFiles with unique [control table] sections:')
-for file_list in hash_to_files.values():
-    if len(file_list) == 1:
-        print(file_list[0])
+unique_files = [file_list[0] for file_list in hash_to_files.values() if len(file_list) == 1]
+unique_files.sort()  # Sort unique files alphabetically
+for filename in unique_files:
+    print(filename)

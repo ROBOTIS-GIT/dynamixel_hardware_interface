@@ -1,15 +1,9 @@
-[type info]
-name	value
-value_of_zero_radian_position	2048
-value_of_max_radian_position	4095
-value_of_min_radian_position	0
-min_radian	-3.14159265
-max_radian	3.14159265
-
 [unit info]
-Data Name	value	unit	Sign Type
-Present Velocity	0.0116228475	rad/s	signed
-Goal Velocity	0.0116228475	rad/s	signed
+Data Name	value	unit	Sign Type	Offset
+Present Velocity	0.0116228475	rad/s	signed	0.0
+Goal Velocity	0.0116228475	rad/s	signed	0.0
+Present Position	0.0015339807878856412	rad	signed	-3.14159265359
+Goal Position	0.0015339807878856412	rad	signed	-3.14159265359
 
 [control table]
 Address	Size	Data Name

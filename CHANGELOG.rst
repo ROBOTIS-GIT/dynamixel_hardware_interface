@@ -2,6 +2,15 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.0 (2025-11-26)
+------------------
+* Added comm_id/id concept for virtual_* devices.
+* Added unit info system for Unified unit conversion logic.
+* Added sequential initialization logic.
+* Fixed memory leak of matrix malloc.
+* Refactored every type info based unit conversion to unit info based system.
+* Contributors: Woojin Wie
+
 1.4.16 (2025-10-14)
 -------------------
 * Added support for default unit information for Present Input Voltage to model files
