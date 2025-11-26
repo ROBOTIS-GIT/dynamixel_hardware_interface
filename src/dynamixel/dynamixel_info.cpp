@@ -53,12 +53,14 @@ void DynamixelInfo::InitDxlModelInfo()
   open_file.close();
 }
 
-void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num)
+void DynamixelInfo::ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num)
 {
-  ReadDxlModelFile(id, model_num, 0);  // Default to firmware version 0 (unknown)
+  ReadDxlModelFile(comm_id, id, model_num, 0);
 }
 
-void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t firmware_version)
+void DynamixelInfo::ReadDxlModelFile(
+  uint8_t comm_id, uint8_t id, uint16_t model_num,
+  uint8_t firmware_version)
 {
   std::string path = dxl_model_file_dir + "/";
 
@@ -70,8 +72,11 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t fir
       firmware_version);
     path += selected_model_name;
   } else {
-    fprintf(stderr, "[ERROR] CANNOT FIND THE DXL MODEL FROM FILE LIST.\n");
-    throw std::runtime_error("Cannot find the DXL model from file list");
+    fprintf(stderr, "\n");
+    std::string error_msg =
+      std::string("Cannot find the DXL model from file list (model_num: ") +
+      std::to_string(model_num) + ", model_name: " + GetModelName(model_num) + ")";
+    throw std::runtime_error(error_msg);
   }
 
   std::ifstream open_file(path);
@@ -144,7 +149,7 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t fir
   }
 
   if (unit_info_found) {
-    getline(open_file, line);  // Skip header line "Data Name value unit Sign Type"
+    getline(open_file, line);  // Skip header line
     while (!open_file.eof() ) {
       getline(open_file, line);
       if (strcmp(line.c_str(), "[control table]") == 0) {
@@ -166,6 +171,12 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t fir
         bool is_signed = (sign_type_str == "signed");
         temp_dxl_info.unit_map[data_name] = unit_value;
         temp_dxl_info.sign_type_map[data_name] = is_signed;
+        if (strs.size() >= 5) {
+          double offset_value = static_cast<double>(stod(strs.at(4)));
+          temp_dxl_info.offset_map[data_name] = offset_value;
+        } else {
+          temp_dxl_info.offset_map[data_name] = 0.0;
+        }
       } catch (const std::exception & e) {
         std::string error_msg = "Error processing unit info line: " + line +
           "\nError: " + e.what();
@@ -214,7 +225,7 @@ void DynamixelInfo::ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t fir
     throw std::runtime_error(error_msg);
   }
 
-  dxl_info_[id] = temp_dxl_info;
+  dxl_info_by_comm_[comm_id][id] = temp_dxl_info;
   open_file.close();
 }
 
@@ -321,89 +332,136 @@ uint8_t DynamixelInfo::ExtractFirmwareVersionFromFilename(const std::string & fi
 }
 
 bool DynamixelInfo::GetDxlControlItem(
-  uint8_t id, std::string item_name, uint16_t & addr,
+  uint8_t comm_id, uint8_t id, std::string item_name, uint16_t & addr,
   uint8_t & size)
 {
-  for (size_t i = 0; i < dxl_info_[id].item.size(); i++) {
-    if (strcmp(item_name.c_str(), dxl_info_[id].item.at(i).item_name.c_str()) == 0) {
-      addr = dxl_info_[id].item.at(i).address;
-      size = dxl_info_[id].item.at(i).size;
-      return true;
+  auto cit = dxl_info_by_comm_.find(comm_id);
+  if (cit != dxl_info_by_comm_.end()) {
+    auto iit = cit->second.find(id);
+    if (iit != cit->second.end()) {
+      for (size_t i = 0; i < iit->second.item.size(); i++) {
+        if (strcmp(item_name.c_str(), iit->second.item.at(i).item_name.c_str()) == 0) {
+          addr = iit->second.item.at(i).address;
+          size = iit->second.item.at(i).size;
+          return true;
+        }
+      }
     }
   }
   return false;
 }
 
-bool DynamixelInfo::CheckDxlControlItem(uint8_t id, std::string item_name)
+bool DynamixelInfo::CheckDxlControlItem(uint8_t comm_id, uint8_t id, std::string item_name)
 {
-  for (size_t i = 0; i < dxl_info_[id].item.size(); i++) {
-    if (strcmp(item_name.c_str(), dxl_info_[id].item.at(i).item_name.c_str()) == 0) {
-      return true;
+  auto cit = dxl_info_by_comm_.find(comm_id);
+  if (cit != dxl_info_by_comm_.end()) {
+    auto iit = cit->second.find(id);
+    if (iit != cit->second.end()) {
+      for (size_t i = 0; i < iit->second.item.size(); i++) {
+        if (strcmp(item_name.c_str(), iit->second.item.at(i).item_name.c_str()) == 0) {
+          return true;
+        }
+      }
     }
   }
   return false;
 }
 
-int32_t DynamixelInfo::ConvertRadianToValue(uint8_t id, double radian)
+int32_t DynamixelInfo::ConvertRadianToValue(uint8_t comm_id, uint8_t id, double radian)
 {
+  const auto & info = dxl_info_by_comm_[comm_id][id];
   if (radian > 0) {
     return static_cast<int32_t>(radian *
-           (dxl_info_[id].value_of_max_radian_position -
-           dxl_info_[id].value_of_zero_radian_position) / dxl_info_[id].max_radian) +
-           dxl_info_[id].value_of_zero_radian_position;
+           (info.value_of_max_radian_position -
+           info.value_of_zero_radian_position) / info.max_radian) +
+           info.value_of_zero_radian_position;
   } else if (radian < 0) {
     return static_cast<int32_t>(radian *
-           (dxl_info_[id].value_of_min_radian_position -
-           dxl_info_[id].value_of_zero_radian_position) / dxl_info_[id].min_radian) +
-           dxl_info_[id].value_of_zero_radian_position;
+           (info.value_of_min_radian_position -
+           info.value_of_zero_radian_position) / info.min_radian) +
+           info.value_of_zero_radian_position;
   } else {
-    return dxl_info_[id].value_of_zero_radian_position;
+    return info.value_of_zero_radian_position;
   }
 }
 
-double DynamixelInfo::ConvertValueToRadian(uint8_t id, int32_t value)
+double DynamixelInfo::ConvertValueToRadian(uint8_t comm_id, uint8_t id, int32_t value)
 {
-  if (value > dxl_info_[id].value_of_zero_radian_position) {
-    return static_cast<double>(value - dxl_info_[id].value_of_zero_radian_position) *
-           dxl_info_[id].max_radian /
-           static_cast<double>(dxl_info_[id].value_of_max_radian_position -
-           dxl_info_[id].value_of_zero_radian_position);
-  } else if (value < dxl_info_[id].value_of_zero_radian_position) {
-    return static_cast<double>(value - dxl_info_[id].value_of_zero_radian_position) *
-           dxl_info_[id].min_radian /
-           static_cast<double>(dxl_info_[id].value_of_min_radian_position -
-           dxl_info_[id].value_of_zero_radian_position);
+  const auto & info = dxl_info_by_comm_[comm_id][id];
+  if (value > info.value_of_zero_radian_position) {
+    return static_cast<double>(value - info.value_of_zero_radian_position) *
+           info.max_radian /
+           static_cast<double>(info.value_of_max_radian_position -
+           info.value_of_zero_radian_position);
+  } else if (value < info.value_of_zero_radian_position) {
+    return static_cast<double>(value - info.value_of_zero_radian_position) *
+           info.min_radian /
+           static_cast<double>(info.value_of_min_radian_position -
+           info.value_of_zero_radian_position);
   } else {
     return 0.0;
   }
 }
 
-bool DynamixelInfo::GetDxlUnitValue(uint8_t id, std::string data_name, double & unit_value)
+bool DynamixelInfo::GetDxlUnitValue(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  double & unit_value)
 {
-  auto it = dxl_info_[id].unit_map.find(data_name);
-  if (it != dxl_info_[id].unit_map.end()) {
-    unit_value = it->second;
-    return true;
+  auto cit = dxl_info_by_comm_.find(comm_id);
+  if (cit != dxl_info_by_comm_.end()) {
+    auto iit = cit->second.find(id);
+    if (iit != cit->second.end()) {
+      auto it = iit->second.unit_map.find(data_name);
+      if (it != iit->second.unit_map.end()) {
+        unit_value = it->second;
+        return true;
+      }
+    }
   }
   return false;
 }
 
-bool DynamixelInfo::GetDxlSignType(uint8_t id, std::string data_name, bool & is_signed)
+bool DynamixelInfo::GetDxlSignType(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  bool & is_signed)
 {
-  auto it = dxl_info_[id].sign_type_map.find(data_name);
-  if (it != dxl_info_[id].sign_type_map.end()) {
-    is_signed = it->second;
-    return true;
+  auto cit = dxl_info_by_comm_.find(comm_id);
+  if (cit != dxl_info_by_comm_.end()) {
+    auto iit = cit->second.find(id);
+    if (iit != cit->second.end()) {
+      auto it = iit->second.sign_type_map.find(data_name);
+      if (it != iit->second.sign_type_map.end()) {
+        is_signed = it->second;
+        return true;
+      }
+    }
   }
   return false;
 }
 
-double DynamixelInfo::GetUnitMultiplier(uint8_t id, std::string data_name)
+bool DynamixelInfo::GetDxlOffsetValue(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  double & offset_value)
 {
-  auto it = dxl_info_[id].unit_map.find(data_name);
-  if (it != dxl_info_[id].unit_map.end()) {
-    return it->second;
+  auto cit = dxl_info_by_comm_.find(comm_id);
+  if (cit != dxl_info_by_comm_.end()) {
+    auto iit = cit->second.find(id);
+    if (iit != cit->second.end()) {
+      auto it = iit->second.offset_map.find(data_name);
+      if (it != iit->second.offset_map.end()) {
+        offset_value = it->second;
+        return true;
+      }
+    }
   }
+  return false;
+}
+
+double DynamixelInfo::GetUnitMultiplier(uint8_t comm_id, uint8_t id, std::string data_name)
+{
+  auto & info = dxl_info_by_comm_[comm_id][id];
+  auto it = info.unit_map.find(data_name);
+  if (it != info.unit_map.end()) {return it->second;}
   return 1.0;
 }
 

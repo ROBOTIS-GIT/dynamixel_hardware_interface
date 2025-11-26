@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <memory>
 #include <functional>
+#include <utility>
 
 namespace dynamixel_hardware_interface
 {
@@ -164,6 +165,7 @@ typedef struct
  */
 typedef struct
 {
+  uint8_t comm_id;                  ///< Communication ID used to reach the device.
   uint8_t id;                       ///< ID of the Dynamixel motor.
   ControlItem control_item;         ///< Control item details.
   uint32_t data;                    ///< Data associated with the control item.
@@ -197,7 +199,7 @@ private:
   // item write variable
   std::vector<RWItemBufInfo> write_item_buf_;
   std::vector<RWItemBufInfo> read_item_buf_;
-  std::map<uint8_t /*id*/, bool> torque_state_;
+  std::map<std::pair<uint8_t /*comm_id*/, uint8_t /*id*/>, bool> torque_state_;
 
   // read item (sync or bulk) variable
   bool read_type_;
@@ -234,26 +236,25 @@ private:
   // direct inform for bulk write
   std::map<uint8_t /*id*/, IndirectInfo> direct_info_write_;
 
-  std::map<uint8_t /*id*/, uint8_t> comm_id_;
-
 public:
   explicit Dynamixel(const char * path);
   ~Dynamixel();
 
   // DXL Communication Setting
-  DxlError InitDxlComm(std::vector<uint8_t> id_arr, std::string port_name, std::string baudrate);
+  DxlError SetupPort(const std::string & port_name, const std::string & baudrate);
+  DxlError InitDxlComm(uint8_t comm_id, uint8_t id);
   DxlError Reboot(uint8_t id);
   void RWDataReset();
 
   // DXL Read Setting
   DxlError SetDxlReadItems(
-    uint8_t id, uint8_t comm_id, std::vector<std::string> item_names,
+    uint8_t comm_id, uint8_t id, std::vector<std::string> item_names,
     std::vector<std::shared_ptr<double>> data_vec_ptr);
   DxlError SetMultiDxlRead();
 
   // DXL Write Setting
   DxlError SetDxlWriteItems(
-    uint8_t id, uint8_t comm_id, std::vector<std::string> item_names,
+    uint8_t comm_id, uint8_t id, std::vector<std::string> item_names,
     std::vector<std::shared_ptr<double>> data_vec_ptr);
   DxlError SetMultiDxlWrite();
 
@@ -264,34 +265,44 @@ public:
 
   // Set Dxl Option
   // DxlError SetOperatingMode(uint8_t id, uint8_t dynamixel_mode);
-  DxlError DynamixelEnable(std::vector<uint8_t> id_arr);
-  DxlError DynamixelDisable(std::vector<uint8_t> id_arr);
+  DxlError DynamixelEnable(const std::vector<std::pair<uint8_t, uint8_t>> & comm_id_id_arr);
+  DxlError DynamixelDisable(const std::vector<std::pair<uint8_t, uint8_t>> & comm_id_id_arr);
 
   // DXL Item Write
-  DxlError WriteItem(uint8_t id, std::string item_name, uint32_t data);
-  DxlError WriteItem(uint8_t id, uint16_t addr, uint8_t size, uint32_t data);
+  DxlError WriteItem(uint8_t comm_id, uint8_t id, std::string item_name, uint32_t data);
+  DxlError WriteItem(uint8_t comm_id, uint8_t id, uint16_t addr, uint8_t size, uint32_t data);
   DxlError InsertWriteItemBuf(uint8_t id, std::string item_name, uint32_t data);
   DxlError WriteItemBuf();
 
   // DXL Item Read
-  DxlError ReadItem(uint8_t id, std::string item_name, uint32_t & data);
+  DxlError ReadItem(uint8_t comm_id, uint8_t id, std::string item_name, uint32_t & data);
   DxlError InsertReadItemBuf(uint8_t id, std::string item_name);
   DxlError ReadItemBuf();
   bool CheckReadItemBuf(uint8_t id, std::string item_name);
   uint32_t GetReadItemDataBuf(uint8_t id, std::string item_name);
 
   DynamixelInfo GetDxlInfo() {return dxl_info_;}
-  std::map<uint8_t, bool> GetDxlTorqueState() {return torque_state_;}
+  std::map<std::pair<uint8_t, uint8_t>, bool> GetDxlTorqueState() {return torque_state_;}
 
   static std::string DxlErrorToString(DxlError error_num);
 
-  DxlError ReadDxlModelFile(uint8_t id, uint16_t model_num);
-  DxlError ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t firmware_version);
-  DxlError ReadFirmwareVersion(uint8_t id, uint8_t & firmware_version);
+  DxlError ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num);
+  DxlError ReadDxlModelFile(
+    uint8_t comm_id, uint8_t id, uint16_t model_num,
+    uint8_t firmware_version);
+  DxlError ReadFirmwareVersion(uint8_t comm_id, uint8_t id, uint8_t & firmware_version);
 
-  void SetCommId(uint8_t id, uint8_t comm_id) {comm_id_[id] = comm_id;}
+  DxlError InitTorqueStates(
+    std::vector<std::pair<uint8_t, uint8_t>> comm_id_id_arr,
+    bool disable_torque = false);
 
-  DxlError InitTorqueStates(std::vector<uint8_t> id_arr, bool disable_torque = false);
+  void OverrideUnitInfo(
+    uint8_t comm_id,
+    uint8_t id,
+    const std::string & data_name,
+    double unit_multiplier,
+    bool is_signed,
+    double offset_value);
 
 private:
   bool checkReadType();
@@ -334,7 +345,7 @@ private:
     std::function<uint32_t(uint8_t, uint16_t, uint8_t)> get_data_func);
 
   DxlError ProcessDirectReadData(
-    uint8_t id,
+    uint8_t comm_id,
     const std::vector<uint16_t> & item_addrs,
     const std::vector<std::string> & item_names,
     const std::vector<uint8_t> & item_sizes,
@@ -372,6 +383,7 @@ private:
 
   // Helper function for value conversion with unit info
   double ConvertValueWithUnitInfo(
+    uint8_t comm_id,
     uint8_t id,
     std::string item_name,
     uint32_t raw_value,
@@ -380,6 +392,7 @@ private:
 
   // Helper function for converting unit values to raw values
   uint32_t ConvertUnitValueToRawValue(
+    uint8_t comm_id,
     uint8_t id,
     std::string item_name,
     double unit_value,

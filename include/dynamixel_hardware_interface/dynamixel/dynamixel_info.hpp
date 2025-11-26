@@ -52,6 +52,7 @@ typedef  struct
   std::vector<ControlItem> item;
   std::map<std::string, double> unit_map;
   std::map<std::string, bool> sign_type_map;
+  std::map<std::string, double> offset_map;
 } DxlInfo;
 
 class DynamixelInfo
@@ -69,8 +70,8 @@ private:
   uint8_t ExtractFirmwareVersionFromFilename(const std::string & filename);
 
 public:
-  // Id, Control table
-  std::map<uint8_t, DxlInfo> dxl_info_;
+  // comm_id -> (id -> Control table)
+  std::map<uint8_t, std::map<uint8_t, DxlInfo>> dxl_info_by_comm_;
 
   DynamixelInfo() {}
   ~DynamixelInfo() {}
@@ -78,47 +79,65 @@ public:
   void SetDxlModelFolderPath(const char * path);
   void InitDxlModelInfo();
 
-  void ReadDxlModelFile(uint8_t id, uint16_t model_num);
-  void ReadDxlModelFile(uint8_t id, uint16_t model_num, uint8_t firmware_version);
-  bool GetDxlControlItem(uint8_t id, std::string item_name, uint16_t & addr, uint8_t & size);
-  bool CheckDxlControlItem(uint8_t id, std::string item_name);
+  void ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num);
+  void ReadDxlModelFile(uint8_t comm_id, uint8_t id, uint16_t model_num, uint8_t firmware_version);
+  bool GetDxlControlItem(
+    uint8_t comm_id, uint8_t id, std::string item_name, uint16_t & addr,
+    uint8_t & size);
+  bool CheckDxlControlItem(uint8_t comm_id, uint8_t id, std::string item_name);
 
-  bool GetDxlUnitValue(uint8_t id, std::string data_name, double & unit_value);
-  bool GetDxlSignType(uint8_t id, std::string data_name, bool & is_signed);
+  bool GetDxlUnitValue(uint8_t comm_id, uint8_t id, std::string data_name, double & unit_value);
+  bool GetDxlSignType(uint8_t comm_id, uint8_t id, std::string data_name, bool & is_signed);
+  bool GetDxlOffsetValue(uint8_t comm_id, uint8_t id, std::string data_name, double & offset_value);
 
-  // Template-based conversion methods
   template<typename T>
-  double ConvertValueToUnit(uint8_t id, std::string data_name, T value);
+  double ConvertValueToUnit(uint8_t comm_id, uint8_t id, std::string data_name, T value);
 
   template<typename T>
-  T ConvertUnitToValue(uint8_t id, std::string data_name, double unit_value);
+  T ConvertUnitToValue(uint8_t comm_id, uint8_t id, std::string data_name, double unit_value);
 
   // Helper method for internal use
-  double GetUnitMultiplier(uint8_t id, std::string data_name);
+  double GetUnitMultiplier(uint8_t comm_id, uint8_t id, std::string data_name);
 
-  int32_t ConvertRadianToValue(uint8_t id, double radian);
-  double ConvertValueToRadian(uint8_t id, int32_t value);
+  int32_t ConvertRadianToValue(uint8_t comm_id, uint8_t id, double radian);
+  double ConvertValueToRadian(uint8_t comm_id, uint8_t id, int32_t value);
 
   std::string GetModelName(uint16_t model_number) const;
 };
 
 // Template implementations
 template<typename T>
-double DynamixelInfo::ConvertValueToUnit(uint8_t id, std::string data_name, T value)
+double DynamixelInfo::ConvertValueToUnit(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  T value)
 {
-  auto it = dxl_info_[id].unit_map.find(data_name);
-  if (it != dxl_info_[id].unit_map.end()) {
-    return static_cast<double>(value) * it->second;
+  auto & info = dxl_info_by_comm_[comm_id][id];
+  auto it = info.unit_map.find(data_name);
+  if (it != info.unit_map.end()) {
+    double converted_value = static_cast<double>(value) * it->second;
+    auto offset_it = info.offset_map.find(data_name);
+    if (offset_it != info.offset_map.end()) {
+      converted_value += offset_it->second;
+    }
+    return converted_value;
   }
   return static_cast<double>(value);
 }
 
 template<typename T>
-T DynamixelInfo::ConvertUnitToValue(uint8_t id, std::string data_name, double unit_value)
+T DynamixelInfo::ConvertUnitToValue(
+  uint8_t comm_id, uint8_t id, std::string data_name,
+  double unit_value)
 {
-  auto it = dxl_info_[id].unit_map.find(data_name);
-  if (it != dxl_info_[id].unit_map.end()) {
-    return static_cast<T>(unit_value / it->second);
+  auto & info = dxl_info_by_comm_[comm_id][id];
+  auto it = info.unit_map.find(data_name);
+  if (it != info.unit_map.end()) {
+    double adjusted_value = unit_value;
+    auto offset_it = info.offset_map.find(data_name);
+    if (offset_it != info.offset_map.end()) {
+      adjusted_value -= offset_it->second;
+    }
+    return static_cast<T>(adjusted_value / it->second);
   }
   return static_cast<T>(unit_value);
 }
