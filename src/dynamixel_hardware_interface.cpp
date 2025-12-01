@@ -16,6 +16,8 @@
 
 #include "dynamixel_hardware_interface/dynamixel_hardware_interface.hpp"
 
+#include <tinyxml2.h>
+
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -213,6 +215,10 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
+  }
+
+  if (!updateHomingOffsetsFromURDF()) {
+    return hardware_interface::CallbackReturn::ERROR;
   }
 
   torque_enabled_comm_id_id_.clear();
@@ -1308,7 +1314,8 @@ void DynamixelHardware::MapInterfaces(
   const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
   const std::string & conversion_iface,
   const std::string & conversion_name,
-  std::function<double(double)> conversion)
+  std::function<double(double)> conversion,
+  bool outer_is_joint)
 {
   for (size_t i = 0; i < outer_size; ++i) {
     for (size_t k = 0; k < outer_handlers.at(i).interface_name_vec.size(); ++k) {
@@ -1338,7 +1345,14 @@ void DynamixelHardware::MapInterfaces(
             mapped_iface);
           if (it != inner_handlers.at(j).interface_name_vec.end()) {
             size_t idx = std::distance(inner_handlers.at(j).interface_name_vec.begin(), it);
-            value += matrix[i][j] * (*inner_handlers.at(j).value_ptr_vec.at(idx));
+            double inner_value = *inner_handlers.at(j).value_ptr_vec.at(idx);
+            if (!homing_offsets_.empty() && !outer_is_joint) {
+              auto hom_it = homing_offsets_.find(inner_handlers.at(j).name);
+              if (hom_it != homing_offsets_.end()) {
+                inner_value -= hom_it->second;
+              }
+            }
+            value += matrix[i][j] * inner_value;
             break;
           }
         }
@@ -1349,6 +1363,12 @@ void DynamixelHardware::MapInterfaces(
         conversion)
       {
         value = conversion(value);
+      }
+      if (!homing_offsets_.empty() && outer_is_joint) {
+        auto hom_it = homing_offsets_.find(outer_handlers.at(i).name);
+        if (hom_it != homing_offsets_.end()) {
+          value += hom_it->second;
+        }
       }
       *outer_handlers.at(i).value_ptr_vec.at(k) = value;
     }
@@ -1370,7 +1390,8 @@ void DynamixelHardware::CalcTransmissionToJoint()
     dynamixel_hardware_interface::ros2_to_dxl_state_map,
     hardware_interface::HW_IF_POSITION,
     conversion_joint_name_,
-    conv
+    conv,
+    true
   );
 }
 
@@ -1389,7 +1410,8 @@ void DynamixelHardware::CalcJointToTransmission()
     dynamixel_hardware_interface::dxl_to_ros2_cmd_map,
     "Goal Position",
     conversion_dxl_name_,
-    conv
+    conv,
+    false
   );
 }
 
@@ -1694,6 +1716,31 @@ std::string DynamixelHardware::getAllErrorSummaries() const
 
   all_summaries << "=====================================\n";
   return all_summaries.str();
+}
+
+bool DynamixelHardware::updateHomingOffsetsFromURDF(){
+  auto urdf = info_.original_xml;
+  tinyxml2::XMLDocument doc;
+  if (doc.Parse(urdf.c_str()) != tinyxml2::XML_SUCCESS) {
+    RCLCPP_ERROR(logger_, "Failed to parse URDF XML");
+    return false;
+  }
+  const auto * joint_element = doc.RootElement()->FirstChildElement("joint");
+  while (joint_element != nullptr) {
+    const auto * name_attr = joint_element->FindAttribute("name");
+    const auto * calibration_element = joint_element->FirstChildElement("calibration");
+    if (calibration_element != nullptr) {
+      const auto * rising_attr = calibration_element->FindAttribute("rising");
+      if ((rising_attr != nullptr) && (name_attr != nullptr)) {
+        const auto rising = rising_attr->DoubleValue();
+        const std::string name = name_attr->Value();
+        // Store rising offset (radians) per joint name in homing_offsets_
+        homing_offsets_[name] = rising;
+      }
+    }
+    joint_element = joint_element->NextSiblingElement("joint");
+  }
+  return true;
 }
 
 }  // namespace dynamixel_hardware_interface
