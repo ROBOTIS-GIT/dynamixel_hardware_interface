@@ -237,16 +237,14 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
           [&name](const hardware_interface::ComponentInfo & joint) {
             return joint.name == name;
           });
-        if (itr != info_.gpios.end()) {
-          auto params = info_.gpios[std::distance(info_.joints.begin(), itr)].parameters;
-          if (std::find_if(params.begin(), params.end(),
-              [](const std::pair<std::string, std::string> & p) {
-                return p.first == "Homing Offset";
-              }) == params.end())
+        if (itr != info_.joints.end()) {
+          const auto gpio_idx = std::distance(info_.joints.begin(), itr);
+          const auto& params = info_.gpios[gpio_idx].parameters;
+          if (params.find("Homing Offset") == params.end())
           {
-            info_.gpios[std::distance(info_.joints.begin(), itr)].parameters.emplace(
-              "Homing Offset",
-              std::to_string(std::round(rising * (180.0 / M_PI) / (360.0 / 4095))));
+          info_.gpios[gpio_idx].parameters.emplace(
+            "Homing Offset",
+            std::to_string(std::round(rising * (180.0 / M_PI) / (360.0 / 4095))));
           }
         }
       }
