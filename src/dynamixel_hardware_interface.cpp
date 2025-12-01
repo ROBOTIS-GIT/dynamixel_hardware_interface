@@ -217,39 +217,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
     }
   }
 
-  auto urdf = info_.original_xml;
-  tinyxml2::XMLDocument doc;
-  if (doc.Parse(urdf.c_str()) != tinyxml2::XML_SUCCESS) {
-    RCLCPP_ERROR(logger_, "Failed to parse URDF XML");
+  if (!updateHomingOffsetsFromURDF()) {
     return hardware_interface::CallbackReturn::ERROR;
-  }
-  const auto * joint_element = doc.RootElement()->FirstChildElement("joint");
-  while (joint_element != nullptr) {
-    const auto * name_attr = joint_element->FindAttribute("name");
-    const auto * calibration_element = joint_element->FirstChildElement("calibration");
-    if (calibration_element != nullptr) {
-      const auto * rising_attr = calibration_element->FindAttribute("rising");
-      if ((rising_attr != nullptr) && (name_attr != nullptr)) {
-        auto rising = std::atof(calibration_element->Attribute("rising"));
-        std::string name = joint_element->Attribute("name");
-        auto itr = std::find_if(
-          info_.joints.begin(), info_.joints.end(),
-          [&name](const hardware_interface::ComponentInfo & joint) {
-            return joint.name == name;
-          });
-        if (itr != info_.joints.end()) {
-          const auto gpio_idx = std::distance(info_.joints.begin(), itr);
-          const auto& params = info_.gpios[gpio_idx].parameters;
-          if (params.find("Homing Offset") == params.end())
-          {
-          info_.gpios[gpio_idx].parameters.emplace(
-            "Homing Offset",
-            std::to_string(std::round(rising * (180.0 / M_PI) / (360.0 / 4095))));
-          }
-        }
-      }
-    }
-    joint_element = joint_element->NextSiblingElement("joint");
   }
 
   torque_enabled_comm_id_id_.clear();
@@ -1733,6 +1702,40 @@ std::string DynamixelHardware::getAllErrorSummaries() const
 
   all_summaries << "=====================================\n";
   return all_summaries.str();
+}
+
+bool DynamixelHardware::updateHomingOffsetsFromURDF(){
+  auto urdf = info_.original_xml;
+  tinyxml2::XMLDocument doc;
+  if (doc.Parse(urdf.c_str()) != tinyxml2::XML_SUCCESS) {
+    RCLCPP_ERROR(logger_, "Failed to parse URDF XML");
+    return false;
+  }
+  const auto * joint_element = doc.RootElement()->FirstChildElement("joint");
+  while (joint_element != nullptr) {
+    const auto * name_attr = joint_element->FindAttribute("name");
+    const auto * calibration_element = joint_element->FirstChildElement("calibration");
+    if (calibration_element != nullptr) {
+      const auto * rising_attr = calibration_element->FindAttribute("rising");
+      if ((rising_attr != nullptr) && (name_attr != nullptr)) {
+        auto rising = std::atof(calibration_element->Attribute("rising"));
+        std::string name = joint_element->Attribute("name");
+        auto itr = std::find_if(
+          info_.joints.begin(), info_.joints.end(),
+          [&name](const hardware_interface::ComponentInfo & joint) { return joint.name == name; });
+        if (itr != info_.joints.end()) {
+          const auto gpio_idx = std::distance(info_.joints.begin(), itr);
+          const auto & params = info_.gpios[gpio_idx].parameters;
+          if (params.find("Homing Offset") == params.end()) {
+            info_.gpios[gpio_idx].parameters.emplace(
+              "Homing Offset", std::to_string(std::round(rising * (180.0 / M_PI) / (360.0 / 4095))));
+          }
+        }
+      }
+    }
+    joint_element = joint_element->NextSiblingElement("joint");
+  }
+  return true;
 }
 
 }  // namespace dynamixel_hardware_interface
