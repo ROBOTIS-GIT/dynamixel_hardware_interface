@@ -25,6 +25,7 @@ find_package(realtime_tools REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(dynamixel_interfaces REQUIRED)
+find_package(tinyxml2_vendor REQUIRED)
 
 ################################################################################
 # Build
