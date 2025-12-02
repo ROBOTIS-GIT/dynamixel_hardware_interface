@@ -1727,8 +1727,13 @@ bool DynamixelHardware::updateHomingOffsetsFromURDF(){
           const auto gpio_idx = std::distance(info_.joints.begin(), itr);
           const auto & params = info_.gpios[gpio_idx].parameters;
           if (params.find("Homing Offset") == params.end()) {
+            constexpr double RAD_TO_DEG = 180.0 / M_PI;
+            constexpr double DXL_RESOLUTION_12BIT = 4095.0;
+            constexpr double DXL_MAX_DEG = 360.0;
+            const double homing_offset_steps =
+              std::round(rising * RAD_TO_DEG / (DXL_MAX_DEG / DXL_RESOLUTION_12BIT));
             info_.gpios[gpio_idx].parameters.emplace(
-              "Homing Offset", std::to_string(std::round(rising * (180.0 / M_PI) / (360.0 / 4095))));
+              "Homing Offset", std::to_string(homing_offset_steps));
           }
         }
       }
