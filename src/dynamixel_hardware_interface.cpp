@@ -1718,8 +1718,8 @@ bool DynamixelHardware::updateHomingOffsetsFromURDF(){
     if (calibration_element != nullptr) {
       const auto * rising_attr = calibration_element->FindAttribute("rising");
       if ((rising_attr != nullptr) && (name_attr != nullptr)) {
-        auto rising = std::atof(calibration_element->Attribute("rising"));
-        std::string name = joint_element->Attribute("name");
+        const auto rising = rising_attr->DoubleValue();
+        const std::string name = name_attr->Value();
         auto itr = std::find_if(
           info_.joints.begin(), info_.joints.end(),
           [&name](const hardware_interface::ComponentInfo & joint) { return joint.name == name; });
