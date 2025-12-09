@@ -315,6 +315,7 @@ private:
   using StatePublisher = realtime_tools::RealtimePublisher<DynamixelStateMsg>;
   rclcpp::Publisher<DynamixelStateMsg>::SharedPtr dxl_state_pub_;
   std::unique_ptr<StatePublisher> dxl_state_pub_uni_ptr_;
+  DynamixelStateMsg dxl_state_msg_;
 
   rclcpp::Service<dynamixel_interfaces::srv::GetDataFromDxl>::SharedPtr get_dxl_data_srv_;
   void get_dxl_data_srv_callback(
