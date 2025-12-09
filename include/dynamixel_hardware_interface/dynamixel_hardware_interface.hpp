@@ -113,12 +113,12 @@ public:
 
   /**
    * @brief Initialization callback for hardware interface.
-   * @param info Hardware information for the system.
+   * @param params Parameters for the hardware component interface.
    * @return Callback return indicating success or error.
    */
   DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
-  hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info)
-  override;
+  hardware_interface::CallbackReturn on_init(
+    const hardware_interface::HardwareComponentInterfaceParams & params) override;
 
   /**
    * @brief Exports state interfaces for ROS2.
