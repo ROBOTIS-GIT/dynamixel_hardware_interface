@@ -16,6 +16,8 @@
 
 #include "dynamixel_hardware_interface/dynamixel_hardware_interface.hpp"
 
+#include <tinyxml2.h>
+
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -213,6 +215,10 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
+  }
+
+  if (!updateHomingOffsetsFromURDF()) {
+    return hardware_interface::CallbackReturn::ERROR;
   }
 
   torque_enabled_comm_id_id_.clear();
@@ -1694,6 +1700,45 @@ std::string DynamixelHardware::getAllErrorSummaries() const
 
   all_summaries << "=====================================\n";
   return all_summaries.str();
+}
+
+bool DynamixelHardware::updateHomingOffsetsFromURDF(){
+  auto urdf = info_.original_xml;
+  tinyxml2::XMLDocument doc;
+  if (doc.Parse(urdf.c_str()) != tinyxml2::XML_SUCCESS) {
+    RCLCPP_ERROR(logger_, "Failed to parse URDF XML");
+    return false;
+  }
+  const auto * joint_element = doc.RootElement()->FirstChildElement("joint");
+  while (joint_element != nullptr) {
+    const auto * name_attr = joint_element->FindAttribute("name");
+    const auto * calibration_element = joint_element->FirstChildElement("calibration");
+    if (calibration_element != nullptr) {
+      const auto * rising_attr = calibration_element->FindAttribute("rising");
+      if ((rising_attr != nullptr) && (name_attr != nullptr)) {
+        const auto rising = rising_attr->DoubleValue();
+        const std::string name = name_attr->Value();
+        auto itr = std::find_if(
+          info_.joints.begin(), info_.joints.end(),
+          [&name](const hardware_interface::ComponentInfo & joint) { return joint.name == name; });
+        if (itr != info_.joints.end()) {
+          const auto gpio_idx = std::distance(info_.joints.begin(), itr);
+          const auto & params = info_.gpios[gpio_idx].parameters;
+          if (params.find("Homing Offset") == params.end()) {
+            constexpr double RAD_TO_DEG = 180.0 / M_PI;
+            constexpr double DXL_RESOLUTION_12BIT = 4095.0;
+            constexpr double DXL_MAX_DEG = 360.0;
+            const double homing_offset_steps =
+              std::round(rising * RAD_TO_DEG / (DXL_MAX_DEG / DXL_RESOLUTION_12BIT));
+            info_.gpios[gpio_idx].parameters.emplace(
+              "Homing Offset", std::to_string(homing_offset_steps));
+          }
+        }
+      }
+    }
+    joint_element = joint_element->NextSiblingElement("joint");
+  }
+  return true;
 }
 
 }  // namespace dynamixel_hardware_interface

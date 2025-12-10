@@ -374,6 +374,12 @@ private:
 
   // Move dxl_comm_ to the end for safe destruction order
   std::shared_ptr<Dynamixel> dxl_comm_;
+
+  /**
+   * @brief Update homing offsets from the URDF model
+   * @return True if the offsets were updated successfully, false otherwise.
+   */
+  bool updateHomingOffsetsFromURDF();
 };
 
 // Conversion maps between ROS2 and Dynamixel interface names
