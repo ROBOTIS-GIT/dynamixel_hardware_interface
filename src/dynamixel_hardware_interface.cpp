@@ -56,9 +56,9 @@ DynamixelHardware::~DynamixelHardware()
 }
 
 hardware_interface::CallbackReturn DynamixelHardware::on_init(
-  const hardware_interface::HardwareInfo & info)
+  const hardware_interface::HardwareComponentInterfaceParams & params)
 {
-  if (hardware_interface::SystemInterface::on_init(info) !=
+  if (hardware_interface::SystemInterface::on_init(params) !=
     hardware_interface::CallbackReturn::SUCCESS)
   {
     RCLCPP_ERROR_STREAM(logger_, "Failed to initialize DynamixelHardware");
@@ -359,11 +359,9 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   dxl_state_pub_uni_ptr_ = std::make_unique<StatePublisher>(dxl_state_pub_);
 
   size_t num_of_pub_data = hdl_trans_states_.size();
-  dxl_state_pub_uni_ptr_->lock();
-  dxl_state_pub_uni_ptr_->msg_.id.resize(num_of_pub_data);
-  dxl_state_pub_uni_ptr_->msg_.dxl_hw_state.resize(num_of_pub_data);
-  dxl_state_pub_uni_ptr_->msg_.torque_state.resize(num_of_pub_data);
-  dxl_state_pub_uni_ptr_->unlock();
+  dxl_state_msg_.id.resize(num_of_pub_data);
+  dxl_state_msg_.dxl_hw_state.resize(num_of_pub_data);
+  dxl_state_msg_.torque_state.resize(num_of_pub_data);
 
   using namespace std::placeholders;
 
@@ -647,18 +645,18 @@ hardware_interface::return_type DynamixelHardware::read(
   dxl_comm_->ReadItemBuf();
 
   size_t index = 0;
-  if (dxl_state_pub_uni_ptr_ && dxl_state_pub_uni_ptr_->trylock()) {
-    dxl_state_pub_uni_ptr_->msg_.header.stamp = this->now();
-    dxl_state_pub_uni_ptr_->msg_.comm_state = dxl_comm_err_;
+  if (dxl_state_pub_uni_ptr_) {
+    dxl_state_msg_.header.stamp = this->now();
+    dxl_state_msg_.comm_state = dxl_comm_err_;
     for (auto it : hdl_trans_states_) {
-      dxl_state_pub_uni_ptr_->msg_.id.at(index) = it.id;
-      dxl_state_pub_uni_ptr_->msg_.dxl_hw_state.at(index) = dxl_hw_err_[it.id];
+      dxl_state_msg_.id.at(index) = it.id;
+      dxl_state_msg_.dxl_hw_state.at(index) = dxl_hw_err_[it.id];
       auto ts_it = dxl_torque_state_.find({it.comm_id, it.id});
       bool ts = (ts_it != dxl_torque_state_.end()) ? ts_it->second : false;
-      dxl_state_pub_uni_ptr_->msg_.torque_state.at(index) = ts;
+      dxl_state_msg_.torque_state.at(index) = ts;
       index++;
     }
-    dxl_state_pub_uni_ptr_->unlockAndPublish();
+    dxl_state_pub_uni_ptr_->try_publish(dxl_state_msg_);
   }
 
   if (rclcpp::ok()) {
