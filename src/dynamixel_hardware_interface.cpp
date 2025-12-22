@@ -1316,7 +1316,8 @@ void DynamixelHardware::MapInterfaces(
   const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
   const std::string & conversion_iface,
   const std::string & conversion_name,
-  std::function<double(double)> conversion)
+  std::function<double(double)> conversion,
+  bool outer_is_joint)
 {
   for (size_t i = 0; i < outer_size; ++i) {
     for (size_t k = 0; k < outer_handlers.at(i).interface_name_vec.size(); ++k) {
@@ -1346,7 +1347,14 @@ void DynamixelHardware::MapInterfaces(
             mapped_iface);
           if (it != inner_handlers.at(j).interface_name_vec.end()) {
             size_t idx = std::distance(inner_handlers.at(j).interface_name_vec.begin(), it);
-            value += matrix[i][j] * (*inner_handlers.at(j).value_ptr_vec.at(idx));
+            double inner_value = *inner_handlers.at(j).value_ptr_vec.at(idx);
+            if (!homing_offsets_.empty() && !outer_is_joint) {
+              auto hom_it = homing_offsets_.find(inner_handlers.at(j).name);
+              if (hom_it != homing_offsets_.end()) {
+                inner_value -= hom_it->second;
+              }
+            }
+            value += matrix[i][j] * inner_value;
             break;
           }
         }
@@ -1357,6 +1365,12 @@ void DynamixelHardware::MapInterfaces(
         conversion)
       {
         value = conversion(value);
+      }
+      if (!homing_offsets_.empty() && outer_is_joint) {
+        auto hom_it = homing_offsets_.find(outer_handlers.at(i).name);
+        if (hom_it != homing_offsets_.end()) {
+          value += hom_it->second;
+        }
       }
       *outer_handlers.at(i).value_ptr_vec.at(k) = value;
     }
@@ -1378,7 +1392,8 @@ void DynamixelHardware::CalcTransmissionToJoint()
     dynamixel_hardware_interface::ros2_to_dxl_state_map,
     hardware_interface::HW_IF_POSITION,
     conversion_joint_name_,
-    conv
+    conv,
+    true
   );
 }
 
@@ -1397,7 +1412,8 @@ void DynamixelHardware::CalcJointToTransmission()
     dynamixel_hardware_interface::dxl_to_ros2_cmd_map,
     "Goal Position",
     conversion_dxl_name_,
-    conv
+    conv,
+    false
   );
 }
 
@@ -1720,22 +1736,8 @@ bool DynamixelHardware::updateHomingOffsetsFromURDF(){
       if ((rising_attr != nullptr) && (name_attr != nullptr)) {
         const auto rising = rising_attr->DoubleValue();
         const std::string name = name_attr->Value();
-        auto itr = std::find_if(
-          info_.joints.begin(), info_.joints.end(),
-          [&name](const hardware_interface::ComponentInfo & joint) { return joint.name == name; });
-        if (itr != info_.joints.end()) {
-          const auto gpio_idx = std::distance(info_.joints.begin(), itr);
-          const auto & params = info_.gpios[gpio_idx].parameters;
-          if (params.find("Homing Offset") == params.end()) {
-            constexpr double RAD_TO_DEG = 180.0 / M_PI;
-            constexpr double DXL_RESOLUTION_12BIT = 4095.0;
-            constexpr double DXL_MAX_DEG = 360.0;
-            const double homing_offset_steps =
-              std::round(rising * RAD_TO_DEG / (DXL_MAX_DEG / DXL_RESOLUTION_12BIT));
-            info_.gpios[gpio_idx].parameters.emplace(
-              "Homing Offset", std::to_string(homing_offset_steps));
-          }
-        }
+        // Store rising offset (radians) per joint name in homing_offsets_
+        homing_offsets_[name] = rising;
       }
     }
     joint_element = joint_element->NextSiblingElement("joint");

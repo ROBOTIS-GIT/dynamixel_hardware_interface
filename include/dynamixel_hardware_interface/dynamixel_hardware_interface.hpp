@@ -369,7 +369,11 @@ private:
     const std::unordered_map<std::string, std::vector<std::string>> & iface_map,
     const std::string & conversion_iface = "",
     const std::string & conversion_name = "",
-    std::function<double(double)> conversion = nullptr);
+    std::function<double(double)> conversion = nullptr,
+    bool outer_is_joint = false);
+
+  // Map of joint name -> rising offset (radians) read from URDF calibration
+  std::unordered_map<std::string, double> homing_offsets_;
 
   // Move dxl_comm_ to the end for safe destruction order
   std::shared_ptr<Dynamixel> dxl_comm_;
