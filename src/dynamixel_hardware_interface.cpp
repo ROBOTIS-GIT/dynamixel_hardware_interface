@@ -363,6 +363,11 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   dxl_state_pub_uni_ptr_->msg_.id.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->msg_.dxl_hw_state.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->msg_.torque_state.resize(num_of_pub_data);
+  // Add telemetry arrays
+  dxl_state_pub_uni_ptr_->msg_.temperature.resize(num_of_pub_data);
+  dxl_state_pub_uni_ptr_->msg_.voltage.resize(num_of_pub_data);
+  dxl_state_pub_uni_ptr_->msg_.present_current.resize(num_of_pub_data);
+  dxl_state_pub_uni_ptr_->msg_.present_load.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->unlock();
 
   using namespace std::placeholders;
@@ -656,6 +661,37 @@ hardware_interface::return_type DynamixelHardware::read(
       auto ts_it = dxl_torque_state_.find({it.comm_id, it.id});
       bool ts = (ts_it != dxl_torque_state_.end()) ? ts_it->second : false;
       dxl_state_pub_uni_ptr_->msg_.torque_state.at(index) = ts;
+      
+      // Initialize telemetry values to 0
+      dxl_state_pub_uni_ptr_->msg_.temperature.at(index) = 0;
+      dxl_state_pub_uni_ptr_->msg_.voltage.at(index) = 0;
+      dxl_state_pub_uni_ptr_->msg_.present_current.at(index) = 0;
+      dxl_state_pub_uni_ptr_->msg_.present_load.at(index) = 0;
+      
+      // Extract telemetry values from state interfaces
+      for (size_t i = 0; i < it.interface_name_vec.size(); i++) {
+        const std::string& interface_name = it.interface_name_vec.at(i);
+        double value = *it.value_ptr_vec.at(i);
+        
+        if (interface_name == "Present Temperature") {
+          dxl_state_pub_uni_ptr_->msg_.temperature.at(index) = 
+            static_cast<int16_t>(value);
+        }
+        else if (interface_name == "Present Input Voltage") {
+          dxl_state_pub_uni_ptr_->msg_.voltage.at(index) = 
+            static_cast<int16_t>(value * 10.0);
+        }
+        else if (interface_name == "Present Current") {
+          // Value is already in mA (raw units) from model file  
+          dxl_state_pub_uni_ptr_->msg_.present_current.at(index) = 
+            static_cast<int16_t>(value);
+        }
+        else if (interface_name == "Present Load") {
+          dxl_state_pub_uni_ptr_->msg_.present_load.at(index) = 
+            static_cast<int16_t>(value);
+        }
+      }
+      
       index++;
     }
     dxl_state_pub_uni_ptr_->unlockAndPublish();
