@@ -373,6 +373,15 @@ private:
 
   // Move dxl_comm_ to the end for safe destruction order
   std::shared_ptr<Dynamixel> dxl_comm_;
+  
+  /**
+   * @brief populates a specific telementry value for a given servo
+   * @return void
+   */
+  void processTelemetryInterface(
+    const std::string& interface_name,
+    double value,
+    size_t index);
 };
 
 // Conversion maps between ROS2 and Dynamixel interface names

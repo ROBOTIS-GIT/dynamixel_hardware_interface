@@ -33,6 +33,14 @@
 namespace dynamixel_hardware_interface
 {
 
+// Telemetry interface name constants
+namespace TelemetryInterfaces {
+  constexpr const char* TEMPERATURE = "Present Temperature";
+  constexpr const char* VOLTAGE = "Present Input Voltage";
+  constexpr const char* CURRENT = "Present Current";
+  constexpr const char* LOAD = "Present Load";
+}
+
 DynamixelHardware::DynamixelHardware()
 : rclcpp::Node("dynamixel_hardware_interface"),
   logger_(rclcpp::get_logger("dynamixel_hardware_interface"))
@@ -364,8 +372,8 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   dxl_state_pub_uni_ptr_->msg_.dxl_hw_state.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->msg_.torque_state.resize(num_of_pub_data);
   // Add telemetry arrays
-  dxl_state_pub_uni_ptr_->msg_.temperature.resize(num_of_pub_data);
-  dxl_state_pub_uni_ptr_->msg_.voltage.resize(num_of_pub_data);
+  dxl_state_pub_uni_ptr_->msg_.present_temperature.resize(num_of_pub_data);
+  dxl_state_pub_uni_ptr_->msg_.present_input_voltage.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->msg_.present_current.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->msg_.present_load.resize(num_of_pub_data);
   dxl_state_pub_uni_ptr_->unlock();
@@ -612,6 +620,46 @@ hardware_interface::CallbackReturn DynamixelHardware::stop()
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
+struct TelemetryHandler {
+  double scale_factor;
+  std::function<void(DynamixelHardware*, int16_t, size_t)> setter;
+};
+
+void DynamixelHardware::processTelemetryInterface(
+  const std::string& interface_name,
+  double value,
+  size_t index)
+{
+  // Static map for constant time lookup - initialized once
+  static const std::unordered_map<std::string, TelemetryHandler> telemetry_map = {
+      {TelemetryInterfaces::TEMPERATURE, 
+       {1.0, [](DynamixelHardware* hw, int16_t val, size_t idx) {
+         hw->dxl_state_pub_uni_ptr_->msg_.present_temperature.at(idx) = val;
+       }}},
+      {TelemetryInterfaces::VOLTAGE,
+       {10.0, [](DynamixelHardware* hw, int16_t val, size_t idx) {
+         hw->dxl_state_pub_uni_ptr_->msg_.present_input_voltage.at(idx) = val;
+       }}},
+      {TelemetryInterfaces::CURRENT,
+       {1.0, [](DynamixelHardware* hw, int16_t val, size_t idx) {
+         hw->dxl_state_pub_uni_ptr_->msg_.present_current.at(idx) = val;
+       }}},
+      {TelemetryInterfaces::LOAD,
+       {1.0, [](DynamixelHardware* hw, int16_t val, size_t idx) {
+         hw->dxl_state_pub_uni_ptr_->msg_.present_load.at(idx) = val;
+       }}}
+    };
+
+  auto it = telemetry_map.find(interface_name);
+  if (it != telemetry_map.end()) {
+    const auto& handler = it->second;
+    double scale = handler.scale_factor;
+    auto setter = handler.setter;
+    int16_t converted_value = static_cast<int16_t>(value * scale);
+    setter(this, converted_value, index);
+  }
+}
+
 hardware_interface::return_type DynamixelHardware::read(
   [[maybe_unused]] const rclcpp::Time & time, const rclcpp::Duration & period)
 {
@@ -663,8 +711,8 @@ hardware_interface::return_type DynamixelHardware::read(
       dxl_state_pub_uni_ptr_->msg_.torque_state.at(index) = ts;
       
       // Initialize telemetry values to 0
-      dxl_state_pub_uni_ptr_->msg_.temperature.at(index) = 0;
-      dxl_state_pub_uni_ptr_->msg_.voltage.at(index) = 0;
+      dxl_state_pub_uni_ptr_->msg_.present_temperature.at(index) = 0;
+      dxl_state_pub_uni_ptr_->msg_.present_input_voltage.at(index) = 0;
       dxl_state_pub_uni_ptr_->msg_.present_current.at(index) = 0;
       dxl_state_pub_uni_ptr_->msg_.present_load.at(index) = 0;
       
@@ -672,26 +720,8 @@ hardware_interface::return_type DynamixelHardware::read(
       for (size_t i = 0; i < it.interface_name_vec.size(); i++) {
         const std::string& interface_name = it.interface_name_vec.at(i);
         double value = *it.value_ptr_vec.at(i);
-        
-        if (interface_name == "Present Temperature") {
-          dxl_state_pub_uni_ptr_->msg_.temperature.at(index) = 
-            static_cast<int16_t>(value);
-        }
-        else if (interface_name == "Present Input Voltage") {
-          dxl_state_pub_uni_ptr_->msg_.voltage.at(index) = 
-            static_cast<int16_t>(value * 10.0);
-        }
-        else if (interface_name == "Present Current") {
-          // Value is already in mA (raw units) from model file  
-          dxl_state_pub_uni_ptr_->msg_.present_current.at(index) = 
-            static_cast<int16_t>(value);
-        }
-        else if (interface_name == "Present Load") {
-          dxl_state_pub_uni_ptr_->msg_.present_load.at(index) = 
-            static_cast<int16_t>(value);
-        }
+        processTelemetryInterface(interface_name, value, index);
       }
-      
       index++;
     }
     dxl_state_pub_uni_ptr_->unlockAndPublish();
