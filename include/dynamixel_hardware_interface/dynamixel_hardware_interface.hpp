@@ -361,6 +361,17 @@ private:
    */
   std::string getAllErrorSummaries() const;
 
+  /**
+   * @brief Process telemetry interface data and update message fields
+   * @param interface_name Name of the interface (e.g., "Present Temperature")
+   * @param value Raw value from the servo
+   * @param index Array index for the servo in the message
+   */
+  void processTelemetryInterface(
+    const std::string& interface_name,
+    double value,
+    size_t index);
+
   void MapInterfaces(
     size_t outer_size,
     size_t inner_size,
