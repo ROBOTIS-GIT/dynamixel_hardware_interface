@@ -1718,27 +1718,41 @@ std::string DynamixelHardware::getAllErrorSummaries() const
   return all_summaries.str();
 }
 
-bool DynamixelHardware::updateHomingOffsetsFromURDF(){
-  auto urdf = info_.original_xml;
+bool DynamixelHardware::updateHomingOffsetsFromURDF()
+{
+  const auto & urdf = info_.original_xml;
   tinyxml2::XMLDocument doc;
   if (doc.Parse(urdf.c_str()) != tinyxml2::XML_SUCCESS) {
     RCLCPP_ERROR(logger_, "Failed to parse URDF XML");
     return false;
   }
-  const auto * joint_element = doc.RootElement()->FirstChildElement("joint");
-  while (joint_element != nullptr) {
+
+  const auto * root_element = doc.RootElement();
+  if (!root_element) {
+    RCLCPP_WARN(logger_, "URDF is empty or has no root element. Skipping homing offset parsing.");
+    return true;
+  }
+
+  for (const auto * joint_element = root_element->FirstChildElement("joint");
+       joint_element != nullptr;
+       joint_element = joint_element->NextSiblingElement("joint"))
+  {
     const auto * name_attr = joint_element->FindAttribute("name");
-    const auto * calibration_element = joint_element->FirstChildElement("calibration");
-    if (calibration_element != nullptr) {
-      const auto * rising_attr = calibration_element->FindAttribute("rising");
-      if ((rising_attr != nullptr) && (name_attr != nullptr)) {
-        const auto rising = rising_attr->DoubleValue();
-        const std::string name = name_attr->Value();
-        // Store rising offset (radians) per joint name in homing_offsets_
-        homing_offsets_[name] = rising;
-      }
+    if (!name_attr) {
+      continue;
     }
-    joint_element = joint_element->NextSiblingElement("joint");
+
+    const auto * calibration_element = joint_element->FirstChildElement("calibration");
+    if (!calibration_element) {
+      continue;
+    }
+
+    const auto * rising_attr = calibration_element->FindAttribute("rising");
+    if (!rising_attr) {
+      continue;
+    }
+
+    homing_offsets_[name_attr->Value()] = rising_attr->DoubleValue();
   }
   return true;
 }

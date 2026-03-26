@@ -59,6 +59,7 @@ target_link_libraries(${PROJECT_NAME}
   ${std_srvs_TARGETS}
   ${dynamixel_interfaces_TARGETS}
   ${realtime_tools_TARGETS}
+  ${tinyxml2_vendor_TARGETS}
 )
 
 pluginlib_export_plugin_description_file(hardware_interface dynamixel_hardware_interface_plugin.xml)
@@ -109,6 +110,7 @@ ament_export_dependencies(
   pluginlib
   dynamixel_sdk
   dynamixel_interfaces
+  tinyxml2_vendor
 )
 
 ament_package()
