@@ -21,7 +21,3 @@ Address	Size	Data Name
 48	2	Present Input Voltage
 60	2	Max Voltage Limit
 62	2	Min Voltage Limit
-122	2	Indirect Address Read
-452	2	Indirect Address Write
-634	1	Indirect Data Read
-799	1	Indirect Data Write
