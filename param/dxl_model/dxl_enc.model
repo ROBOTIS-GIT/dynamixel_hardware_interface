@@ -10,6 +10,7 @@ Address	Size	Data Name
 7	1	ID
 8	1	Baud Rate (Bus)
 9	1	Return Delay Time
+10	1	Drive Mode
 20	4	Homing Offset
 32	1	LED
 34	1	Status Return Level
@@ -20,3 +21,7 @@ Address	Size	Data Name
 48	2	Present Input Voltage
 60	2	Max Voltage Limit
 62	2	Min Voltage Limit
+122	2	Indirect Address Read
+452	2	Indirect Address Write
+634	1	Indirect Data Read
+799	1	Indirect Data Write
