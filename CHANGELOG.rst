@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.2 (2026-02-04)
+------------------
+* Added xm335_t323 model file
+* Contributors: Woojin Wie
+
 1.5.1 (2025-12-10)
 ------------------
 * Fixed deprecated interface for ros2 control
