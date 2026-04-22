@@ -2273,7 +2273,7 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
 
       for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
-        uint8_t ID = comm_id;
+        uint8_t ID = it_write_data.id_arr.at(item_index);
         std::string item_name = direct_info_write_[comm_id].item_name.at(item_index);
         uint8_t size = direct_info_write_[comm_id].item_size.at(item_index);
 

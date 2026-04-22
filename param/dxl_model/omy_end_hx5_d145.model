@@ -1,0 +1,7 @@
+[unit info]
+Data Name	value	unit	Sign Type	Offset
+Present Pressure 5	1.0	raw	unsigned	0.0
+
+[control table]
+Address	Size	Data Name
+192	1	Present Pressure 5

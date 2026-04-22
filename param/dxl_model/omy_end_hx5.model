@@ -17,20 +17,25 @@ Address	Size	Data Name
 36	2	Realtime Tick
 40	1	Digital Input
 41	1	Digital Output
-42	2	Analog Input1
-44	2	Analog Input2
+42	2	Analog Input 0
+44	2	Analog Input 1
 46	1	SyncTable Enable
+46	1	Table Sync Enable
 48	2	SyncTable Read Address
+48	2	Table Sync Read Address 1
+50	2	Table Sync Read Address 2
 52	2	SyncTable Read Size
+52	2	Table Sync Read Size 1
+54	2	Table Sync Read Size 2
 56	2	SyncTable Write Address
+56	2	Table Sync Write Address 1
+58	2	Table Sync Write Address 2
 60	2	SyncTable Write Size
+60	2	Table Sync Write Size 1
+62	2	Table Sync Write Size 2
 72	1	Table Sync Read Data
+72	2	HX5 Present Position 1
+74	2	HX5 Present Velocity 1
+76	2	HX5 Present Current 1
 200	1	Table Sync Write Data
-378	2	Indirect Address
-634	1	Indirect Data
-378	2	Indirect Address 1
-634	1	Indirect Data 1
-378	2	Indirect Address Write
-634	1	Indirect Data Write
-402	2	Indirect Address Read
-646	1	Indirect Data Read
+280	1	SyncTable Enable HX5
