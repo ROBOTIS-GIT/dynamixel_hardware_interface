@@ -1,0 +1,71 @@
+[unit info]
+Data Name	value	unit	Sign Type	Offset
+Present Pressure 1	0.01	hPa	unsigned	0.0
+Present Pressure 2	0.01	hPa	unsigned	0.0
+Present Pressure 3	0.01	hPa	unsigned	0.0
+Present Pressure 4	0.01	hPa	unsigned	0.0
+Present Pressure 5	0.01	hPa	unsigned	0.0
+Present Pressure 6	0.01	hPa	unsigned	0.0
+Present Pressure 7	0.01	hPa	unsigned	0.0
+Present Pressure 8	0.01	hPa	unsigned	0.0
+Present Pressure 9	0.01	hPa	unsigned	0.0
+Center X	1.0	raw	unsigned	0.0
+Center Y	1.0	raw	unsigned	0.0
+Present Force	0.01	hPa	unsigned	0.0
+Hardware Error Status	1.0	raw	unsigned	0.0
+Realtime Tick	1.0	ms	unsigned	0.0
+Present Input Voltage	0.1	V	unsigned	0.0
+Present Temperature	1.0	degC	unsigned	0.0
+PressureRaw 1	1.0	Pa	unsigned	0.0
+PressureRaw 2	1.0	Pa	unsigned	0.0
+PressureRaw 3	1.0	Pa	unsigned	0.0
+PressureRaw 4	1.0	Pa	unsigned	0.0
+PressureRaw 5	1.0	Pa	unsigned	0.0
+PressureRaw 6	1.0	Pa	unsigned	0.0
+PressureRaw 7	1.0	Pa	unsigned	0.0
+PressureRaw 8	1.0	Pa	unsigned	0.0
+PressureRaw 9	1.0	Pa	unsigned	0.0
+LED	1.0	raw	unsigned	0.0
+Calibration Enable	1.0	raw	unsigned	0.0
+Status Return Level	1.0	raw	unsigned	0.0
+
+[control table]
+Address	Size	Data Name
+0	2	Model Number
+2	4	Model Information
+6	1	Firmware Version
+7	1	ID
+8	1	Baud Rate (Bus)
+9	1	Return Delay Time
+31	1	Temperature Limit
+32	2	Max Voltage Limit
+34	2	Min Voltage Limit
+65	1	LED
+68	1	Status Return Level
+69	1	Registered Instruction
+70	1	Hardware Error Status
+71	1	Calibration Enable
+72	1	Present Pressure 1
+73	1	Present Pressure 2
+74	1	Present Pressure 3
+75	1	Present Pressure 4
+76	1	Present Pressure 5
+77	1	Present Pressure 6
+78	1	Present Pressure 7
+79	1	Present Pressure 8
+80	1	Present Pressure 9
+82	1	Center X
+83	1	Center Y
+84	2	Present Force
+120	2	Realtime Tick
+144	2	Present Input Voltage
+146	1	Present Temperature
+336	4	PressureRaw 1
+340	4	PressureRaw 2
+344	4	PressureRaw 3
+348	4	PressureRaw 4
+352	4	PressureRaw 5
+356	4	PressureRaw 6
+360	4	PressureRaw 7
+364	4	PressureRaw 8
+368	4	PressureRaw 9

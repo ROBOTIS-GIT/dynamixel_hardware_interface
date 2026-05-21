@@ -254,6 +254,13 @@ private:
 
   bool is_set_hdl_{false};
 
+  // Sensor read pacing — arm SyncRead runs every cycle, sensors registered
+  // through Dynamixel::SetDxlSensorReadItems are read once per
+  // tactile_read_divider_ cycles via Dynamixel::ReadSensorOnly. Counter is
+  // incremented in read().
+  uint32_t read_cycle_count_{0};
+  int32_t tactile_read_divider_{10};
+
   // joint <-> transmission matrix
   size_t num_of_joints_;
   size_t num_of_transmissions_;
