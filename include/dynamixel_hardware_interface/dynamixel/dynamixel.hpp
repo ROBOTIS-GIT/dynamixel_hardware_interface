@@ -205,6 +205,11 @@ private:
   bool read_type_;
   std::vector<RWItemList> read_data_list_;
 
+  // Sensor-only read items. These are NOT added to the SyncRead/FastSyncRead
+  // group so a tactile-side failure can never delay the arm read group.
+  // Serviced by ReadSensorOnly() with a single batched readTxRx per comm_id.
+  std::vector<RWItemList> sensor_read_data_list_;
+
   // sync read
   dynamixel::GroupSyncRead * group_sync_read_ = nullptr;
   // bulk read
@@ -251,6 +256,21 @@ public:
     uint8_t comm_id, uint8_t id, std::vector<std::string> item_names,
     std::vector<std::shared_ptr<double>> data_vec_ptr);
   DxlError SetMultiDxlRead();
+
+  // Sensor-only read path. Items registered here bypass the SyncRead /
+  // FastSyncRead group and are read by ReadSensorOnly() (single batched
+  // readTxRx per comm_id, no retry, silent on failure). Useful for tactile
+  // or environmental sensors whose occasional packet loss should not stall
+  // the arm read loop.
+  DxlError SetDxlSensorReadItems(
+    uint8_t comm_id, uint8_t id, std::vector<std::string> item_names,
+    std::vector<std::shared_ptr<double>> data_vec_ptr);
+  DxlError ReadSensorOnly();
+
+  // Allow callers to opt out of FastSyncRead/FastBulkRead at runtime. The
+  // internal fallback (on first failure) already exists; this lets a robot
+  // disable the optimization up-front via hardware parameters.
+  void SetUseFastReadProtocol(bool enable) {use_fast_read_protocol_ = enable;}
 
   // DXL Write Setting
   DxlError SetDxlWriteItems(

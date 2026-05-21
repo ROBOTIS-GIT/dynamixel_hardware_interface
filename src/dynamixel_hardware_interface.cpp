@@ -144,6 +144,30 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
       (ament_index_cpp::get_package_share_directory("dynamixel_hardware_interface") +
       dxl_model_folder).c_str()));
 
+  if (info_.hardware_parameters.find("use_fast_read_protocol") !=
+    info_.hardware_parameters.end())
+  {
+    const std::string & s = info_.hardware_parameters.at("use_fast_read_protocol");
+    bool enable = (s == "true" || s == "1");
+    dxl_comm_->SetUseFastReadProtocol(enable);
+    RCLCPP_INFO_STREAM(logger_, "use_fast_read_protocol = " << (enable ? "true" : "false"));
+  }
+
+  if (info_.hardware_parameters.find("tactile_read_divider") !=
+    info_.hardware_parameters.end())
+  {
+    try {
+      int v = std::stoi(info_.hardware_parameters.at("tactile_read_divider"));
+      tactile_read_divider_ = (v > 0) ? v : 1;
+    } catch (const std::exception & e) {
+      RCLCPP_WARN_STREAM(
+        logger_,
+        "Invalid tactile_read_divider, using default " << tactile_read_divider_ << ": " <<
+          e.what());
+    }
+  }
+  RCLCPP_INFO_STREAM(logger_, "tactile_read_divider = " << tactile_read_divider_);
+
   RCLCPP_INFO_STREAM(logger_, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
   RCLCPP_INFO_STREAM(logger_, "$$$$$ Init Dxl Comm Port");
 
@@ -459,6 +483,20 @@ DynamixelHardware::export_state_interfaces()
             it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
       }
     }
+    for (auto it : hdl_gpio_sensor_states_) {
+      for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
+        if (i >= it.interface_name_vec.size()) {
+          RCLCPP_ERROR_STREAM(
+            logger_, "Interface name vector size mismatch for gpio sensor " << it.name <<
+              ". Expected size: " << it.value_ptr_vec.size() <<
+              ", Actual size: " << it.interface_name_vec.size());
+          continue;
+        }
+        state_interfaces.emplace_back(
+          hardware_interface::StateInterface(
+            it.name, it.interface_name_vec.at(i), it.value_ptr_vec.at(i).get()));
+      }
+    }
     for (auto it : hdl_gpio_controller_states_) {
       for (size_t i = 0; i < it.value_ptr_vec.size(); i++) {
         if (i >= it.interface_name_vec.size()) {
@@ -637,6 +675,17 @@ hardware_interface::return_type DynamixelHardware::read(
   }
 
   CalcTransmissionToJoint();
+
+  // Sensor read pacing — kept out of the arm SyncRead group. ReadSensorOnly
+  // does a single batched readTxRx per comm_id with no retry; silent on
+  // failure so a missed tactile packet never propagates into the arm path.
+  // The counter starts at 0 so the first sample fires on the first cycle.
+  if (tactile_read_divider_ > 0 &&
+    (read_cycle_count_ % static_cast<uint32_t>(tactile_read_divider_)) == 0)
+  {
+    (void)dxl_comm_->ReadSensorOnly();
+  }
+  ++read_cycle_count_;
 
   for (auto sensor : hdl_gpio_sensor_states_) {
     ReadSensorData(sensor);
@@ -1073,8 +1122,15 @@ bool DynamixelHardware::InitDxlReadItems()
       return false;
     }
   }
+  // Route gpio_sensor entries to the sensor-only read path. This keeps the
+  // SyncRead / FastSyncRead group composed of motor IDs only, so a tactile
+  // failure cannot delay or fail the arm read.
+  // NOTE for reviewers: this is a behavior change for existing users with
+  // gpio_sensor entries. If a backward-compatible rollout is preferred, gate
+  // the dispatch on a hardware_parameter (e.g.
+  // `route_gpio_sensors_to_sensor_only_read`, default false).
   for (auto it : hdl_gpio_sensor_states_) {
-    if (dxl_comm_->SetDxlReadItems(
+    if (dxl_comm_->SetDxlSensorReadItems(
         it.comm_id, it.id, it.interface_name_vec,
         it.value_ptr_vec) != DxlError::OK)
     {

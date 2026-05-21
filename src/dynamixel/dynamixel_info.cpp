@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 #include <regex>
+#include <stdexcept>
 
 namespace dynamixel_hardware_interface
 {
@@ -34,8 +35,9 @@ void DynamixelInfo::InitDxlModelInfo()
   std::string model_file = dxl_model_file_dir + "/dynamixel.model";
   std::ifstream open_file(model_file.c_str());
   if (open_file.is_open() != 1) {
-    fprintf(stderr, "[ERROR] CANNOT FIND DXL MODEL LIST FILE.\n%s\n", model_file.c_str());
-    exit(-1);
+    // Throw instead of exit() so controller_manager can surface the error
+    // through normal lifecycle transitions rather than killing the host.
+    throw std::runtime_error("[ERROR] CANNOT FIND DXL MODEL LIST FILE: " + model_file);
   }
   std::string line;
   getline(open_file, line);

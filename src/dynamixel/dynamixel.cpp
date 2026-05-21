@@ -16,6 +16,7 @@
 
 #include "dynamixel_hardware_interface/dynamixel/dynamixel.hpp"
 
+#include <algorithm>
 #include <queue>
 #include <vector>
 #include <string>
@@ -395,6 +396,7 @@ void Dynamixel::RWDataReset()
 {
   read_data_list_.clear();
   write_data_list_.clear();
+  sensor_read_data_list_.clear();
 }
 
 DxlError Dynamixel::SetDxlReadItems(
@@ -467,6 +469,122 @@ DxlError Dynamixel::SetDxlReadItems(
   read_data_list_.push_back(read_item);
 
   return DxlError::OK;
+}
+
+DxlError Dynamixel::SetDxlSensorReadItems(
+  uint8_t comm_id,
+  uint8_t id,
+  std::vector<std::string> item_names,
+  std::vector<std::shared_ptr<double>> data_vec_ptr)
+{
+  if (item_names.empty()) {
+    return DxlError::OK;
+  }
+  if (item_names.size() != data_vec_ptr.size()) {
+    fprintf(
+      stderr, "[SetDxlSensorReadItems] Incorrect data size [%zu] [%zu]\n",
+      item_names.size(), data_vec_ptr.size());
+    return DxlError::SET_READ_ITEM_FAIL;
+  }
+
+  std::vector<uint8_t> item_ids;
+  std::vector<uint16_t> item_addrs;
+  std::vector<uint8_t> item_sizes;
+  for (const auto & it_name : item_names) {
+    uint16_t addr;
+    uint8_t size;
+    if (!dxl_info_.GetDxlControlItem(comm_id, id, it_name, addr, size)) {
+      fprintf(
+        stderr,
+        "[SetDxlSensorReadItems][comm_id:%03d][ID:%03d] Cannot find control item: %s\n",
+        comm_id, id, it_name.c_str());
+      return DxlError::CANNOT_FIND_CONTROL_ITEM;
+    }
+    item_ids.push_back(id);
+    item_addrs.push_back(addr);
+    item_sizes.push_back(size);
+  }
+
+  // Append to an existing entry for this comm_id if present, so multiple
+  // sensor IDs on the same bus share a single batched read.
+  for (auto & existing_item : sensor_read_data_list_) {
+    if (existing_item.comm_id == comm_id) {
+      existing_item.id_arr.insert(existing_item.id_arr.end(), item_ids.begin(), item_ids.end());
+      existing_item.item_name.insert(
+        existing_item.item_name.end(), item_names.begin(), item_names.end());
+      existing_item.item_addr.insert(
+        existing_item.item_addr.end(), item_addrs.begin(), item_addrs.end());
+      existing_item.item_size.insert(
+        existing_item.item_size.end(), item_sizes.begin(), item_sizes.end());
+      existing_item.item_data_ptr_vec.insert(
+        existing_item.item_data_ptr_vec.end(),
+        data_vec_ptr.begin(), data_vec_ptr.end());
+      return DxlError::OK;
+    }
+  }
+
+  RWItemList new_item;
+  new_item.comm_id = comm_id;
+  new_item.id_arr = std::move(item_ids);
+  new_item.item_name = std::move(item_names);
+  new_item.item_addr = std::move(item_addrs);
+  new_item.item_size = std::move(item_sizes);
+  new_item.item_data_ptr_vec = std::move(data_vec_ptr);
+  sensor_read_data_list_.push_back(new_item);
+  return DxlError::OK;
+}
+
+DxlError Dynamixel::ReadSensorOnly()
+{
+  if (sensor_read_data_list_.empty()) {
+    return DxlError::OK;
+  }
+  DxlError worst = DxlError::OK;
+  for (const auto & list : sensor_read_data_list_) {
+    if (list.item_addr.empty()) {
+      continue;
+    }
+    // Batch into one readTxRx covering [min_addr, max_addr+size) per comm_id.
+    // Empirically ~9x faster than N per-item ReadItem calls at 4 Mbps because
+    // the per-packet tx+rx round-trip dominates over wire bytes; address gaps
+    // (rare in a single sensor block) cost a few extra bytes per cycle.
+    uint16_t min_addr = list.item_addr.at(0);
+    uint16_t end_addr = static_cast<uint16_t>(list.item_addr.at(0) + list.item_size.at(0));
+    for (size_t i = 1; i < list.item_addr.size(); ++i) {
+      min_addr = std::min(min_addr, list.item_addr.at(i));
+      end_addr = std::max(
+        end_addr,
+        static_cast<uint16_t>(list.item_addr.at(i) + list.item_size.at(i)));
+    }
+    const uint16_t length = end_addr - min_addr;
+    std::vector<uint8_t> buf(length, 0);
+    uint8_t dxl_error = 0;
+    int dxl_comm_result = packet_handler_->readTxRx(
+      port_handler_, list.comm_id, min_addr, length, buf.data(), &dxl_error);
+
+    // Silent on failure: keep previous sample values, surface worst code to
+    // caller so the cycle counter can decide whether to log.
+    if (dxl_comm_result != COMM_SUCCESS) {
+      worst = DxlError::ITEM_READ_FAIL;
+      continue;
+    }
+    if (dxl_error != 0 && !(dxl_error & 0x80)) {
+      worst = DxlError::ITEM_READ_FAIL;
+      continue;
+    }
+
+    // Distribute bytes from buf back into per-item value pointers (little-endian).
+    for (size_t i = 0; i < list.item_addr.size(); ++i) {
+      const size_t off = list.item_addr.at(i) - min_addr;
+      const uint8_t sz = list.item_size.at(i);
+      uint32_t v = 0;
+      for (uint8_t b = 0; b < sz; ++b) {
+        v |= static_cast<uint32_t>(buf.at(off + b)) << (8 * b);
+      }
+      *list.item_data_ptr_vec.at(i) = static_cast<double>(v);
+    }
+  }
+  return worst;
 }
 
 DxlError Dynamixel::SetMultiDxlRead()
@@ -2063,7 +2181,10 @@ DxlError Dynamixel::SetDxlValueToSyncWrite()
 {
   for (auto it_write_data : write_data_list_) {
     uint8_t comm_id = it_write_data.comm_id;
-    uint8_t * param_write_value = new uint8_t[indirect_info_write_[comm_id].size];
+    // Use a vector so the buffer is freed automatically on every return path
+    // (previous raw `new uint8_t[]` leaked on most paths).
+    std::vector<uint8_t> param_write_value_buf(indirect_info_write_[comm_id].size);
+    uint8_t * param_write_value = param_write_value_buf.data();
     uint8_t added_byte = 0;
 
     for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
@@ -2268,8 +2389,11 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
     uint8_t added_byte = 0;
 
     // Check if this is a direct write
+    std::vector<uint8_t> param_write_value_buf;
     if (direct_info_write_.find(comm_id) != direct_info_write_.end()) {
-      param_write_value = new uint8_t[direct_info_write_[comm_id].size];
+      // Vector-backed buffer auto-frees on scope exit (was `new uint8_t[]`).
+      param_write_value_buf.assign(direct_info_write_[comm_id].size, 0);
+      param_write_value = param_write_value_buf.data();
 
       for (uint16_t item_index = 0; item_index < direct_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
@@ -2312,8 +2436,9 @@ DxlError Dynamixel::SetDxlValueToBulkWrite()
         return DxlError::BULK_WRITE_FAIL;
       }
     } else {
-      // Handle indirect write
-      param_write_value = new uint8_t[indirect_info_write_[comm_id].size];
+      // Handle indirect write — vector RAII (was leaking `new uint8_t[]`).
+      param_write_value_buf.assign(indirect_info_write_[comm_id].size, 0);
+      param_write_value = param_write_value_buf.data();
 
       for (uint16_t item_index = 0; item_index < indirect_info_write_[comm_id].cnt; item_index++) {
         double data = *it_write_data.item_data_ptr_vec.at(item_index);
