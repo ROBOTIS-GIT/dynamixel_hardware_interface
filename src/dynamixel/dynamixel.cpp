@@ -1320,6 +1320,53 @@ DxlError Dynamixel::SetSyncReadHandler(std::vector<uint8_t> id_arr)
 
 DxlError Dynamixel::GetDxlValueFromSyncRead(double period_ms)
 {
+  if (read_data_list_.size() == 1) {
+    auto it_read_data = read_data_list_.front();
+    uint8_t id = it_read_data.comm_id;
+    uint16_t indirect_addr = indirect_info_read_[id].indirect_data_addr;
+    uint8_t indirect_size = indirect_info_read_[id].size;
+    std::vector<uint8_t> read_buffer(indirect_size, 0);
+    uint8_t dxl_error = 0;
+
+    if (period_ms > 0) {
+      port_handler_->setPacketTimeout(period_ms);
+    }
+
+    int dxl_comm_result = packet_handler_->readTxRx(
+      port_handler_, id, indirect_addr, indirect_size, read_buffer.data(), &dxl_error);
+    if (dxl_comm_result != COMM_SUCCESS) {
+      fprintf(
+        stderr, "DirectRead Rx Fail [ID : %d] [addr : %d] [size : %d] [Error code : %d]\n",
+        id, indirect_addr, indirect_size, dxl_comm_result);
+      return DxlError::SYNC_READ_FAIL;
+    }
+    if (dxl_error != 0) {
+      fprintf(
+        stderr, "DirectRead Packet Error [ID : %d] : %s\n",
+        id, packet_handler_->getRxPacketError(dxl_error));
+      return DxlError::SYNC_READ_FAIL;
+    }
+
+    return ProcessReadData(
+      id,
+      indirect_addr,
+      it_read_data.id_arr,
+      indirect_info_read_[id].item_name,
+      indirect_info_read_[id].item_size,
+      it_read_data.item_data_ptr_vec,
+      [&read_buffer, indirect_addr](uint8_t, uint16_t addr, uint8_t size) {
+        if (addr < indirect_addr) {
+          return uint32_t{0};
+        }
+        size_t offset = static_cast<size_t>(addr - indirect_addr);
+        uint32_t value = 0;
+        for (uint8_t i = 0; i < size && offset + i < read_buffer.size(); ++i) {
+          value |= static_cast<uint32_t>(read_buffer[offset + i]) << (8 * i);
+        }
+        return value;
+      });
+  }
+
   // Try fast sync read for the first 10 attempts after startup/handler setup.
   // If any of the first 10 attempts succeeds, use fast sync read permanently.
   // If all 10 attempts fail, permanently fallback to normal sync read.

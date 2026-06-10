@@ -1,0 +1,124 @@
+[unit info]
+Data Name	value	unit	Sign Type	Offset
+Present Velocity	0.0239691227	rad/s	signed	0.0
+Goal Velocity	0.0239691227	rad/s	signed	0.0
+Present Current	1.0	raw	signed	0.0
+Goal Current	1.0	raw	signed	0.0
+Present Position	0.0015339807878856412	rad	signed	-3.14159265359
+Goal Position	0.0015339807878856412	rad	signed	-3.14159265359
+
+[control table]
+Address	Size	Data Name
+0	2	Model Number
+2	4	Model Information
+6	1	Firmware Version
+7	1	ID
+8	1	Baud Rate
+9	1	Return Delay Time
+10	1	Drive Mode
+11	1	Operating Mode
+12	1	Secondary(Shadow) ID
+13	1	Protocol Type
+20	4	Homing Offset
+24	4	Moving Threshold
+31	1	Temperature Limit
+32	2	Max Voltage Limit
+34	2	Min Voltage Limit
+36	2	PWM Limit
+38	2	Current Limit
+44	4	Velocity Limit
+48	4	Max Position Limit
+52	4	Min Position Limit
+60	2	Startup Configuration
+62	1	PWM Slope
+63	1	Shutdown
+64	1	Torque Enable
+65	1	LED
+68	1	Status Return Level
+69	1	Registered Instruction
+70	1	Hardware Error Status
+76	2	Velocity I Gain
+78	2	Velocity P Gain
+80	2	Position D Gain
+82	2	Position I Gain
+84	2	Position P Gain
+88	2	Feedforward 2nd Gain
+90	2	Feedforward 1st Gain
+98	1	Bus Watchdog
+100	2	Goal PWM
+102	2	Goal Current
+104	4	Goal Velocity
+108	4	Profile Acceleration
+112	4	Profile Velocity
+116	4	Goal Position
+120	2	Realtime Tick
+122	1	Moving
+123	1	Moving Status
+124	2	Present PWM
+126	2	Present Current
+128	4	Present Velocity
+132	4	Present Position
+136	4	Velocity Trajectory
+140	4	Position Trajectory
+144	2	Present Input Voltage
+146	1	Present Temperature
+168	2	Indirect Address 1
+170	2	Indirect Address 2
+172	2	Indirect Address 3
+174	2	Indirect Address 4
+176	2	Indirect Address 5
+178	2	Indirect Address 6
+180	2	Indirect Address 7
+182	2	Indirect Address 8
+184	2	Indirect Address 9
+186	2	Indirect Address 10
+188	2	Indirect Address 11
+190	2	Indirect Address 12
+192	2	Indirect Address 13
+194	2	Indirect Address 14
+196	2	Indirect Address 15
+198	2	Indirect Address 16
+200	2	Indirect Address 17
+202	2	Indirect Address 18
+204	2	Indirect Address 19
+206	2	Indirect Address 20
+208	2	Indirect Address 21
+210	2	Indirect Address 22
+212	2	Indirect Address 23
+214	2	Indirect Address 24
+216	2	Indirect Address 25
+218	2	Indirect Address 26
+220	2	Indirect Address 27
+222	2	Indirect Address 28
+224	1	Indirect Data 1
+226	1	Indirect Data 2
+228	1	Indirect Data 3
+230	1	Indirect Data 4
+232	1	Indirect Data 5
+234	1	Indirect Data 6
+236	1	Indirect Data 7
+238	1	Indirect Data 8
+240	1	Indirect Data 9
+242	1	Indirect Data 10
+244	1	Indirect Data 11
+246	1	Indirect Data 12
+248	1	Indirect Data 13
+250	1	Indirect Data 14
+252	1	Indirect Data 15
+254	1	Indirect Data 16
+256	1	Indirect Data 17
+258	1	Indirect Data 18
+260	1	Indirect Data 19
+262	1	Indirect Data 20
+264	1	Indirect Data 21
+266	1	Indirect Data 22
+268	1	Indirect Data 23
+270	1	Indirect Data 24
+272	1	Indirect Data 25
+274	1	Indirect Data 26
+276	1	Indirect Data 27
+278	1	Indirect Data 28
+168	2	Indirect Address Write
+224	1	Indirect Data Write
+180	2	Indirect Address Read
+230	1	Indirect Data Read

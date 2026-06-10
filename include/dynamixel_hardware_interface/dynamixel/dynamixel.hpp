@@ -215,7 +215,7 @@ private:
   dynamixel::GroupFastBulkRead * group_fast_bulk_read_ = nullptr;
 
   // fast read protocol state (applies to both sync and bulk)
-  bool use_fast_read_protocol_ = true;
+  bool use_fast_read_protocol_ = false;
   bool fast_read_permanent_ = false;
   int fast_read_fail_count_ = 0;
 
