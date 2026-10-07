@@ -18,10 +18,10 @@ Address	Size	Data Name
 106	1	Status
 122	2	Indirect Address 1
 122	2	Indirect Address Read
-452	2	Indirect Address Write
+462	2	Indirect Address Write
 634	1	Indirect Data 1
 634	1	Indirect Data Read
-799	1	Indirect Data Write
+804	1	Indirect Data Write
 1024	1	SyncTable 1 ID 1
 1025	1	SyncTable 1 ID 2
 1026	1	SyncTable 1 ID 3
