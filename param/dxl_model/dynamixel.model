@@ -3,6 +3,7 @@ Number	Name
 220	omy_hat.model
 230	omy_end.model
 231	omy_end_rh_p12_rn.model
+240	mre16_s14_t.model
 260	hx5_d20_rr.model
 261	hx5_d20_rl.model
 6001	hx5_d20_r_synctable_1_device_1.model
@@ -104,6 +105,3 @@ Number	Name
 51201	h42_20_s300_ra.model
 53769	h54_100_s500_ra.model
 54025	h54_200_s500_ra.model
-
-
-240	dxl_enc.model
