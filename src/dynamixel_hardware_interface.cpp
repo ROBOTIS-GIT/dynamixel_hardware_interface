@@ -1473,29 +1473,17 @@ void DynamixelHardware::get_dxl_data_srv_callback(
 {
   uint8_t id = static_cast<uint8_t>(request->id);
   std::string name = request->item_name;
+  uint32_t item_data = 0;
 
-  if (dxl_comm_->InsertReadItemBuf(id, name) != DxlError::OK) {
-    RCLCPP_ERROR_STREAM(logger_, "get_dxl_data_srv_callback InsertReadItemBuf");
-
+  // The service is processed by spin_some() from read().  Waiting for a
+  // later read() cycle prevents that cycle from starting, so read directly.
+  if (dxl_comm_->ReadItem(id, id, name, item_data) != DxlError::OK) {
+    RCLCPP_ERROR_STREAM(logger_, "get_dxl_data_srv_callback ReadItem");
     response->result = false;
     return;
   }
-  double timeout_sec = request->timeout_sec;
-  if (timeout_sec == 0.0) {
-    timeout_sec = 1.0;
-  }
-  rclcpp::Time t_start = rclcpp::Clock().now();
-  while (dxl_comm_->CheckReadItemBuf(id, name) == false) {
-    if ((rclcpp::Clock().now() - t_start).seconds() > timeout_sec) {
-      RCLCPP_ERROR_STREAM(
-        logger_,
-        "get_dxl_data_srv_callback Timeout : " << (rclcpp::Clock().now() - t_start).seconds() );
-      response->result = false;
-      return;
-    }
-  }
 
-  response->item_data = dxl_comm_->GetReadItemDataBuf(id, name);
+  response->item_data = item_data;
   response->result = true;
 }
 
