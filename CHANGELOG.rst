@@ -2,6 +2,11 @@
 Changelog for package dynamixel_hardware_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.3 (2026-11-02)
+------------------
+* Added support for the MRE16-S14-T encoder
+* Contributors: Wonho Yun
+
 1.5.2 (2026-02-04)
 ------------------
 * Added xm335_t323 model file
