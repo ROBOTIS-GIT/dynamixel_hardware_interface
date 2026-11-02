@@ -1,0 +1,23 @@
+[unit info]
+Data Name	value	unit	Sign Type	Offset
+Present Position	0.00038349519697141030	rad	signed	-3.14159265359
+
+[control table]
+Address	Size	Data Name
+0	2	Model Number
+2	4	Model Information
+6	1	Firmware Version
+7	1	ID
+8	1	Baud Rate (Bus)
+9	1	Return Delay Time
+10	1	Drive Mode
+20	4	Homing Offset
+32	1	LED
+34	1	Status Return Level
+35	1	Registered Instruction
+36	2	Realtime Tick
+38	1	Hardware Error Status
+44	4	Present Position
+48	2	Present Input Voltage
+60	2	Max Voltage Limit
+62	2	Min Voltage Limit
