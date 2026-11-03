@@ -33,6 +33,20 @@
 namespace dynamixel_hardware_interface
 {
 
+// Telemetry interface name constants
+namespace TelemetryInterfaces {
+  constexpr const char* TEMPERATURE = "Present Temperature";
+  constexpr const char* VOLTAGE = "Present Input Voltage";
+  constexpr const char* CURRENT = "Present Current";
+  constexpr const char* LOAD = "Present Load";
+}
+
+// Telemetry handler configuration
+struct TelemetryHandler {
+  double scale_factor;  // Conversion factor to apply to raw value
+  std::function<void(DynamixelHardware*, int16_t, size_t)> setter;  // Function to set message field
+};
+
 DynamixelHardware::DynamixelHardware()
 : rclcpp::Node("dynamixel_hardware_interface"),
   logger_(rclcpp::get_logger("dynamixel_hardware_interface"))
@@ -362,6 +376,11 @@ hardware_interface::CallbackReturn DynamixelHardware::on_init(
   dxl_state_msg_.id.resize(num_of_pub_data);
   dxl_state_msg_.dxl_hw_state.resize(num_of_pub_data);
   dxl_state_msg_.torque_state.resize(num_of_pub_data);
+  // Add telemetry arrays
+  dxl_state_msg_.present_temperature.resize(num_of_pub_data);
+  dxl_state_msg_.present_input_voltage.resize(num_of_pub_data);
+  dxl_state_msg_.present_current.resize(num_of_pub_data);
+  dxl_state_msg_.present_load.resize(num_of_pub_data);
 
   using namespace std::placeholders;
 
@@ -535,6 +554,53 @@ DynamixelHardware::export_command_interfaces()
   return command_interfaces;
 }
 
+void DynamixelHardware::processTelemetryInterface(
+  const std::string& interface_name,
+  double value,
+  size_t index)
+{
+  // Map of interface names to their handlers
+  // Static ensures this is initialized only once
+  static const std::unordered_map<std::string, TelemetryHandler> telemetry_map = {
+    {TelemetryInterfaces::TEMPERATURE, 
+     {1.0,  // No scaling needed
+      [](DynamixelHardware* hw, int16_t val, size_t idx) {
+        hw->dxl_state_msg_.present_temperature.at(idx) = val;
+      }}},
+      
+    {TelemetryInterfaces::VOLTAGE,
+     {10.0,  // Scale to 0.1V units (e.g., 12.5V -> 125)
+      [](DynamixelHardware* hw, int16_t val, size_t idx) {
+        hw->dxl_state_msg_.present_input_voltage.at(idx) = val;
+      }}},
+      
+    {TelemetryInterfaces::CURRENT,
+     {1.0,  // Already in mA from model file
+      [](DynamixelHardware* hw, int16_t val, size_t idx) {
+        hw->dxl_state_msg_.present_current.at(idx) = val;
+      }}},
+      
+    {TelemetryInterfaces::LOAD,
+     {1.0,  // No scaling needed
+      [](DynamixelHardware* hw, int16_t val, size_t idx) {
+        hw->dxl_state_msg_.present_load.at(idx) = val;
+      }}}
+  };
+
+  // Find the handler for this interface
+  auto it = telemetry_map.find(interface_name);
+  if (it != telemetry_map.end()) {
+    const TelemetryHandler& handler = it->second;
+    
+    // Apply scale factor and convert to int16_t
+    int16_t converted_value = static_cast<int16_t>(value * handler.scale_factor);
+    
+    // Call the setter function to update the appropriate message field
+    handler.setter(this, converted_value, index);
+  }
+  // If interface not found, silently ignore (not a telemetry interface)
+}
+
 hardware_interface::CallbackReturn DynamixelHardware::on_activate(
   [[maybe_unused]] const rclcpp_lifecycle::State & previous_state)
 {
@@ -654,6 +720,20 @@ hardware_interface::return_type DynamixelHardware::read(
       auto ts_it = dxl_torque_state_.find({it.comm_id, it.id});
       bool ts = (ts_it != dxl_torque_state_.end()) ? ts_it->second : false;
       dxl_state_msg_.torque_state.at(index) = ts;
+      
+      // Initialize telemetry values to 0
+      dxl_state_msg_.present_temperature.at(index) = 0;
+      dxl_state_msg_.present_input_voltage.at(index) = 0;
+      dxl_state_msg_.present_current.at(index) = 0;
+      dxl_state_msg_.present_load.at(index) = 0;
+      
+      // Extract telemetry values from state interfaces
+      for (size_t i = 0; i < it.interface_name_vec.size(); i++) {
+        const std::string& interface_name = it.interface_name_vec.at(i);
+        double value = *it.value_ptr_vec.at(i);
+        processTelemetryInterface(interface_name, value, index);
+      }
+      
       index++;
     }
     dxl_state_pub_uni_ptr_->try_publish(dxl_state_msg_);
