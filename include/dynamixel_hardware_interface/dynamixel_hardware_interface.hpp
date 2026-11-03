@@ -135,6 +135,33 @@ public:
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
   /**
+   * @brief Opens the port and initializes the Dynamixels, unless on_init() already did.
+   * @param previous_state Previous lifecycle state.
+   * @return Callback return indicating success or error.
+   */
+  DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
+  hardware_interface::CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state)
+  override;
+
+  /**
+   * @brief Closes the port, so that the component can be configured again.
+   * @param previous_state Previous lifecycle state.
+   * @return Callback return indicating success or error.
+   */
+  DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
+  hardware_interface::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state)
+  override;
+
+  /**
+   * @brief Disables torque and closes the port.
+   * @param previous_state Previous lifecycle state.
+   * @return Callback return indicating success or error.
+   */
+  DYNAMIXEL_HARDWARE_INTERFACE_PUBLIC
+  hardware_interface::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state)
+  override;
+
+  /**
    * @brief Callback for activating the hardware interface.
    * @param previous_state Previous lifecycle state.
    * @return Callback return indicating success or error.
@@ -229,6 +256,9 @@ private:
   ///// dxl variable
   std::string port_name_;
   std::string baud_rate_;
+  std::string dxl_model_folder_;
+  bool disable_torque_at_init_{false};
+  bool initialize_communication_on_configure_{false};
   std::vector<std::pair<uint8_t, uint8_t>> dxl_comm_id_id_;
   std::vector<std::pair<uint8_t, uint8_t>> virtual_dxl_comm_id_id_;
 
@@ -252,8 +282,6 @@ private:
   std::vector<HandlerVarType> hdl_gpio_controller_states_;
   std::vector<HandlerVarType> hdl_gpio_controller_commands_;
 
-  bool is_set_hdl_{false};
-
   // joint <-> transmission matrix
   size_t num_of_joints_;
   size_t num_of_transmissions_;
@@ -265,6 +293,24 @@ private:
    * @return True if initialization was successful, false otherwise.
    */
   bool InitItem(const hardware_interface::ComponentInfo & gpio);
+
+  /**
+   * @brief Opens the port and initializes the Dynamixels.
+   * @return Callback return indicating success or error.
+   */
+  hardware_interface::CallbackReturn InitDxlCommunication();
+
+  /**
+   * @brief Builds the joint/sensor handlers and the ROS publisher and services.
+   * @return Callback return indicating success or error.
+   */
+  hardware_interface::CallbackReturn InitHandlersAndServices();
+
+  /**
+   * @brief Builds the interface handlers from the URDF (no communication).
+   */
+  void InitDxlReadHandlers();
+  void InitDxlWriteHandlers();
 
   /**
    * @brief Initializes the read items for Dynamixel.
