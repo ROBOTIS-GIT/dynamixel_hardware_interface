@@ -4,9 +4,9 @@ name: CI
 # Specifies the events that trigger the workflow
 on:
   push:
-    branches: [ jazzy, main ]
+    branches: [ main, humble, jazzy ]
   pull_request:
-    branches: [ jazzy, main ]
+    branches: [ main, humble, jazzy ]
 
 # Defines a set of jobs to be run as part of the workflow
 jobs:
@@ -17,17 +17,27 @@ jobs:
       fail-fast: false
       matrix:
         ros_distribution:
-          # - humble
+          - humble
           - jazzy
+          - kilted
+          - lyrical
           - rolling
         include:
           # ROS 2 Humble Hawksbill
-          # - docker_image: ubuntu:jammy
-          #   ros_distribution: humble
-          #   ros_version: 2
+          - docker_image: ubuntu:jammy
+            ros_distribution: humble
+            ros_version: 2
           # ROS 2 Jazzy Jalisco
           - docker_image: ubuntu:noble
             ros_distribution: jazzy
+            ros_version: 2
+          # ROS 2 Kilted
+          - docker_image: ubuntu:noble
+            ros_distribution: kilted
+            ros_version: 2
+          # ROS 2 Lyrical
+          - docker_image: ubuntu:resolute
+            ros_distribution: lyrical
             ros_version: 2
           # ROS 2 Rolling Ridley
           - docker_image: ubuntu:resolute
@@ -48,6 +58,7 @@ jobs:
         uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
+          use-ros2-testing: ${{ matrix.ros_distribution == 'rolling' }}
 
       - name: Check and Install ROS dependencies
         shell: bash
@@ -67,7 +78,7 @@ jobs:
           fi
 
       - name: Build and Test
-        uses: ros-tooling/action-ros-ci@v0.3
+        uses: ros-tooling/action-ros-ci@v0.4
         with:
           target-ros2-distro: ${{ matrix.ros_distribution }}
           vcs-repo-file-url: "https://raw.githubusercontent.com/ROBOTIS-GIT/dynamixel_hardware_interface/main/dynamixel_hardware_interface_ci.repos"
