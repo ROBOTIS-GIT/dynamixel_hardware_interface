@@ -4,9 +4,9 @@ name: CI
 # Specifies the events that trigger the workflow
 on:
   push:
-    branches: [ main, humble, jazzy ]
+    branches: [ main, jazzy ]
   pull_request:
-    branches: [ main, humble, jazzy ]
+    branches: [ main, jazzy ]
 
 # Defines a set of jobs to be run as part of the workflow
 jobs:
@@ -17,16 +17,11 @@ jobs:
       fail-fast: false
       matrix:
         ros_distribution:
-          - humble
           - jazzy
           - kilted
           - lyrical
           - rolling
         include:
-          # ROS 2 Humble Hawksbill
-          - docker_image: ubuntu:jammy
-            ros_distribution: humble
-            ros_version: 2
           # ROS 2 Jazzy Jalisco
           - docker_image: ubuntu:noble
             ros_distribution: jazzy
