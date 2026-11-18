@@ -1456,6 +1456,7 @@ void DynamixelHardware::ChangeDxlTorqueState()
 
   // Aggregate across all devices; if any OFF, report DISABLED
   auto torque_state_map = dxl_comm_->GetDxlTorqueState();
+  dxl_torque_state_ = torque_state_map;
   for (const auto & single_torque_state : torque_state_map) {
     if (single_torque_state.second == TORQUE_OFF) {
       dxl_torque_status_ = TORQUE_DISABLED;
