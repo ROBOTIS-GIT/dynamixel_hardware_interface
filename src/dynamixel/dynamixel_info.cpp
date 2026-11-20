@@ -276,21 +276,20 @@ std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
   // fprintf(stderr, "[Firmware Version Selection] Found %zu firmware-specific files for %s\n",
   //         available_firmware_versions.size(), base_model_name.c_str());
 
-  // Find the highest firmware version file that is <= device firmware version
+  // Firmware suffixes are inclusive upper bounds (e.g. XC330 fw52 is pre-V53).
   std::string selected_file = base_model_name;  // Default to base model
   int highest_fw_version = -1;
-  std::string highest_fw_file;
+  int selected_fw_version = 256;
 
   for (const auto & fw_file : available_firmware_versions) {
     uint8_t fw_version = ExtractFirmwareVersionFromFilename(fw_file);
     if (fw_version > highest_fw_version) {
       highest_fw_version = fw_version;
-      highest_fw_file = fw_file;
     }
-    if (fw_version <= firmware_version &&
-      fw_version > ExtractFirmwareVersionFromFilename(selected_file))
+    if (firmware_version <= fw_version && fw_version < selected_fw_version)
     {
       selected_file = fw_file;
+      selected_fw_version = fw_version;
     }
   }
 
@@ -311,7 +310,7 @@ std::string DynamixelInfo::SelectModelFileByFirmwareVersion(
     " and update your DYNAMIXEL firmware."
     " See: https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/\n");
 
-  // Otherwise, use the highest firmware-specific file <= device FW
+  // Use the nearest firmware-specific upper bound.
   fprintf(
     stderr, "[Firmware Version Selection] Device FW: %d, Selected Model: %s (FW: %d)\n",
     firmware_version, selected_file.c_str(),
